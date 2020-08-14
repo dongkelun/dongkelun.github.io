@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html>
-<head>
+<head><meta name="generator" content="Hexo 3.9.0">
   <meta charset="utf-8">
   
   <!-- <meta name="referrer" content="no-referrer" /> -->
   <meta name="renderer" content="webkit">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <link rel="dns-prefetch" href="https://dongkelun.com">
   <title>Spark Streaming+Kafka提交offset实现有且仅有一次(exactly-once) | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -44,7 +44,7 @@
   
 
 </head>
-
+</html>
 <body>
   <div id="container" q-class="show:isCtnShow">
     <canvas id="anm-canvas" class="anm-canvas"></canvas>
@@ -268,8 +268,8 @@
 </li>
 </ul>
 <p>3、启动上面的程序<br>4、继续生产几条数据<br>接下来先看一下结果：</p>
-<p><img src="https://tva1.sinaimg.cn/large/e44344dcly1fshpnnheigj20ld02jglj.jpg" alt=""><br><img src="https://tva3.sinaimg.cn/large/e44344dcly1fshpnmxnjgj21f00ow77c.jpg" alt=""></p>
-<p>由图可得，这样可以将历史数据全部打印出来，并且后面实时增加的数据，也打印出来了，且可以看到offset是在增加的，最后一个offset是202，那么接下来测试一下程序重启之后是否会接着之前的数据继续消费呢<br>5、停止程序<br>6、生产几条数据<br>7、启动程序<br>看一下结果:<br><img src="https://tva2.sinaimg.cn/large/e44344dcly1fshpnoqlnwj20la04rmxa.jpg" alt=""><br><img src="https://tva1.sinaimg.cn/large/e44344dcly1fshpnoc9yuj21g00pp0vw.jpg" alt=""><br>可以看出，程序确实是接着上次消费的地方消费的，为了证实这一点，我将earliest和offset圈了起来，从offset可以看到是从上次的202开始消费的。</p>
+<p><img src="https://tva1.sinaimg.cn/large/e44344dcly1fshpnnheigj20ld02jglj.jpg" alt><br><img src="https://tva3.sinaimg.cn/large/e44344dcly1fshpnmxnjgj21f00ow77c.jpg" alt></p>
+<p>由图可得，这样可以将历史数据全部打印出来，并且后面实时增加的数据，也打印出来了，且可以看到offset是在增加的，最后一个offset是202，那么接下来测试一下程序重启之后是否会接着之前的数据继续消费呢<br>5、停止程序<br>6、生产几条数据<br>7、启动程序<br>看一下结果:<br><img src="https://tva2.sinaimg.cn/large/e44344dcly1fshpnoqlnwj20la04rmxa.jpg" alt><br><img src="https://tva1.sinaimg.cn/large/e44344dcly1fshpnoc9yuj21g00pp0vw.jpg" alt><br>可以看出，程序确实是接着上次消费的地方消费的，为了证实这一点，我将earliest和offset圈了起来，从offset可以看到是从上次的202开始消费的。</p>
 <h2 id="3、关于offset过期时间"><a href="#3、关于offset过期时间" class="headerlink" title="3、关于offset过期时间"></a>3、关于offset过期时间</h2><p>kafka offset默认的过期时间是一天，当上面的程序挂掉，一天之内没有重启，也就是一天之内没有保存新的offset的话，那么之前的offset就会被删除，再重启程序，就会从头开始消费kafka里的所有历史数据，这种情况是有问题的，所以可以通过设置offsets.retention.minutes自定义offset过期时间，该设置单位为分钟，默认为1440。<br>修改kafka的offset过期时间详细信息见：<a href="https://dongkelun.com/2018/06/21/modifyKafkaOffsetTime/">https://dongkelun.com/2018/06/21/modifyKafkaOffsetTime/</a></p>
 <h2 id="4、自己保存offset"><a href="#4、自己保存offset" class="headerlink" title="4、自己保存offset"></a>4、自己保存offset</h2><p>可以通过自己保存offset的信息到数据库里，然后需要时再取出来，根据得到的offset信息消费kafka里的数据，这样就不用担心offset的过期的问题了，因为没有自己写代码实现，所以先给出官网的示例代码：<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// The details depend on your data store, but the general idea looks like this</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// begin from the the offsets committed to the database</span></span><br><span class="line"><span class="keyword">val</span> fromOffsets = selectOffsetsFromYourDatabase.map &#123; resultSet =&gt;</span><br><span class="line">  <span class="keyword">new</span> <span class="type">TopicPartition</span>(resultSet.string(<span class="string">"topic"</span>), resultSet.int(<span class="string">"partition"</span>)) -&gt; resultSet.long(<span class="string">"offset"</span>)</span><br><span class="line">&#125;.toMap</span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> stream = <span class="type">KafkaUtils</span>.createDirectStream[<span class="type">String</span>, <span class="type">String</span>](</span><br><span class="line">  streamingContext,</span><br><span class="line">  <span class="type">PreferConsistent</span>,</span><br><span class="line">  <span class="type">Assign</span>[<span class="type">String</span>, <span class="type">String</span>](fromOffsets.keys.toList, kafkaParams, fromOffsets)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">stream.foreachRDD &#123; rdd =&gt;</span><br><span class="line">  <span class="keyword">val</span> offsetRanges = rdd.asInstanceOf[<span class="type">HasOffsetRanges</span>].offsetRanges</span><br><span class="line"></span><br><span class="line">  <span class="keyword">val</span> results = yourCalculation(rdd)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// begin your transaction</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// update results</span></span><br><span class="line">  <span class="comment">// update offsets where the end of existing offsets matches the beginning of this batch of offsets</span></span><br><span class="line">  <span class="comment">// assert that offsets were updated correctly</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// end your transaction</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 
@@ -627,11 +627,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -647,18 +647,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
@@ -667,11 +655,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -680,6 +680,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -695,19 +703,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+                <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+                <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -715,11 +715,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -735,7 +743,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -747,27 +775,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">java</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">scala</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">日期</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -779,27 +807,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">scala</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">日期</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -807,59 +815,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">vue</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">git</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">git-page</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -875,7 +839,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -887,7 +851,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -899,7 +863,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">yarn</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -907,7 +887,35 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">vue</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">git</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">git-page</a>
               </li>
             
             <div class="clearfix"></div>

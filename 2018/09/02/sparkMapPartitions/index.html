@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html>
-<head>
+<head><meta name="generator" content="Hexo 3.9.0">
   <meta charset="utf-8">
   
   <!-- <meta name="referrer" content="no-referrer" /> -->
   <meta name="renderer" content="webkit">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <link rel="dns-prefetch" href="https://dongkelun.com">
   <title>Spark性能优化：基于分区进行操作 | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -44,7 +44,7 @@
   
 
 </head>
-
+</html>
 <body>
   <div id="container" q-class="show:isCtnShow">
     <canvas id="anm-canvas" class="anm-canvas"></canvas>
@@ -289,9 +289,9 @@
 <a id="more"></a>
 <p>首先给出上面三个算子的具体代码示例。</p>
 <h2 id="1、mapPartitions"><a href="#1、mapPartitions" class="headerlink" title="1、mapPartitions"></a>1、mapPartitions</h2><p>与map类似，不同点是map是对RDD的里的每一个元素进行操作，而mapPartitions是对每一个分区的数据（迭代器）进行操作，具体可以看上面的表格。<br>下面同时用map和mapPartitions实现WordCount，看一下mapPartitions的用法以及与map的区别<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.dkl.leanring.spark.test</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SparkSession</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">WordCount</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> spark = <span class="type">SparkSession</span>.builder().master(<span class="string">"local"</span>).appName(<span class="string">"WordCount"</span>).getOrCreate()</span><br><span class="line">    <span class="keyword">val</span> sc = spark.sparkContext</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> input = sc.parallelize(<span class="type">Seq</span>(<span class="string">"Spark Hive Kafka"</span>, <span class="string">"Hadoop Kafka Hive Hbase"</span>, <span class="string">"Java Scala Spark"</span>))</span><br><span class="line">    <span class="keyword">val</span> words = input.flatMap(line =&gt; line.split(<span class="string">" "</span>))</span><br><span class="line">    <span class="keyword">val</span> counts = words.map(word =&gt; (word, <span class="number">1</span>)).reduceByKey &#123; (x, y) =&gt; x + y &#125;</span><br><span class="line">    println(counts.collect().mkString(<span class="string">","</span>))</span><br><span class="line">    <span class="keyword">val</span> counts1 = words.mapPartitions(it =&gt; it.map(word =&gt; (word, <span class="number">1</span>))).reduceByKey &#123; (x, y) =&gt; x + y &#125;</span><br><span class="line">    println(counts1.collect().mkString(<span class="string">","</span>))</span><br><span class="line"></span><br><span class="line">    spark.stop()</span><br><span class="line"></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p><img src="https://tva4.sinaimg.cn/large/e44344dcly1fuw4revx5lj214a0gtq4i.jpg" alt=""></p>
+<p><img src="https://tva4.sinaimg.cn/large/e44344dcly1fuw4revx5lj214a0gtq4i.jpg" alt></p>
 <h2 id="2、mapPartitionsWithIndex"><a href="#2、mapPartitionsWithIndex" class="headerlink" title="2、mapPartitionsWithIndex"></a>2、mapPartitionsWithIndex</h2><p>和mapPartitions一样，只是多了一个分区的序号，下面的代码实现了将Rdd的元素数字n变为(分区序号,n*n)<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> rdd = sc.parallelize(<span class="number">1</span> to <span class="number">10</span>, <span class="number">5</span>)</span><br><span class="line"><span class="keyword">val</span> res = rdd.mapPartitionsWithIndex((index, it) =&gt; &#123;</span><br><span class="line">  it.map(n =&gt; (index, n * n))</span><br><span class="line">&#125;)</span><br><span class="line">println(res.collect().mkString(<span class="string">" "</span>))</span><br></pre></td></tr></table></figure></p>
-<p><img src="https://tva3.sinaimg.cn/large/e44344dcly1fuw66omqy6j20p0057jrp.jpg" alt=""></p>
+<p><img src="https://tva3.sinaimg.cn/large/e44344dcly1fuw66omqy6j20p0057jrp.jpg" alt></p>
 <h2 id="3、foreachPartitions"><a href="#3、foreachPartitions" class="headerlink" title="3、foreachPartitions"></a>3、foreachPartitions</h2><p>foreachPartitions和foreach类似，不同点也是foreachPartitions基于分区进行操作的<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rdd.foreachPartition(it =&gt; it.foreach(println))</span><br></pre></td></tr></table></figure></p>
 <h2 id="4、关于如何避免重复配置"><a href="#4、关于如何避免重复配置" class="headerlink" title="4、关于如何避免重复配置"></a>4、关于如何避免重复配置</h2><p>下面以打开数据库连接举例，需求是这样的：<br>读取mysql表里的数据，做了一系列数据处理得到结果之后，需要修改我们mysql表里的每一条数据的状态，代表程序已经处理过了，下次不需要处理了。</p>
 <h3 id="4-1-表"><a href="#4-1-表" class="headerlink" title="4.1 表"></a>4.1 表</h3><p>以最简单表结构示例</p>
@@ -314,7 +314,7 @@
 </tbody>
 </table>
 <p>建表语句<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> <span class="keyword">test</span> (</span><br><span class="line">	<span class="keyword">id</span> <span class="built_in">INTEGER</span> <span class="keyword">NOT</span> <span class="literal">NULL</span> AUTO_INCREMENT,</span><br><span class="line">	isdeal <span class="built_in">INTEGER</span> <span class="keyword">DEFAULT</span> <span class="number">0</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">	primary <span class="keyword">key</span>(<span class="keyword">id</span>) </span><br><span class="line">)</span><br><span class="line"><span class="keyword">ENGINE</span>=<span class="keyword">InnoDB</span></span><br><span class="line"><span class="keyword">DEFAULT</span> <span class="keyword">CHARSET</span>=utf8</span><br><span class="line"><span class="keyword">COLLATE</span>=utf8_general_ci;</span><br></pre></td></tr></table></figure></p>
-<p><img src="https://tva3.sinaimg.cn/large/e44344dcly1fuwf38qctxj20p00kwt99.jpg" alt=""></p>
+<p><img src="https://tva3.sinaimg.cn/large/e44344dcly1fuwf38qctxj20p00kwt99.jpg" alt></p>
 <h3 id="4-2-不基于分区操作"><a href="#4-2-不基于分区操作" class="headerlink" title="4.2 不基于分区操作"></a>4.2 不基于分区操作</h3><p>一共用两种方法</p>
 <h4 id="4-2-1-第一种"><a href="#4-2-1-第一种" class="headerlink" title="4.2.1 第一种"></a>4.2.1 第一种</h4><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.dkl.leanring.spark.sql.mysql</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SparkSession</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">UpdateMysqlDemo</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> spark = <span class="type">SparkSession</span>.builder().appName(<span class="string">"UpdateMysqlDemo"</span>).master(<span class="string">"local"</span>).getOrCreate()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> database_url = <span class="string">"jdbc:mysql://192.168.44.128:3306/test?useUnicode=true&amp;characterEncoding=utf-8&amp;useSSL=false"</span></span><br><span class="line">    <span class="keyword">val</span> user = <span class="string">"root"</span></span><br><span class="line">    <span class="keyword">val</span> password = <span class="string">"Root-123456"</span></span><br><span class="line">    <span class="keyword">val</span> df = spark.read</span><br><span class="line">      .format(<span class="string">"jdbc"</span>)</span><br><span class="line">      .option(<span class="string">"url"</span>, database_url)</span><br><span class="line">      .option(<span class="string">"dbtable"</span>, <span class="string">"(select * from test where isDeal=0 limit 5)a"</span>)</span><br><span class="line">      .option(<span class="string">"user"</span>, user)</span><br><span class="line">      .option(<span class="string">"password"</span>, password)</span><br><span class="line">      .option(<span class="string">"driver"</span>, <span class="string">"com.mysql.jdbc.Driver"</span>)</span><br><span class="line">      .option(<span class="string">"numPartitions"</span>, <span class="string">"5"</span>)</span><br><span class="line">      .option(<span class="string">"partitionColumn"</span>, <span class="string">"ID"</span>)</span><br><span class="line">      .option(<span class="string">"lowerBound"</span>, <span class="string">"1"</span>)</span><br><span class="line">      .option(<span class="string">"upperBound"</span>, <span class="string">"10"</span>)</span><br><span class="line">      .load()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">import</span> java.sql.&#123; <span class="type">Connection</span>, <span class="type">DriverManager</span>, <span class="type">ResultSet</span> &#125;;</span><br><span class="line">    df.rdd.foreach(row =&gt; &#123;</span><br><span class="line">      <span class="keyword">val</span> conn = <span class="type">DriverManager</span>.getConnection(database_url, user, password)</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// Configure to be Read Only</span></span><br><span class="line">        <span class="keyword">val</span> statement = conn.createStatement(<span class="type">ResultSet</span>.<span class="type">TYPE_FORWARD_ONLY</span>, <span class="type">ResultSet</span>.<span class="type">CONCUR_READ_ONLY</span>)</span><br><span class="line">        <span class="keyword">val</span> prep = conn.prepareStatement(<span class="string">s"update test set isDeal=1 where id=?"</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">val</span> id = row.getAs[<span class="type">Int</span>](<span class="string">"id"</span>)</span><br><span class="line">        prep.setInt(<span class="number">1</span>, id)</span><br><span class="line">        prep.executeUpdate</span><br><span class="line"></span><br><span class="line">      &#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">        <span class="keyword">case</span> e: <span class="type">Exception</span> =&gt; e.printStackTrace</span><br><span class="line">      &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        conn.close()</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">    &#125;)</span><br><span class="line"></span><br><span class="line">    spark.stop()</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <ul>
@@ -326,7 +326,7 @@
 <h3 id="4-3-基于分区的方式"><a href="#4-3-基于分区的方式" class="headerlink" title="4.3 基于分区的方式"></a>4.3 基于分区的方式</h3><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">df.rdd.foreachPartition(it =&gt; &#123;</span><br><span class="line">  <span class="keyword">val</span> conn = <span class="type">DriverManager</span>.getConnection(database_url, user, password)</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="keyword">val</span> statement = conn.createStatement(<span class="type">ResultSet</span>.<span class="type">TYPE_FORWARD_ONLY</span>, <span class="type">ResultSet</span>.<span class="type">CONCUR_READ_ONLY</span>)</span><br><span class="line">    <span class="keyword">val</span> prep = conn.prepareStatement(<span class="string">s"update test set isDeal=1 where id=?"</span>)</span><br><span class="line">    it.foreach(row =&gt; &#123;</span><br><span class="line">      <span class="keyword">val</span> id = row.getAs[<span class="type">Int</span>](<span class="string">"id"</span>)</span><br><span class="line">      prep.setInt(<span class="number">1</span>, id)</span><br><span class="line">      prep.executeUpdate</span><br><span class="line">    &#125;)</span><br><span class="line"></span><br><span class="line">  &#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> e: <span class="type">Exception</span> =&gt; e.printStackTrace</span><br><span class="line">  &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    conn.close()</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
 <p>这种方式就结合了上面两种方式的优点，基于分区的方式使得创建连接的次数不会那么多，然后每个分区的数据也可以平均分到每个节点的executor上，避免了内存不足产生的异常，当然前提是要合理的分配分区数，既不能让分区数太多，也不能让每个分区的数据太多，还有要注意数据倾斜的问题，因为当数据倾斜造成某个分区数据量太大同样造成OOM（内存溢出）。</p>
 <h3 id="4-4-其他"><a href="#4-4-其他" class="headerlink" title="4.4 其他"></a>4.4 其他</h3><p>上面只是列举了一个例子，且只是在foreach这样的action算子里体现的，当然肯定也有需求需是在transformation里进行如数据库的连接这样的操作，大家可类比的使用mapPartitions即可</p>
-<h2 id="5、其他优点（未证实）"><a href="#5、其他优点（未证实）" class="headerlink" title="5、其他优点（未证实）"></a>5、其他优点（未证实）</h2><p>网上有很多博客提到mapPartitions还有其他优点，就是mapPartitions比map快，性能高，原因是因为map的function会执行rdd.count次，而mapPartitions的function则执行rdd.numPartitions次。<br>但我并这么认为，因mapPartitions的function和map的function是不一样的，mapPartitions里的迭代器的每个元素还是都要执行一遍的，实际上也是执行rdd.count次。<br>下面以其中一篇博客举例（只列出优点，大部分博客上的写的都一样的，应该出自同一篇博客吧~）<br><img src="https://tva3.sinaimg.cn/large/e44344dcly1fuwkza9ih7j20p00jk0uw.jpg" alt=""><br>博客地址：<a href="https://blog.csdn.net/tian_qing_lei/article/details/77940504" target="_blank" rel="noopener">Spark—算子调优之MapPartitions提升Map类操作性能</a></p>
+<h2 id="5、其他优点（未证实）"><a href="#5、其他优点（未证实）" class="headerlink" title="5、其他优点（未证实）"></a>5、其他优点（未证实）</h2><p>网上有很多博客提到mapPartitions还有其他优点，就是mapPartitions比map快，性能高，原因是因为map的function会执行rdd.count次，而mapPartitions的function则执行rdd.numPartitions次。<br>但我并这么认为，因mapPartitions的function和map的function是不一样的，mapPartitions里的迭代器的每个元素还是都要执行一遍的，实际上也是执行rdd.count次。<br>下面以其中一篇博客举例（只列出优点，大部分博客上的写的都一样的，应该出自同一篇博客吧~）<br><img src="https://tva3.sinaimg.cn/large/e44344dcly1fuwkza9ih7j20p00jk0uw.jpg" alt><br>博客地址：<a href="https://blog.csdn.net/tian_qing_lei/article/details/77940504" target="_blank" rel="noopener">Spark—算子调优之MapPartitions提升Map类操作性能</a></p>
 <ul>
 <li>至于mapPartitions是否真的比map处理速度快,如果我有时间验证得到结果的话，我再更新一下这个地方~<h2 id="相关阅读"><a href="#相关阅读" class="headerlink" title="相关阅读"></a>相关阅读</h2></li>
 <li><a href="https://dongkelun.com/2018/03/21/sparkMysql/">Spark Sql 连接mysql</a></li>
@@ -687,11 +687,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -707,18 +707,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
@@ -727,11 +715,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -740,6 +740,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -755,19 +763,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+                <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+                <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -775,11 +775,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -795,7 +803,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -807,27 +835,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">java</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">scala</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">日期</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -839,27 +867,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">scala</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">日期</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -867,59 +875,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">vue</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">git</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">git-page</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -935,7 +899,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -947,7 +911,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -959,7 +923,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">yarn</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -967,7 +947,35 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">vue</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">git</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">git-page</a>
               </li>
             
             <div class="clearfix"></div>

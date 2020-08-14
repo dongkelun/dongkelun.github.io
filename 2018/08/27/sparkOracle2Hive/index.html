@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html>
-<head>
+<head><meta name="generator" content="Hexo 3.9.0">
   <meta charset="utf-8">
   
   <!-- <meta name="referrer" content="no-referrer" /> -->
   <meta name="renderer" content="webkit">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <link rel="dns-prefetch" href="https://dongkelun.com">
   <title>利用Spark实现Oracle到Hive的历史数据同步 | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -45,7 +45,7 @@
   
 
 </head>
-
+</html>
 <body>
   <div id="container" q-class="show:isCtnShow">
     <canvas id="anm-canvas" class="anm-canvas"></canvas>
@@ -314,16 +314,16 @@
 </table>
 <a id="more"></a>
 <h3 id="2-1-看一下Spark字段类型对应"><a href="#2-1-看一下Spark字段类型对应" class="headerlink" title="2.1 看一下Spark字段类型对应"></a>2.1 看一下Spark字段类型对应</h3><p>首先建一张包含大部分字段类型的Oracle表<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> <span class="keyword">TEST</span> (</span><br><span class="line">	COL1 VARCHAR2(<span class="number">25</span>),</span><br><span class="line">	COL2 <span class="keyword">NVARCHAR2</span>(<span class="number">18</span>),</span><br><span class="line">	COL3 <span class="built_in">INTEGER</span>,</span><br><span class="line">	COL4 <span class="built_in">NUMBER</span>(<span class="number">10</span>,<span class="number">4</span>),</span><br><span class="line">	COL5 <span class="built_in">NUMBER</span>(<span class="number">30</span>,<span class="number">7</span>),</span><br><span class="line">	COL6 <span class="built_in">NUMBER</span>,</span><br><span class="line">	COL7 <span class="built_in">DATE</span>,</span><br><span class="line">	COL8 <span class="keyword">TIMESTAMP</span>,</span><br><span class="line">	COL9 <span class="built_in">CHAR</span>(<span class="number">30</span>),</span><br><span class="line">	COL10 <span class="keyword">CLOB</span>,</span><br><span class="line">	COL11 <span class="built_in">BLOB</span>,</span><br><span class="line">	COL12 <span class="keyword">RAW</span>(<span class="number">12</span>)</span><br><span class="line">) ;</span><br><span class="line"><span class="keyword">COMMENT</span> <span class="keyword">ON</span> <span class="keyword">COLUMN</span> TEST.COL2 <span class="keyword">IS</span> <span class="string">'注释2'</span> ;</span><br><span class="line"><span class="keyword">COMMENT</span> <span class="keyword">ON</span> <span class="keyword">COLUMN</span> TEST.COL7 <span class="keyword">IS</span> <span class="string">'注释7'</span> ;</span><br><span class="line"><span class="keyword">COMMENT</span> <span class="keyword">ON</span> <span class="keyword">COLUMN</span> TEST.COL10 <span class="keyword">IS</span> <span class="string">'注释10'</span> ;</span><br></pre></td></tr></table></figure></p>
-<p><img src="https://tva1.sinaimg.cn/large/e44344dcly1fuo0m05unhj213q0asgmg.jpg" alt=""><br>然后用Spark打印一下获取到的字段类型。<br><img src="https://tva1.sinaimg.cn/large/e44344dcly1fuo1isdv3xj211i0o2dhh.jpg" alt=""><br>可以看到Spark成功的完成上述表格的字段类型转化，小数的精度和是否为空都可以获取到，但是不完美的一点是没有将NUMBER标度为零的转换为Int,而还是以DECIMAL(38,0)的形式表示，虽然都是表示的整数，但是在后面Spark读取hive的时候，还需要将DECIMAL转为Int。</p>
+<p><img src="https://tva1.sinaimg.cn/large/e44344dcly1fuo0m05unhj213q0asgmg.jpg" alt><br>然后用Spark打印一下获取到的字段类型。<br><img src="https://tva1.sinaimg.cn/large/e44344dcly1fuo1isdv3xj211i0o2dhh.jpg" alt><br>可以看到Spark成功的完成上述表格的字段类型转化，小数的精度和是否为空都可以获取到，但是不完美的一点是没有将NUMBER标度为零的转换为Int,而还是以DECIMAL(38,0)的形式表示，虽然都是表示的整数，但是在后面Spark读取hive的时候，还需要将DECIMAL转为Int。</p>
 <h3 id="2-2-按需修改字段类型对应"><a href="#2-2-按需修改字段类型对应" class="headerlink" title="2.2 按需修改字段类型对应"></a>2.2 按需修改字段类型对应</h3><p>以上面讲的将DECIMAL(38,0)转为Int为例:<br>先尝试通过修改schema实现<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.spark.sql.types._</span><br><span class="line"><span class="keyword">val</span> schema = df.schema.map(s =&gt; &#123;</span><br><span class="line">  <span class="keyword">if</span> (s.dataType.equals(<span class="type">DecimalType</span>(<span class="number">38</span>, <span class="number">0</span>))) &#123;</span><br><span class="line">    <span class="keyword">new</span> <span class="type">StructField</span>(s.name, <span class="type">IntegerType</span>, s.nullable)</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    s</span><br><span class="line">  &#125;</span><br><span class="line">&#125;)</span><br><span class="line"><span class="comment">//根据添加了注释的schema，新建DataFrame</span></span><br><span class="line"><span class="keyword">val</span> new_df = spark.createDataFrame(df.rdd, <span class="type">StructType</span>(schema)).repartition(<span class="number">160</span>)</span><br><span class="line">new_df.printSchema()</span><br></pre></td></tr></table></figure></p>
-<p><img src="https://tva4.sinaimg.cn/large/e44344dcly1fuo9vuhxz8j211i0onabz.jpg" alt=""><br>可以看到，已经成功的将COL3的字段转为了Int。但是这样构造的DataFrame是不能用的，如执行new_df.show会报如下错误：<br><figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java.lang.RuntimeException: Error <span class="keyword">while</span> encodin<span class="variable">g:</span> java.lang.RuntimeException: java.math.BigDecimal <span class="keyword">is</span> not <span class="keyword">a</span> valid external <span class="built_in">type</span> <span class="keyword">for</span> schema of <span class="keyword">int</span></span><br></pre></td></tr></table></figure></p>
+<p><img src="https://tva4.sinaimg.cn/large/e44344dcly1fuo9vuhxz8j211i0onabz.jpg" alt><br>可以看到，已经成功的将COL3的字段转为了Int。但是这样构造的DataFrame是不能用的，如执行new_df.show会报如下错误：<br><figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java.lang.RuntimeException: Error <span class="keyword">while</span> encodin<span class="variable">g:</span> java.lang.RuntimeException: java.math.BigDecimal <span class="keyword">is</span> not <span class="keyword">a</span> valid external <span class="built_in">type</span> <span class="keyword">for</span> schema of <span class="keyword">int</span></span><br></pre></td></tr></table></figure></p>
 <p>原因是rdd的数据类型和schema的数据类型不匹配。<br>最后可以通过如下方式实现：<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> scala.collection.mutable.<span class="type">ArrayBuffer</span></span><br><span class="line"><span class="comment">//需要转换的列名</span></span><br><span class="line"><span class="keyword">val</span> colName = <span class="type">ArrayBuffer</span>[<span class="type">String</span>]()</span><br><span class="line"><span class="keyword">val</span> schema = df.schema.foreach(s =&gt; &#123;</span><br><span class="line">  <span class="keyword">if</span> (s.dataType.equals(<span class="type">DecimalType</span>(<span class="number">38</span>, <span class="number">0</span>))) &#123;</span><br><span class="line">    colName += s.name</span><br><span class="line">  &#125;</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.functions._</span><br><span class="line"><span class="keyword">var</span> df_int = df</span><br><span class="line">colName.foreach(name =&gt; &#123;</span><br><span class="line">  df_int = df_int.withColumn(name, col(name).cast(<span class="type">IntegerType</span>))</span><br><span class="line">&#125;)</span><br><span class="line">df_int.printSchema()</span><br><span class="line">df_int.show</span><br></pre></td></tr></table></figure></p>
-<p><img src="https://tva4.sinaimg.cn/large/e44344dcly1fuo9vuzk8mj211i0pbabr.jpg" alt=""></p>
+<p><img src="https://tva4.sinaimg.cn/large/e44344dcly1fuo9vuzk8mj211i0pbabr.jpg" alt></p>
 <h2 id="3、Oracle全部历史数据同步Hive"><a href="#3、Oracle全部历史数据同步Hive" class="headerlink" title="3、Oracle全部历史数据同步Hive"></a>3、Oracle全部历史数据同步Hive</h2><h3 id="3-1-再新建一张表"><a href="#3-1-再新建一张表" class="headerlink" title="3.1 再新建一张表"></a>3.1 再新建一张表</h3><p>这里的目的是表示多个表，而不是一个表，上面已经建了一张表，再建一张表，以验证代码可以将所有的表都同步过去,这里用上一篇博客上的建表Sql即可<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> ORA_TEST (</span><br><span class="line"><span class="keyword">ID</span> VARCHAR2(<span class="number">100</span>), </span><br><span class="line"><span class="keyword">NAME</span> VARCHAR2(<span class="number">100</span>)</span><br><span class="line">);</span><br><span class="line"><span class="keyword">COMMENT</span> <span class="keyword">ON</span> <span class="keyword">COLUMN</span> ORA_TEST.ID <span class="keyword">IS</span> <span class="string">'ID'</span>;</span><br><span class="line"><span class="keyword">COMMENT</span> <span class="keyword">ON</span> <span class="keyword">COLUMN</span> ORA_TEST.NAME <span class="keyword">IS</span> <span class="string">'名字'</span>;</span><br><span class="line"><span class="keyword">COMMENT</span> <span class="keyword">ON</span> <span class="keyword">TABLE</span> ORA_TEST <span class="keyword">IS</span>  <span class="string">'测试'</span>;</span><br></pre></td></tr></table></figure></p>
 <p>再在每张表里造点数据，这里就不截图了。</p>
 <h3 id="3-2-代码"><a href="#3-2-代码" class="headerlink" title="3.2 代码"></a>3.2 代码</h3><p>上篇博客里用到的注释，是在程序里手工添加的注释，下面的代码是从Oracle里取的，且同步的是一个用户下所有的表。</p>
 <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.dkl.leanring.spark.sql.<span class="type">Oracle</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SparkSession</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.types._</span><br><span class="line"><span class="keyword">import</span> java.util.<span class="type">Properties</span></span><br><span class="line"><span class="keyword">import</span> scala.collection.mutable.<span class="type">ArrayBuffer</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Spark自动建表（带字段注释、暂无表注释）</span></span><br><span class="line"><span class="comment"> * 并将中间库Oracle的历史数据全部初始化到hive</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * 实现方案：</span></span><br><span class="line"><span class="comment"> * 1、 利用Spark的自动字段类型匹配</span></span><br><span class="line"><span class="comment"> * 2、 读取Oracle表字段注释，添加到DataFrame的元数据</span></span><br><span class="line"><span class="comment"> * 3、按需修改Spark默认的字段类型转换</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * 注：需要提前建好对应的hive数据库</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">Oracle2Hive</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> spark = <span class="type">SparkSession</span></span><br><span class="line">      .builder()</span><br><span class="line">      .appName(<span class="string">"Oracle2Hive"</span>)</span><br><span class="line">      .master(<span class="string">"local"</span>)</span><br><span class="line">      .config(<span class="string">"spark.sql.parquet.writeLegacyFormat"</span>, <span class="literal">true</span>)</span><br><span class="line">      .enableHiveSupport()</span><br><span class="line">      .getOrCreate()</span><br><span class="line"></span><br><span class="line">    <span class="comment">//oracle的连接信息</span></span><br><span class="line">    <span class="keyword">val</span> p = <span class="keyword">new</span> <span class="type">Properties</span>()</span><br><span class="line">    p.put(<span class="string">"driver"</span>, <span class="string">"oracle.jdbc.driver.OracleDriver"</span>)</span><br><span class="line">    p.put(<span class="string">"url"</span>, <span class="string">"jdbc:oracle:thin:@192.168.44.128:1521:orcl"</span>)</span><br><span class="line">    p.put(<span class="string">"user"</span>, <span class="string">"bigdata"</span>)</span><br><span class="line">    p.put(<span class="string">"password"</span>, <span class="string">"bigdata"</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">import</span> scala.collection.<span class="type">JavaConversions</span>._</span><br><span class="line">    <span class="keyword">val</span> database_conf: scala.collection.mutable.<span class="type">Map</span>[<span class="type">String</span>, <span class="type">String</span>] = p</span><br><span class="line"></span><br><span class="line">    <span class="comment">//Oracle是分用户的，这里以用户BIGDATA为例</span></span><br><span class="line">    <span class="keyword">val</span> owner = <span class="string">"BIGDATA"</span></span><br><span class="line">    <span class="keyword">val</span> sql_in_owner = <span class="string">s"('<span class="subst">$&#123;owner&#125;</span>')"</span></span><br><span class="line"></span><br><span class="line">    database_conf.put(<span class="string">"dbtable"</span>, <span class="string">"TEST"</span>)</span><br><span class="line"></span><br><span class="line">    spark.sql(<span class="string">s"use <span class="subst">$&#123;owner&#125;</span>"</span>)</span><br><span class="line"></span><br><span class="line">    database_conf.put(<span class="string">"dbtable"</span>, <span class="string">s"(select table_name from all_tables where owner in <span class="subst">$&#123;sql_in_owner&#125;</span>)a"</span>)</span><br><span class="line">    <span class="comment">//所有的表名</span></span><br><span class="line">    <span class="keyword">val</span> allTableNames = getDataFrame(spark, database_conf)</span><br><span class="line"></span><br><span class="line">    database_conf.put(<span class="string">"dbtable"</span>, <span class="string">s"(select * from all_col_comments where owner in <span class="subst">$&#123;sql_in_owner&#125;</span>)a"</span>)</span><br><span class="line">    <span class="comment">//所有的表字段对应的注释</span></span><br><span class="line">    <span class="keyword">val</span> allColComments = getDataFrame(spark, database_conf).repartition(<span class="number">160</span>).cache</span><br><span class="line"></span><br><span class="line">    allTableNames.select(<span class="string">"table_name"</span>).collect().foreach(row =&gt; &#123;</span><br><span class="line">      <span class="comment">//表名</span></span><br><span class="line">      <span class="keyword">val</span> table_name = row.getAs[<span class="type">String</span>](<span class="string">"table_name"</span>)</span><br><span class="line">      database_conf.put(<span class="string">"dbtable"</span>, table_name)</span><br><span class="line">      <span class="comment">//根据表名从Oracle取数</span></span><br><span class="line">      <span class="keyword">val</span> df = getDataFrame(spark, database_conf)</span><br><span class="line">      <span class="comment">//字段名 和注 对应的map</span></span><br><span class="line">      <span class="keyword">val</span> colName_comments_map = allColComments.where(<span class="string">s"TABLE_NAME='<span class="subst">$&#123;table_name&#125;</span>'"</span>)</span><br><span class="line">        .select(<span class="string">"COLUMN_NAME"</span>, <span class="string">"COMMENTS"</span>)</span><br><span class="line">        .na.fill(<span class="string">""</span>, <span class="type">Array</span>(<span class="string">"COMMENTS"</span>))</span><br><span class="line">        .rdd.map(row =&gt; (row.getAs[<span class="type">String</span>](<span class="string">"COLUMN_NAME"</span>), row.getAs[<span class="type">String</span>](<span class="string">"COMMENTS"</span>)))</span><br><span class="line">        .collect()</span><br><span class="line">        .toMap</span><br><span class="line"></span><br><span class="line">      <span class="keyword">val</span> colName = <span class="type">ArrayBuffer</span>[<span class="type">String</span>]()</span><br><span class="line">      <span class="comment">//为schema添加注释信息</span></span><br><span class="line">      <span class="keyword">val</span> schema = df.schema.map(s =&gt; &#123;</span><br><span class="line">        <span class="keyword">if</span> (s.dataType.equals(<span class="type">DecimalType</span>(<span class="number">38</span>, <span class="number">0</span>))) &#123;</span><br><span class="line">          colName += s.name</span><br><span class="line">          <span class="keyword">new</span> <span class="type">StructField</span>(s.name, <span class="type">IntegerType</span>, s.nullable, s.metadata).withComment(colName_comments_map(s.name))</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">          s.withComment(colName_comments_map(s.name))</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;)</span><br><span class="line"></span><br><span class="line">      <span class="keyword">import</span> org.apache.spark.sql.functions._</span><br><span class="line">      <span class="keyword">var</span> df_int = df</span><br><span class="line">      colName.foreach(name =&gt; &#123;</span><br><span class="line">        df_int = df_int.withColumn(name, col(name).cast(<span class="type">IntegerType</span>))</span><br><span class="line"></span><br><span class="line">      &#125;)</span><br><span class="line">      <span class="comment">//根据添加了注释的schema，新建DataFrame</span></span><br><span class="line">      <span class="keyword">val</span> new_df = spark.createDataFrame(df_int.rdd, <span class="type">StructType</span>(schema))</span><br><span class="line">      new_df.write.mode(<span class="string">"overwrite"</span>).saveAsTable(table_name)</span><br><span class="line"></span><br><span class="line">      <span class="comment">//      new_df.schema.foreach(s =&gt; println(s.metadata))</span></span><br><span class="line">      <span class="comment">//      new_df.printSchema()</span></span><br><span class="line"></span><br><span class="line">    &#125;)</span><br><span class="line"></span><br><span class="line">    spark.stop</span><br><span class="line"></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * @param spark SparkSession</span></span><br><span class="line"><span class="comment">   * @param database_conf 数据库配置项Map，包括driver,url,username,password,dbtable等内容，提交程序时需用--jars选项引用相关jar包</span></span><br><span class="line"><span class="comment">   * @return 返回DataFrame对象</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">getDataFrame</span></span>(spark: <span class="type">SparkSession</span>, database_conf: scala.collection.<span class="type">Map</span>[<span class="type">String</span>, <span class="type">String</span>]) = &#123;</span><br><span class="line">    spark.read.format(<span class="string">"jdbc"</span>).options(database_conf).load()</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="3-3-看一下Hive里的结果"><a href="#3-3-看一下Hive里的结果" class="headerlink" title="3.3 看一下Hive里的结果"></a>3.3 看一下Hive里的结果</h3><p><img src="https://tva1.sinaimg.cn/large/e44344dcly1fuo9vvehxij20xc0i5my1.jpg" alt=""></p>
+<h3 id="3-3-看一下Hive里的结果"><a href="#3-3-看一下Hive里的结果" class="headerlink" title="3.3 看一下Hive里的结果"></a>3.3 看一下Hive里的结果</h3><p><img src="https://tva1.sinaimg.cn/large/e44344dcly1fuo9vvehxij20xc0i5my1.jpg" alt></p>
 <p>这样就成功的完成了Oracle历史数据到Hive的同步！</p>
 <h2 id="4、关于增量数据的同步"><a href="#4、关于增量数据的同步" class="headerlink" title="4、关于增量数据的同步"></a>4、关于增量数据的同步</h2><h3 id="4-1-实时同步"><a href="#4-1-实时同步" class="headerlink" title="4.1 实时同步"></a>4.1 实时同步</h3><p>可以考虑这样，先用ogg将Oracle的增量数据实时同步到kafka,再用Spark Streaming实现kafka到hive的实时同步。</p>
 <ul>
@@ -684,11 +684,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -704,18 +704,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
@@ -724,11 +712,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -737,6 +737,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -752,19 +760,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+                <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+                <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -772,11 +772,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -792,7 +800,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -804,27 +832,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">java</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">scala</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">日期</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -836,27 +864,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">scala</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">日期</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -864,59 +872,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">vue</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">git</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">git-page</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -932,7 +896,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -944,7 +908,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -956,7 +920,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">yarn</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -964,7 +944,35 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">vue</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">git</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">git-page</a>
               </li>
             
             <div class="clearfix"></div>

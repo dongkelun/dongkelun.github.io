@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html>
-<head>
+<head><meta name="generator" content="Hexo 3.9.0">
   <meta charset="utf-8">
   
   <!-- <meta name="referrer" content="no-referrer" /> -->
   <meta name="renderer" content="webkit">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <link rel="dns-prefetch" href="https://dongkelun.com">
   <title>hive查询报错:java.io.IOException:org.apache.parquet.io.ParquetDecodingException | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -42,7 +42,7 @@
   
 
 </head>
-
+</html>
 <body>
   <div id="container" q-class="show:isCtnShow">
     <canvas id="anm-canvas" class="anm-canvas"></canvas>
@@ -262,8 +262,8 @@
 <h2 id="2、spark-sql代码"><a href="#2、spark-sql代码" class="headerlink" title="2、spark sql代码"></a>2、spark sql代码</h2><p>执行如下代码,便可以将之前在oracle里建的test的表导入到hive里了，其中hive的表会自动创建，具体的spark连接hive，连接关系型数据库，可以参考我的其他两篇博客：<a href="https://dongkelun.com/2018/03/25/sparkHive/">spark连接hive（spark-shell和eclipse两种方式）</a> 、<a href="http://dongkelun.com/2018/03/21/sparkMysql/">Spark Sql 连接mysql</a><br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.dkl.leanring.spark.sql</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SparkSession</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SaveMode</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">Oracle2HiveTest</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//初始化spark</span></span><br><span class="line">    <span class="keyword">val</span> spark = <span class="type">SparkSession</span></span><br><span class="line">      .builder()</span><br><span class="line">      .appName(<span class="string">"Oracle2HiveTest"</span>)</span><br><span class="line">      .master(<span class="string">"local"</span>)</span><br><span class="line">      <span class="comment">//      .config("spark.sql.parquet.writeLegacyFormat", true)</span></span><br><span class="line">      .enableHiveSupport()</span><br><span class="line">      .getOrCreate()</span><br><span class="line"></span><br><span class="line">    <span class="comment">//表名为我们新建的测试表</span></span><br><span class="line">    <span class="keyword">val</span> tableName = <span class="string">"test"</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">//spark连接oracle数据库</span></span><br><span class="line">    <span class="keyword">val</span> df = spark.read</span><br><span class="line">      .format(<span class="string">"jdbc"</span>)</span><br><span class="line">      .option(<span class="string">"url"</span>, <span class="string">"jdbc:oracle:thin:@192.168.44.128:1521:orcl"</span>)</span><br><span class="line">      .option(<span class="string">"dbtable"</span>, tableName)</span><br><span class="line">      .option(<span class="string">"user"</span>, <span class="string">"bigdata"</span>)</span><br><span class="line">      .option(<span class="string">"password"</span>, <span class="string">"bigdata"</span>)</span><br><span class="line">      .option(<span class="string">"driver"</span>, <span class="string">"oracle.jdbc.driver.OracleDriver"</span>)</span><br><span class="line">      .load()</span><br><span class="line">    <span class="comment">//导入spark的sql函数，用起来较方便</span></span><br><span class="line">    <span class="keyword">import</span> spark.sql</span><br><span class="line">    <span class="comment">//切换到test数据库</span></span><br><span class="line">    sql(<span class="string">"use test"</span>)</span><br><span class="line">    <span class="comment">//将df中的数据保存到hive表中（自动建表）</span></span><br><span class="line">    df.write.mode(<span class="type">SaveMode</span>.<span class="type">Overwrite</span>).saveAsTable(tableName)</span><br><span class="line">    <span class="comment">//停止spark</span></span><br><span class="line">    spark.stop</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <h2 id="3、在hive里查询"><a href="#3、在hive里查询" class="headerlink" title="3、在hive里查询"></a>3、在hive里查询</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hive</span><br></pre></td></tr></table></figure>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>;</span><br></pre></td></tr></table></figure>
-<p>这时就可以出现如标题所述的异常了，附图：<br><img src="https://tva2.sinaimg.cn/large/e44344dcly1fri0ue9i0mj21ey01p3yi.jpg" alt=""></p>
-<h2 id="4、解决办法"><a href="#4、解决办法" class="headerlink" title="4、解决办法"></a>4、解决办法</h2><p>将2里面spark代码中的.config(“spark.sql.parquet.writeLegacyFormat”, true)注释去掉，再执行一次，即可解决该异常，该配置的默认值为false，如果设置为true，Spark将使用与Hive相同的约定来编写Parquet数据。<br><img src="https://tva2.sinaimg.cn/large/e44344dcly1fri0uewro9j21fc02hwed.jpg" alt=""></p>
+<p>这时就可以出现如标题所述的异常了，附图：<br><img src="https://tva2.sinaimg.cn/large/e44344dcly1fri0ue9i0mj21ey01p3yi.jpg" alt></p>
+<h2 id="4、解决办法"><a href="#4、解决办法" class="headerlink" title="4、解决办法"></a>4、解决办法</h2><p>将2里面spark代码中的.config(“spark.sql.parquet.writeLegacyFormat”, true)注释去掉，再执行一次，即可解决该异常，该配置的默认值为false，如果设置为true，Spark将使用与Hive相同的约定来编写Parquet数据。<br><img src="https://tva2.sinaimg.cn/large/e44344dcly1fri0uewro9j21fc02hwed.jpg" alt></p>
 <h2 id="5、异常原因"><a href="#5、异常原因" class="headerlink" title="5、异常原因"></a>5、异常原因</h2><p>出现该异常的根本原因是由于Hive和Spark中使用的不同的parquet约定引起的，参考<a href="https://stackoverflow.com/questions/37829334/parquet-io-parquetdecodingexception-can-not-read-value-at-0-in-block-1-in-file" target="_blank" rel="noopener">https://stackoverflow.com/questions/37829334/parquet-io-parquetdecodingexception-can-not-read-value-at-0-in-block-1-in-file</a>中的最后一个回答（加载可能比较慢），由于博主英文水平不是那么的好，所以附上英文吧~<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Root Cause:</span><br><span class="line">This issue is caused because of different parquet conventions used in Hive and Spark. In Hive, the decimal datatype is represented as fixed bytes (INT 32). In Spark 1.4 or later the default convention is to use the Standard Parquet representation for decimal data type. As per the Standard Parquet representation based on the precision of the column datatype, the underlying representation changes.</span><br><span class="line">eg: DECIMAL can be used to annotate the following types: int32: for 1 &lt;= precision &lt;= 9 int64: for 1 &lt;= precision &lt;= 18; precision &lt; 10 will produce a warning</span><br><span class="line"></span><br><span class="line">Hence this issue happens only with the usage of datatypes which have different representations in the different Parquet conventions. If the datatype is DECIMAL (10,3), both the conventions represent it as INT32, hence we won&apos;t face an issue. If you are not aware of the internal representation of the datatypes it is safe to use the same convention used for writing while reading. With Hive, you do not have the flexibility to choose the Parquet convention. But with Spark, you do.</span><br><span class="line"></span><br><span class="line">Solution: The convention used by Spark to write Parquet data is configurable. This is determined by the property spark.sql.parquet.writeLegacyFormat The default value is false. If set to &quot;true&quot;, Spark will use the same convention as Hive for writing the Parquet data. This will help to solve the issue.</span><br></pre></td></tr></table></figure></p>
 <h2 id="6、注意"><a href="#6、注意" class="headerlink" title="6、注意"></a>6、注意</h2><p>1.2中的建表语句中NUMBER(10,2)的精度(10,2)必须要写，如果改为NUMBER就不会出现该异常，至于其他精度会不会出现该问题，大家可自行测试。</p>
 
@@ -399,8 +399,8 @@
     </a>
   
   
-    <a href="/2018/05/17/sparkMlFeatureProcessing1/" id="article-nav-older" class="article-nav-link-wrap">
-      <div class="article-nav-title">spark ML之特征处理（1）</div>
+    <a href="/2018/05/17/sparkKafka/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Spark Streaming连接Kafka入门教程</div>
       <i class="icon-circle-right"></i>
     </a>
   
@@ -621,11 +621,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -641,18 +641,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
@@ -661,11 +649,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -674,6 +674,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -689,19 +697,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+                <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+                <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -709,11 +709,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -729,7 +737,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -741,27 +769,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">java</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">scala</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">日期</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -773,27 +801,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">scala</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">日期</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -801,59 +809,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">vue</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">git</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">git-page</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -869,7 +833,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -881,7 +845,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -893,7 +857,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">yarn</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -901,7 +881,35 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">vue</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">git</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">git-page</a>
               </li>
             
             <div class="clearfix"></div>
