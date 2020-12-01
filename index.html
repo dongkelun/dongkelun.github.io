@@ -203,6 +203,181 @@
           <div id="js-content" class="content-ll">
             
   
+    <article id="post-sparkJobSubmit" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/11/25/sparkJobSubmit/">Spark Job 提交源码阅读笔记</a>
+    </h1>
+  
+
+        
+        <a href="/2020/11/25/sparkJobSubmit/" class="archive-article-date">
+  	<time datetime="2020-11-24T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2020-11-25</time>
+</a>
+        
+      </header>
+	    
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p> Spark Job 提交源码阅读笔记</p>
+ <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sc.runJob() 最后都会走到下面这个方法</span><br></pre></td></tr></table></figure>
+<p> 在SparkContext类中<br> <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"> </span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Run a function on a given set of partitions in an RDD and pass the results to the given</span></span><br><span class="line"><span class="comment"> * handler function. This is the main entry point for all actions in Spark.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * @param rdd target RDD to run tasks on</span></span><br><span class="line"><span class="comment"> * @param func a function to run on each partition of the RDD</span></span><br><span class="line"><span class="comment"> * @param partitions set of partitions to run on; some jobs may not want to compute on all</span></span><br><span class="line"><span class="comment"> * partitions of the target RDD, e.g. for operations like `first()`</span></span><br><span class="line"><span class="comment"> * @param resultHandler callback to pass each result to</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">runJob</span></span>[<span class="type">T</span>, <span class="type">U</span>: <span class="type">ClassTag</span>](</span><br><span class="line">    rdd: <span class="type">RDD</span>[<span class="type">T</span>],</span><br><span class="line">    func: (<span class="type">TaskContext</span>, <span class="type">Iterator</span>[<span class="type">T</span>]) =&gt; <span class="type">U</span>,</span><br><span class="line">    partitions: <span class="type">Seq</span>[<span class="type">Int</span>],</span><br><span class="line">    resultHandler: (<span class="type">Int</span>, <span class="type">U</span>) =&gt; <span class="type">Unit</span>): <span class="type">Unit</span> = &#123;</span><br><span class="line">  <span class="keyword">if</span> (stopped.get()) &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">IllegalStateException</span>(<span class="string">"SparkContext has been shutdown"</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">val</span> callSite = getCallSite</span><br><span class="line">  <span class="keyword">val</span> cleanedFunc = clean(func)</span><br><span class="line">  logInfo(<span class="string">"Starting job: "</span> + callSite.shortForm)</span><br><span class="line">  <span class="keyword">if</span> (conf.getBoolean(<span class="string">"spark.logLineage"</span>, <span class="literal">false</span>)) &#123;</span><br><span class="line">    logInfo(<span class="string">"RDD's recursive dependencies:\n"</span> + rdd.toDebugString)</span><br><span class="line">  &#125;</span><br><span class="line">  dagScheduler.runJob(rdd, cleanedFunc, partitions, callSite, resultHandler, localProperties.get)</span><br><span class="line">  progressBar.foreach(_.finishAll())</span><br><span class="line">  rdd.doCheckpoint()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+        
+          <a class="article-more-a" href="/2020/11/25/sparkJobSubmit/#more">more >></a>
+        
+      
+
+      
+	  
+    </div>
+    <div class="article-info article-info-index">
+      
+	   
+		  
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">源码</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+		  
+
+	  
+	 
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2020/11/25/sparkJobSubmit/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-hadoopExcepetion2" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/11/17/hadoopExcepetion2/">java.lang.UnsatisfiedLinkError:org.apache.hadoop.io.nativeio.NativeIO$Windows.access0(Ljava/lang/String;I)Z</a>
+    </h1>
+  
+
+        
+        <a href="/2020/11/17/hadoopExcepetion2/" class="archive-article-date">
+  	<time datetime="2020-11-16T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2020-11-17</time>
+</a>
+        
+      </header>
+	    
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>这个异常发生在Spark读取Windows本地CSV然后show，当然一般情况下不会发生，还有一个条件，项目里加了hbase-client和hbase-mapreduce，具体是哪一个依赖或者两个依赖合起来造成的影响我没有去细究，主要记录解决方法</p>
+<blockquote>
+<p>网上也有其他很多情况可能出现这个异常</p>
+</blockquote>
+        
+          <a class="article-more-a" href="/2020/11/17/hadoopExcepetion2/#more">more >></a>
+        
+      
+
+      
+	  
+    </div>
+    <div class="article-info article-info-index">
+      
+	   
+		  
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">Hadoop</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">ambari</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+		  
+
+	  
+	 
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2020/11/17/hadoopExcepetion2/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
     <article id="post-vmwareClone" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -468,183 +643,6 @@
 
 
   
-    <article id="post-javaHbase" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/08/19/javaHbase/">Java API 连接 Hbase示例</a>
-    </h1>
-  
-
-        
-        <a href="/2020/08/19/javaHbase/" class="archive-article-date">
-  	<time datetime="2020-08-18T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2020-08-19</time>
-</a>
-        
-      </header>
-	    
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>记录一下Java API 连接 Hbase的代码，并记录遇到的异常及解决办法</p>
-<h2 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h2><p>首先pom.xml里添加hbase-client依赖：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.hbase<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>hbase-client<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.4.13<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
-<p>然后将hbase-site.xml，core-site.xml复制到本地（如果实在本地运行的话）</p>
-        
-          <a class="article-more-a" href="/2020/08/19/javaHbase/#more">more >></a>
-        
-      
-
-      
-	  
-    </div>
-    <div class="article-info article-info-index">
-      
-	   
-		  
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">hbase</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">java</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-		  
-
-	  
-	 
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2020/08/19/javaHbase/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-hbaseConf" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/08/14/hbaseConf/">centos7 hbase1.4.13+hadoop2.7.1+单机环境搭建</a>
-    </h1>
-  
-
-        
-        <a href="/2020/08/14/hbaseConf/" class="archive-article-date">
-  	<time datetime="2020-08-13T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2020-08-14</time>
-</a>
-        
-      </header>
-	    
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>因后续要学习研究hbase，那就先从搭建hbase开始吧。先搭建一个单机版的，方便自己学习使用。</p>
-<h2 id="安装配置hadoop"><a href="#安装配置hadoop" class="headerlink" title="安装配置hadoop"></a>安装配置hadoop</h2><p>参考我的另一篇文章：<a href="https://dongkelun.com/2018/03/23/hadoopConf/">centos7 hadoop 单机模式安装配置</a><br>注：这里的JDK为1.8，版本支持如图<br><img src="https://tva2.sinaimg.cn/large/e44344dcly1gfonyb4k9vj20eq05b748.jpg" alt></p>
-        
-          <a class="article-more-a" href="/2020/08/14/hbaseConf/#more">more >></a>
-        
-      
-
-      
-	  
-    </div>
-    <div class="article-info article-info-index">
-      
-	   
-		  
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">centos7</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">hbase</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">hadoop</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-		  
-
-	  
-	 
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2020/08/14/hbaseConf/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
   
     <nav id="page-nav">
       <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/20/">20</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
@@ -802,6 +800,14 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -822,14 +828,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">SQL</a>
               </li>
              
@@ -846,27 +844,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -878,15 +872,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -898,23 +884,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">java</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -930,6 +908,26 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Linux</a>
               </li>
              
@@ -938,7 +936,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -950,23 +952,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -990,6 +980,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">scala</a>
               </li>
              
@@ -998,19 +992,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">异常</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1026,7 +1008,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1038,15 +1032,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1058,15 +1044,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1074,11 +1064,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1086,7 +1080,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1102,7 +1096,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
             
             <div class="clearfix"></div>
