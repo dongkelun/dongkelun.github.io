@@ -18,7 +18,7 @@
 <meta property="og:description" content="前言总结Spark Thrift Server、Hive Server以及如何用Java连接 启动hive server123hiveserver2或hive --service hiveserver2 默认端口是1000 spark thrift server修改hive.server2.transport.mode为http(默认值为binary（TCP），可选值HTTP)将hive-site">
 <meta property="og:locale" content="cn">
 <meta property="og:image" content="https://tva2.sinaimg.cn/large/e44344dcly1gnszkl4rqzj20t70pfabd.jpg">
-<meta property="og:updated_time" content="2021-05-07T08:28:32.851Z">
+<meta property="og:updated_time" content="2021-05-08T06:35:45.245Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Java 连接 Spark Thrift Server&#x2F;Hive Server总结">
 <meta name="twitter:description" content="前言总结Spark Thrift Server、Hive Server以及如何用Java连接 启动hive server123hiveserver2或hive --service hiveserver2 默认端口是1000 spark thrift server修改hive.server2.transport.mode为http(默认值为binary（TCP），可选值HTTP)将hive-site">
@@ -264,7 +264,7 @@
 </blockquote>
 <h2 id="Java-代码"><a href="#Java-代码" class="headerlink" title="Java 代码"></a>Java 代码</h2><h3 id="pom-依赖"><a href="#pom-依赖" class="headerlink" title="pom 依赖"></a>pom 依赖</h3><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.hive<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>hive-jdbc<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.3.7<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.hadoop<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>hadoop-common<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.7.4<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></span><br></pre></td></tr></table></figure>
 <blockquote>
-<p>更新：2021-05-07<br>这里提一下依赖的版本问题，上面写的版本是我自己搭建的开源的hive和hadoop,所以版本可以很清楚的知道是多少，并且和spark版本是适配的。后来在连接hdp对应的hive和spark时，在版本对应关系上出现了问题，这里总结一下。首先提一下在连接Spark Thrift Server时，对版本适配要求比较高，而hive server对依赖的版本适配较低。<br>总结一下hdp如何对应版本，在ambari界面添加服务即可看到各个组件包括hive对应的版本信息，或者在命令行看一下jar包，比如hive-jdbc-3.1.0.3.1.0.0-78.jar，则代表hive本本为3.1.0，后面的是hdp的版本号，这样配置依赖连接Hive Server是没有问题的，而在连接Spark Server时发现了问题，报了版本不匹配的异常，比如spark/jars下的jar包为hive-jdbc-1.21.2.3.1.0.0-78.jar，那么hive-jdbc的版本应该为1.21.2可实际上没有这个版本的依赖，且即使用上面的3.1.0版本去连接Spark Sever一样版本不匹配，那么这种情况下该如何确定hive-jdbc的版本的？我用的是下面的方法：<br>首先确认Spark的版本为2.4.<em>，然后我去github上查找对应的版本的<a href="https://github.com/apache/spark/blob/branch-2.4/pom.xml" target="_blank" rel="noopener">spark源码</a>的依赖，发现hive的版本号为1.2.1，<br>hadoop的版本号为2.6.5，那么最终hive-jdbc:1.2.1,hadoop-common:2.6.5，这样配置依赖就可以连接hdp下的spark thrift server了,且该版本的hive-jdbc一样可以连接hive server即上面说的hive server对依赖的版本适配较低。最后提一下，当hive-jdbc版本为3.1.0即3.</em>.*时，不用再另外添加hadoop-common的依赖即可连接hive server，因为hive-jdbc的包里已经包含了对应的依赖，即使同时添加也会依赖冲突的。</p>
+<p>更新：2021-05-07<br>这里提一下依赖的版本问题，上面写的版本是我自己搭建的开源的hive和hadoop,所以版本可以很清楚的知道是多少，并且和spark版本是适配的。后来在连接hdp对应的hive和spark时，在版本对应关系上出现了问题，这里总结一下。首先提一下在连接Spark Thrift Server时，对版本适配要求比较高，而hive server对依赖的版本适配较低。<br>总结一下hdp如何对应版本，在ambari界面添加服务即可看到各个组件包括hive对应的版本信息，或者在命令行看一下jar包，比如hive-jdbc-3.1.0.3.1.0.0-78.jar，则代表hive本本为3.1.0，后面的是hdp的版本号，这样配置依赖连接Hive Server是没有问题的，而在连接Spark Server时发现了问题，报了版本不匹配的异常，比如spark/jars下的jar包为hive-jdbc-1.21.2.3.1.0.0-78.jar，那么hive-jdbc的版本应该为1.21.2可实际上没有这个版本的依赖，且即使用上面的3.1.0版本去连接Spark Sever一样版本不匹配，那么这种情况下该如何确定hive-jdbc的版本的？我用的是下面的方法：<br>首先确认Spark的版本为2.4.<em>，然后我去github上查找对应的版本的<a href="https://github.com/apache/spark/blob/branch-2.4/pom.xml" target="_blank" rel="noopener">spark源码</a>的依赖，发现hive的版本号为1.2.1，<br>hadoop的版本号为2.6.5，那么最终hive-jdbc:1.2.1,hadoop-common:2.6.5，这样配置依赖就可以连接hdp下的spark thrift server了,且该版本的hive-jdbc一样可以连接hive server即上面说的hive server对依赖的版本适配较低。最后提一下，当hive-jdbc版本为3.1.0即3.</em>.*时，不用再另外添加hadoop-common的依赖即可连接hive server，因为hive-jdbc的包里已经包含了对应的依赖，即使同时添加也会依赖冲突的。<br>附：版本不匹配时的异常信息：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">14</span>:<span class="number">32</span>:<span class="number">23.971</span> [main] ERROR org.apache.hive.jdbc.HiveConnection - Error opening session</span><br><span class="line">org.apache.thrift.TApplicationException: Required field <span class="string">'client_protocol'</span> is unset! Struct:TOpenSessionReq(client_protocol:<span class="keyword">null</span>, configuration:&#123;set:hiveconf:hive.server2.thrift.resultset.<span class="keyword">default</span>.fetch.size=<span class="number">1000</span>, use:database=sjtt&#125;)</span><br><span class="line">	at org.apache.thrift.TApplicationException.read(TApplicationException.java:<span class="number">111</span>) ~[libthrift-<span class="number">0.9</span>.3.jar:<span class="number">0.9</span>.3]</span><br><span class="line">	at org.apache.thrift.TServiceClient.receiveBase(TServiceClient.java:<span class="number">79</span>) ~[libthrift-<span class="number">0.9</span>.3.jar:<span class="number">0.9</span>.3]</span><br><span class="line">	at org.apache.hive.service.rpc.thrift.TCLIService$Client.recv_OpenSession(TCLIService.java:<span class="number">168</span>) ~[hive-service-rpc-<span class="number">2.3</span>.7.jar:<span class="number">2.3</span>.7]</span><br><span class="line">	at org.apache.hive.service.rpc.thrift.TCLIService$Client.OpenSession(TCLIService.java:<span class="number">155</span>) ~[hive-service-rpc-<span class="number">2.3</span>.7.jar:<span class="number">2.3</span>.7]</span><br><span class="line">	at org.apache.hive.jdbc.HiveConnection.openSession(HiveConnection.java:<span class="number">680</span>) [hive-jdbc-<span class="number">2.3</span>.7.jar:<span class="number">2.3</span>.7]</span><br><span class="line">	at org.apache.hive.jdbc.HiveConnection.&lt;init&gt;(HiveConnection.java:<span class="number">200</span>) [hive-jdbc-<span class="number">2.3</span>.7.jar:<span class="number">2.3</span>.7]</span><br><span class="line">	at org.apache.hive.jdbc.HiveDriver.connect(HiveDriver.java:<span class="number">107</span>) [hive-jdbc-<span class="number">2.3</span>.7.jar:<span class="number">2.3</span>.7]</span><br><span class="line">	at java.sql.DriverManager.getConnection(DriverManager.java:<span class="number">664</span>) [?:<span class="number">1.8</span>.0_161]</span><br><span class="line">	at java.sql.DriverManager.getConnection(DriverManager.java:<span class="number">270</span>) [?:<span class="number">1.8</span>.0_161]</span><br><span class="line">	at com.dkl.blog.SparkThriftServerDemoWithKerberos.jdbcDemo(SparkThriftServerDemoWithKerberos.java:<span class="number">41</span>) [classes/:?]</span><br><span class="line">	at com.dkl.blog.SparkThriftServerDemoWithKerberos.main(SparkThriftServerDemoWithKerberos.java:<span class="number">35</span>) [classes/:?]</span><br></pre></td></tr></table></figure></p>
 </blockquote>
 <h3 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.dkl.blog;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.sql.*;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Created by dongkelun on 2021/2/5 17:07</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SparkThriftServerDemo</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> String HIVE_JDBC_URL = <span class="string">"jdbc:hive2://192.168.44.128:10000/default"</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String SPARK_JDBC_URL = <span class="string">"jdbc:hive2://192.168.44.128:10001/default?hive.server2.transport.mode=http;hive.server2.thrift.http.path=cliservice"</span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> SQLException </span>&#123;</span><br><span class="line">        <span class="comment">//----------------------------------connect hive----------------------------------//</span></span><br><span class="line">        System.out.println(<span class="string">"select from hive"</span>);</span><br><span class="line">        jdbcDemo(HIVE_JDBC_URL);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//------------------------------connect spark thrift server-----------------------//</span></span><br><span class="line">        System.out.println(<span class="string">"select from spark thrift server"</span>);</span><br><span class="line">        jdbcDemo(SPARK_JDBC_URL);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">jdbcDemo</span><span class="params">(String jdbc_url)</span> <span class="keyword">throws</span> SQLException </span>&#123;</span><br><span class="line">        Connection connection = <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            connection = DriverManager.getConnection(jdbc_url);</span><br><span class="line">            selectTable(connection);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (SQLException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            connection.close();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">selectTable</span><span class="params">(Connection connection)</span> </span>&#123;</span><br><span class="line">        String sql = <span class="string">"select * from test limit 10"</span>;</span><br><span class="line">        Statement stmt = <span class="keyword">null</span>;</span><br><span class="line">        ResultSet rs = <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            stmt = connection.createStatement();</span><br><span class="line">            rs = stmt.executeQuery(sql);</span><br><span class="line">            System.out.println(<span class="string">"====================================="</span>);</span><br><span class="line">            <span class="keyword">while</span> (rs.next()) &#123;</span><br><span class="line">                System.out.println(rs.getString(<span class="number">1</span>) + <span class="string">","</span> + rs.getString(<span class="number">2</span>));</span><br><span class="line">            &#125;</span><br><span class="line">            System.out.println(<span class="string">"====================================="</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (SQLException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            close(stmt);</span><br><span class="line">            close(rs);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 关闭Statement</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> stmt</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">close</span><span class="params">(Statement stmt)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (stmt != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                stmt.close();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (SQLException e) &#123;</span><br><span class="line">                e.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 关闭ResultSet</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> rs</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">close</span><span class="params">(ResultSet rs)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (rs != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                rs.close();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (SQLException e) &#123;</span><br><span class="line">                e.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>代码已上传到 <a href="https://github.com/dongkelun/java-spark-thrift-server-demo" target="_blank" rel="noopener">github</a></p>
@@ -612,15 +612,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -632,6 +628,14 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">SQL</a>
               </li>
              
@@ -640,7 +644,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -652,11 +664,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -668,11 +680,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -684,27 +696,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Scala</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -720,11 +720,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -744,27 +752,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -776,19 +764,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -800,6 +792,14 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">scala</a>
               </li>
              
@@ -808,7 +808,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -817,10 +825,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -836,7 +840,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -868,10 +872,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
@@ -880,11 +880,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -893,10 +901,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">vmware</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -913,10 +917,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
               </li>
             
             <div class="clearfix"></div>
