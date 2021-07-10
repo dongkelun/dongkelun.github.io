@@ -231,34 +231,9 @@
 </blockquote>
 <p>说明：<br>1、这里有ts代表设置了preCombinedField字段<br>2、hudi默认使用布隆索引，布隆索引只保证同一分区下同一个主键对应的值唯一,可以使用全局索引保证所有分区值唯一，这里不展开细说<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="type">String</span> getDefaultIndexType(<span class="type">EngineType</span> engineType) &#123;</span><br><span class="line">  switch (engineType) &#123;</span><br><span class="line">    <span class="keyword">case</span> <span class="type">SPARK</span>:</span><br><span class="line">      <span class="keyword">return</span> <span class="type">HoodieIndex</span>.<span class="type">IndexType</span>.<span class="type">BLOOM</span>.name();</span><br><span class="line">    <span class="keyword">case</span> <span class="type">FLINK</span>:</span><br><span class="line">    <span class="keyword">case</span> <span class="type">JAVA</span>:</span><br><span class="line">      <span class="keyword">return</span> <span class="type">HoodieIndex</span>.<span class="type">IndexType</span>.<span class="type">INMEMORY</span>.name();</span><br><span class="line">    <span class="keyword">default</span>:</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">HoodieNotSupportedException</span>(<span class="string">"Unsupported engine "</span> + engineType);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <p>3、如果在测试过程中，发现和我的结论不一致，可能和后面的注意事项有关。<br>4、当指定了hoodie.datasource.write.insert.drop.duplicates=true时，不管是insert还是upsert,如果存在历史数据则不更新。实际在源码中，如果为upsert，也会修改为insert。<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (hoodieConfig.getBoolean(<span class="type">INSERT_DROP_DUPS_OPT_KEY</span>) &amp;&amp;</span><br><span class="line">      operation == <span class="type">WriteOperationType</span>.<span class="type">UPSERT</span>) &#123;</span><br><span class="line"></span><br><span class="line">      log.warn(<span class="string">s"<span class="subst">$UPSERT_OPERATION_OPT_VAL</span> is not applicable "</span> +</span><br><span class="line">        <span class="string">s"when <span class="subst">$INSERT_DROP_DUPS_OPT_KEY</span> is set to be true, "</span> +</span><br><span class="line">        <span class="string">s"overriding the <span class="subst">$OPERATION_OPT_KEY</span> to be <span class="subst">$INSERT_OPERATION_OPT_VAL</span>"</span>)</span><br><span class="line"></span><br><span class="line">      operation = <span class="type">WriteOperationType</span>.<span class="type">INSERT</span></span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">&lt;!-- more --&gt;</span><br><span class="line"></span><br><span class="line">## 程序</span><br><span class="line">先说程序建表，程序写hudi表时，默认情况下，hudi,必须指定preCombinedField，否则，会抛出异常，示例如下</span><br><span class="line"></span><br><span class="line">```scala</span><br><span class="line">import org.apache.hudi.DataSourceWriteOptions._</span><br><span class="line">import org.apache.hudi.QuickstartUtils.&#123;DataGenerator, convertToStringList, getQuickstartWriteConfigs&#125;</span><br><span class="line">import org.apache.spark.sql.SparkSession</span><br><span class="line"></span><br><span class="line">val spark = SparkSession.builder()</span><br><span class="line">    .master(&quot;local[*]&quot;)</span><br><span class="line">    .appName(&quot;TestHuDiPreCombinedFiled&quot;)</span><br><span class="line">    .config(&quot;spark.serializer&quot;, &quot;org.apache.spark.serializer.KryoSerializer&quot;)</span><br><span class="line">    .config(&quot;spark.sql.extensions&quot;, &quot;org.apache.spark.sql.hudi.HoodieSparkSessionExtension&quot;)</span><br><span class="line">    .getOrCreate()</span><br><span class="line"></span><br><span class="line">val tableName = &quot;test_hudi_table&quot;</span><br><span class="line">val data = Array((7, &quot;name12&quot;, 1.21, 108L, &quot;2021-05-06&quot;), (7, &quot;name2&quot;, 2.22, 108L, &quot;2021-05-06&quot;),</span><br><span class="line">      (7, &quot;name3&quot;, 3.45, 108L, &quot;2021-05-06&quot;)</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">val df = spark.createDataFrame(data).toDF(&quot;id&quot;, &quot;name&quot;, &quot;price&quot;, &quot;ts&quot;, &quot;dt&quot;)</span><br><span class="line">df.write.format(&quot;hudi&quot;).</span><br><span class="line">  options(getQuickstartWriteConfigs).</span><br><span class="line">  option(PRECOMBINE_FIELD_OPT_KEY.key(), &quot;ts&quot;). //指定preCombinedField=ts</span><br><span class="line">  option(RECORDKEY_FIELD_OPT_KEY.key(), &quot;id&quot;).</span><br><span class="line">  option(PARTITIONPATH_FIELD_OPT_KEY.key(), &quot;dt&quot;).</span><br><span class="line">  option(HIVE_STYLE_PARTITIONING_OPT_KEY.key(), true). //hive 分区路径的格式是否和hive一样，如果true，则：分区字段=</span><br><span class="line">  option(&quot;hoodie.table.name&quot;, tableName).</span><br><span class="line">  //      option(&quot;hoodie.datasource.write.insert.drop.duplicates&quot;, true). //不更新</span><br><span class="line">  //      option(OPERATION_OPT_KEY.key(), &quot;INSERT&quot;).</span><br><span class="line">  option(KEYGENERATOR_CLASS_OPT_KEY.key(), &quot;org.apache.hudi.keygen.ComplexKeyGenerator&quot;).</span><br><span class="line">  mode(&quot;append&quot;).</span><br><span class="line">  save(s&quot;/tmp/$&#123;tableName&#125;&quot;)</span><br><span class="line">val read_df = spark.</span><br><span class="line">read.</span><br><span class="line">format(&quot;hudi&quot;).</span><br><span class="line">load(s&quot;/tmp/$&#123;tableName&#125;&quot; + &quot;/*&quot;)</span><br><span class="line"></span><br><span class="line">read_df.show()</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>hudi 程序写数据默认OPERATION为UPSERT，当数据重复时（这里指同一主键对应多条记录），程序在写数据钱会根据预合并字段ts进行去重，去重保留ts值最大的那条记录，且无论新记录的ts值是否大于历史记录的ts值，都会覆盖写，直接更新。<br>当OPERATION为INSERT时（option(OPERATION_OPT_KEY.key(), “INSERT”)），没有预合并，程序依次写入，实际更新为最后一条记录，且无论新记录的ts值是否大于历史记录的ts值，都会覆盖写，直接更新。</p>
-</blockquote>
-<p>附hoodie.properties：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">#Properties saved on Sat Jul 10 15:08:16 CST 2021</span><br><span class="line">#Sat Jul 10 15:08:16 CST 2021</span><br><span class="line">hoodie.table.precombine.field=ts</span><br><span class="line">hoodie.table.name=test_hudi_table</span><br><span class="line">hoodie.archivelog.folder=archived</span><br><span class="line">hoodie.table.type=COPY_ON_WRITE</span><br><span class="line">hoodie.table.version=<span class="number">1</span></span><br><span class="line">hoodie.timeline.layout.version=<span class="number">1</span></span><br><span class="line">hoodie.table.partition.columns=dt</span><br></pre></td></tr></table></figure>
-<p>可见，hudi表元数据里有hoodie.table.precombine.field=ts，代表preCombinedField生效</p>
-<h2 id="SQL"><a href="#SQL" class="headerlink" title="SQL"></a>SQL</h2><p>SQL与程序不同，分为两种，有预合并和没有预合并</p>
-<h3 id="没有预合并"><a href="#没有预合并" class="headerlink" title="没有预合并"></a>没有预合并</h3><p>SQL默认没有预合并</p>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">spark.sql(</span><br><span class="line">  <span class="string">s""</span><span class="string">"</span></span><br><span class="line"><span class="string">     | create table $&#123;tableName&#125; (</span></span><br><span class="line"><span class="string">     |  id int,</span></span><br><span class="line"><span class="string">     |  name string,</span></span><br><span class="line"><span class="string">     |  price double,</span></span><br><span class="line"><span class="string">     |  ts long,</span></span><br><span class="line"><span class="string">     |  dt string</span></span><br><span class="line"><span class="string">     |) using hudi</span></span><br><span class="line"><span class="string">     | partitioned by (dt)</span></span><br><span class="line"><span class="string">     | options (</span></span><br><span class="line"><span class="string">     |  primaryKey = 'id',</span></span><br><span class="line"><span class="string">     |  type = 'cow'</span></span><br><span class="line"><span class="string">     | )</span></span><br><span class="line"><span class="string">     | location '/tmp/$&#123;tableName&#125;'</span></span><br><span class="line"><span class="string">     |"</span><span class="string">""</span>.stripMargin)</span><br><span class="line">spark.sql(<span class="string">s"show create table <span class="subst">$&#123;tableName&#125;</span>"</span>).show(<span class="literal">false</span>)</span><br><span class="line">spark.sql(</span><br><span class="line">  <span class="string">s""</span><span class="string">"</span></span><br><span class="line"><span class="string">     |merge into $&#123;tableName&#125; as t0</span></span><br><span class="line"><span class="string">     |using (</span></span><br><span class="line"><span class="string">     |  select 1 as id, 'hudi' as name, 97 as price, 99 as ts, '2021-05-05' as dt,'INSERT' as opt_type union</span></span><br><span class="line"><span class="string">     |  select 1 as id, 'hudi_2' as name, 98 as price, 99 as ts, '2021-05-05' as dt,'UPDATE' as opt_type union</span></span><br><span class="line"><span class="string">     |  select 1 as id, 'hudi_2' as name, 99 as price, 99 as ts, '2021-05-05' as dt,'UPDATE' as opt_type union</span></span><br><span class="line"><span class="string">     |  select 3 as id, 'hudi' as name, 10 as price, 110 as ts, '2021-05-05' as dt ,'DELETE' as opt_type</span></span><br><span class="line"><span class="string">     | ) as s0</span></span><br><span class="line"><span class="string">     |on t0.id = s0.id</span></span><br><span class="line"><span class="string">     |when matched and opt_type!='DELETE' then update set *</span></span><br><span class="line"><span class="string">     |when matched and opt_type='DELETE' then delete</span></span><br><span class="line"><span class="string">     |when not matched and opt_type!='DELETE' then insert *</span></span><br><span class="line"><span class="string">     |"</span><span class="string">""</span>.stripMargin)</span><br><span class="line">spark.table(tableName).show()</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>没有设置预合并字段值，如果数据重复，去重时会取第一个值，写数据时，直接覆盖历史数据</p>
-</blockquote>
-<p>查看hoodie.properties和在spark.sql(s”show create table ${tableName}”).show(false)打印信息里发现表的元数据信息确实没有preCombinedField，示例中虽然有ts字段，但是没有没有显示设置，当然可以直接去掉ts字段，大家可以自行测试。</p>
-<h3 id="有预合并"><a href="#有预合并" class="headerlink" title="有预合并"></a>有预合并</h3><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">spark.sql(</span><br><span class="line">  <span class="string">s""</span><span class="string">"</span></span><br><span class="line"><span class="string">     | create table $&#123;tableName&#125; (</span></span><br><span class="line"><span class="string">     |  id int,</span></span><br><span class="line"><span class="string">     |  name string,</span></span><br><span class="line"><span class="string">     |  price double,</span></span><br><span class="line"><span class="string">     |  ts long,</span></span><br><span class="line"><span class="string">     |  dt string</span></span><br><span class="line"><span class="string">     |) using hudi</span></span><br><span class="line"><span class="string">     | partitioned by (dt)</span></span><br><span class="line"><span class="string">     | options (</span></span><br><span class="line"><span class="string">     |  primaryKey = 'id',</span></span><br><span class="line"><span class="string">     |  preCombineField = 'ts',</span></span><br><span class="line"><span class="string">     |  type = 'cow'</span></span><br><span class="line"><span class="string">     | )</span></span><br><span class="line"><span class="string">     | location '/tmp/$&#123;tableName&#125;'</span></span><br><span class="line"><span class="string">     |"</span><span class="string">""</span>.stripMargin)</span><br><span class="line">spark.sql(<span class="string">s"show create table <span class="subst">$&#123;tableName&#125;</span>"</span>).show(<span class="literal">false</span>)</span><br><span class="line">spark.sql(</span><br><span class="line">  <span class="string">s""</span><span class="string">"</span></span><br><span class="line"><span class="string">     |merge into $&#123;tableName&#125; as t0</span></span><br><span class="line"><span class="string">     |using (</span></span><br><span class="line"><span class="string">     |  select 1 as id, 'hudi' as name, 97 as price, 99 as ts, '2021-05-05' as dt,'INSERT' as opt_type union</span></span><br><span class="line"><span class="string">     |  select 1 as id, 'hudi_2' as name, 98 as price, 99 as ts, '2021-05-05' as dt,'UPDATE' as opt_type union</span></span><br><span class="line"><span class="string">     |  select 1 as id, 'hudi_2' as name, 99 as price, 99 as ts, '2021-05-05' as dt,'UPDATE' as opt_type union</span></span><br><span class="line"><span class="string">     |  select 3 as id, 'hudi' as name, 10 as price, 110 as ts, '2021-05-05' as dt ,'DELETE' as opt_type</span></span><br><span class="line"><span class="string">     | ) as s0</span></span><br><span class="line"><span class="string">     |on t0.id = s0.id</span></span><br><span class="line"><span class="string">     |when matched and opt_type!='DELETE' then update set *</span></span><br><span class="line"><span class="string">     |when matched and opt_type='DELETE' then delete</span></span><br><span class="line"><span class="string">     |when not matched and opt_type!='DELETE' then insert *</span></span><br><span class="line"><span class="string">     |"</span><span class="string">""</span>.stripMargin)</span><br><span class="line">spark.table(tableName).show()</span><br></pre></td></tr></table></figure>
-<p>SQL的唯一的区别是在建表语句中加了配置preCombineField = ‘ts’，同样可以在hoodie.properties和打印信息里查看是否有hoodie.table.precombine.field=ts信息。</p>
-<blockquote>
-<p>预合并时如果数据重复取预合并字段值最大的那条记录，最大值相同的取第一个。写数据时，ts值大于等于历史ts值，才会更新，小于历史值则不更新。</p>
-</blockquote>
-<h2 id="SQL与程序结合"><a href="#SQL与程序结合" class="headerlink" title="SQL与程序结合"></a>SQL与程序结合</h2><p>先用SQL建表，再用程序写数据。这种情况主要是想建表时不想多一列ts字段，而在预合并时可以添加一列预合并字段进行去重，因为目前的版本SQL没有实现该功能。在SQL建表时如果指定了 preCombineField = ‘ts’，则表结构中必须有ts这个字段。</p>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> tableName = <span class="string">"test_hudi_table4"</span></span><br><span class="line">spark.sql(</span><br><span class="line">  <span class="string">s""</span><span class="string">"</span></span><br><span class="line"><span class="string">     | create table $&#123;tableName&#125; (</span></span><br><span class="line"><span class="string">     |  id int,</span></span><br><span class="line"><span class="string">     |  name string,</span></span><br><span class="line"><span class="string">     |  price double,</span></span><br><span class="line"><span class="string">     |  dt string</span></span><br><span class="line"><span class="string">     |) using hudi</span></span><br><span class="line"><span class="string">     | partitioned by (dt)</span></span><br><span class="line"><span class="string">     | options (</span></span><br><span class="line"><span class="string">     |  primaryKey = 'id',</span></span><br><span class="line"><span class="string">     |  type = 'cow'</span></span><br><span class="line"><span class="string">     | )</span></span><br><span class="line"><span class="string">     | location '/tmp/$&#123;tableName&#125;'</span></span><br><span class="line"><span class="string">     |"</span><span class="string">""</span>.stripMargin)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> data = <span class="type">Array</span>((<span class="number">7</span>, <span class="string">"name12"</span>, <span class="number">1.21</span>, <span class="number">106</span>L, <span class="string">"2021-05-06"</span>), (<span class="number">7</span>, <span class="string">"name2"</span>, <span class="number">2.22</span>, <span class="number">108</span>L, <span class="string">"2021-05-06"</span>),</span><br><span class="line">  (<span class="number">7</span>, <span class="string">"name3"</span>, <span class="number">3.45</span>, <span class="number">107</span>L, <span class="string">"2021-05-06"</span>)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> df = spark.createDataFrame(data).toDF(<span class="string">"id"</span>, <span class="string">"name"</span>, <span class="string">"price"</span>, <span class="string">"ts"</span>, <span class="string">"dt"</span>)</span><br><span class="line"></span><br><span class="line">df.show()</span><br><span class="line">df.write.format(<span class="string">"hudi"</span>).</span><br><span class="line">  options(getQuickstartWriteConfigs).</span><br><span class="line">  option(<span class="type">PRECOMBINE_FIELD_OPT_KEY</span>.key(), <span class="string">"ts"</span>).</span><br><span class="line">  option(<span class="type">RECORDKEY_FIELD_OPT_KEY</span>.key(), <span class="string">"id"</span>).</span><br><span class="line">  option(<span class="type">PARTITIONPATH_FIELD_OPT_KEY</span>.key(), <span class="string">"dt"</span>).</span><br><span class="line">  option(<span class="type">HIVE_STYLE_PARTITIONING_OPT_KEY</span>.key(), <span class="literal">true</span>). <span class="comment">//hive 分区路径的格式是否和hive一样，如果true，则：分区字段=</span></span><br><span class="line">  option(<span class="string">"hoodie.table.name"</span>, tableName).</span><br><span class="line">  <span class="comment">//      option("hoodie.datasource.write.insert.drop.duplicates", true). //不更新</span></span><br><span class="line">  <span class="comment">//      option(OPERATION_OPT_KEY.key(), "INSERT").</span></span><br><span class="line">  option(<span class="type">KEYGENERATOR_CLASS_OPT_KEY</span>.key(), <span class="string">"org.apache.hudi.keygen.ComplexKeyGenerator"</span>).</span><br><span class="line">  save(<span class="string">s"/tmp/<span class="subst">$&#123;tableName&#125;</span>"</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> read_df = spark.</span><br><span class="line">  read.</span><br><span class="line">  format(<span class="string">"hudi"</span>).</span><br><span class="line">  load(<span class="string">s"/tmp/<span class="subst">$&#123;tableName&#125;</span>"</span> + <span class="string">"/*"</span>)</span><br><span class="line"></span><br><span class="line">read_df.show()</span><br><span class="line">spark.table(tableName).show()</span><br></pre></td></tr></table></figure>
-<p>上面的程序主要是用SQL先建了表的元数据，然后再用程序指定了PRECOMBINE_FIELD_OPT_KEY=ts,这样就实现了既可以预合并去重，也不用在建表中指定ts字段。但是打印中发现用程序读parquet文件时多了ts列，读表时因为元数据里没有ts列，没有打印出来，实际文件存储的有ts这一列。</p>
-<p>上面只是模拟了这一场景，而我们想实现的时下面的</p>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">spark.sql(</span><br><span class="line">  <span class="string">s""</span><span class="string">"</span></span><br><span class="line"><span class="string">     | create table $&#123;tableName&#125; (</span></span><br><span class="line"><span class="string">     |  id int,</span></span><br><span class="line"><span class="string">     |  name string,</span></span><br><span class="line"><span class="string">     |  price double,</span></span><br><span class="line"><span class="string">     |  dt string</span></span><br><span class="line"><span class="string">     |) using hudi</span></span><br><span class="line"><span class="string">     | partitioned by (dt)</span></span><br><span class="line"><span class="string">     | options (</span></span><br><span class="line"><span class="string">     |  primaryKey = 'id',</span></span><br><span class="line"><span class="string">     |  preCombineField = 'ts',</span></span><br><span class="line"><span class="string">     |  type = 'cow'</span></span><br><span class="line"><span class="string">     | )</span></span><br><span class="line"><span class="string">     | location '/tmp/$&#123;tableName&#125;'</span></span><br><span class="line"><span class="string">     |"</span><span class="string">""</span>.stripMargin)</span><br><span class="line">spark.sql(</span><br><span class="line">  <span class="string">s""</span><span class="string">"</span></span><br><span class="line"><span class="string">     |merge into $&#123;tableName&#125; as t0</span></span><br><span class="line"><span class="string">     |using (</span></span><br><span class="line"><span class="string">     |  select 1 as id, 'hudi' as name, 97 as price, 99 as ts, '2021-05-05' as dt,'INSERT' as opt_type union</span></span><br><span class="line"><span class="string">     |  select 1 as id, 'hudi_2' as name, 98 as price, 99 as ts, '2021-05-05' as dt,'UPDATE' as opt_type union</span></span><br><span class="line"><span class="string">     |  select 1 as id, 'hudi_2' as name, 99 as price, 99 as ts, '2021-05-05' as dt,'UPDATE' as opt_type union</span></span><br><span class="line"><span class="string">     |  select 3 as id, 'hudi' as name, 10 as price, 110 as ts, '2021-05-05' as dt ,'DELETE' as opt_type</span></span><br><span class="line"><span class="string">     | ) as s0</span></span><br><span class="line"><span class="string">     |on t0.id = s0.id</span></span><br><span class="line"><span class="string">     |when matched and opt_type!='DELETE' then update set *</span></span><br><span class="line"><span class="string">     |when matched and opt_type='DELETE' then delete</span></span><br><span class="line"><span class="string">     |when not matched and opt_type!='DELETE' then insert *</span></span><br><span class="line"><span class="string">     |"</span><span class="string">""</span>.stripMargin)</span><br></pre></td></tr></table></figure>
-<p>在建表时指定了preCombineField = ‘ts’，但是表结构中没有ts字段，而且后面的merge sql拼接时添加这一列。目前master分支还不支持这种情况，如果想实现这一情况，可以自己尝试修改源码支持。</p>
-<h2 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h2><p>示例代码已上传到gitee(<a href="https://gitee.com/dongkelun/spark-hudi/blob/master/src/main/scala/com/dkl/blog/hudi/TestHuDiPreCombinedFiled.scala" target="_blank" rel="noopener">https://gitee.com/dongkelun/spark-hudi/blob/master/src/main/scala/com/dkl/blog/hudi/TestHuDiPreCombinedFiled.scala</a>)</p>
-<h2 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h2><p>用SQL创建新表或者用程序append模式创建新表时，如果对应的数据目录已存在，需要先将文件夹删掉，因为hoodie.properties里保存了表的元数据信息，程序里会根据文件信息判断表是否存在，如果存在，会复用旧表的元数据。这种情况存在于想用同一个表测试上面多种情况</p>
-
+        
+          <a class="article-more-a" href="/2021/07/10/hudiPreCombinedField/#more">more >></a>
+        
       
 
       
@@ -847,14 +822,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -875,19 +842,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -903,35 +874,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -943,7 +894,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -952,6 +907,26 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -967,19 +942,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">java</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">hbase</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -991,15 +962,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Linux</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
+                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1011,10 +990,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
@@ -1023,31 +998,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">scala</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">日期</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1055,7 +1010,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1067,7 +1022,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">scala</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1083,15 +1058,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Delta Lake</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
+                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1103,6 +1082,34 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
               </li>
              
@@ -1111,31 +1118,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1144,10 +1135,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1160,18 +1147,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
             
             <div class="clearfix"></div>
