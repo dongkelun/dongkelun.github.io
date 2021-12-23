@@ -203,6 +203,122 @@
           <div id="js-content" class="content-ll">
             
   
+    <article id="post-prestoHudiException" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2021/12/23/prestoHudiException/">presto查询hudi异常解决</a>
+    </h1>
+  
+
+        
+        <a href="/2021/12/23/prestoHudiException/" class="archive-article-date">
+  	<time datetime="2021-12-22T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-12-23</time>
+</a>
+        
+      </header>
+	    
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>记录一个presto查询hudi的异常的解决办法，本人目前对presto还不是很熟，只是在使用过程中遇到了问题，记录一下异常解决方法以及过程</p>
+<h2 id="异常"><a href="#异常" class="headerlink" title="异常"></a>异常</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">2021</span>-<span class="number">12</span>-<span class="number">22</span>T17:<span class="number">29</span>:<span class="number">55.440</span>+<span class="number">0800</span>    ERROR   SplitRunner-<span class="number">101</span>-<span class="number">126</span>     com.facebook.presto.execution.executor.TaskExecutor     Error processing Split <span class="number">20211222_092954_00047_8</span>xk77.1.0.0-<span class="number">0</span> &#123;path=hdfs:<span class="comment">//cluster1/warehouse/tablespace/managed/hive/test_dkl.db/test_hudi_1/069eddc2-f3bf-4efc-911b-3cb3aa523a8e-0_0-0-0_20211222172800.parquet, start=0, length=435116, fileSize=435116, fileModifiedTime=1640165281695, hosts=[], database=test_dkl, table=test_hudi_1, nodeSelectionStrategy=NO_PREFERENCE, partitionName=&lt;UNPARTITIONED&gt;, s3SelectPushdownEnabled=false, cacheQuotaRequirement=CacheQuotaRequirement&#123;cacheQuotaScope=GLOBAL, quota=Optional.empty&#125;&#125; (start = 9.271133085962032E9, wall = 49 ms, cpu = 0 ms, wait = 0 ms, calls = 1)</span></span><br><span class="line">org.apache.parquet.io.ParquetDecodingException: Can not read value at <span class="number">0</span> in block -<span class="number">1</span> in file hdfs:<span class="comment">//cluster1/warehouse/tablespace/managed/hive/test_dkl.db/test_hudi_1/069eddc2-f3bf-4efc-911b-3cb3aa523a8e-0_0-0-0_20211222172800.parquet</span></span><br><span class="line">        at org.apache.parquet.hadoop.InternalParquetRecordReader.nextKeyValue(InternalParquetRecordReader.java:<span class="number">251</span>)</span><br><span class="line">        at org.apache.parquet.hadoop.ParquetRecordReader.nextKeyValue(ParquetRecordReader.java:<span class="number">207</span>)</span><br><span class="line">        at org.apache.hadoop.hive.ql.io.parquet.read.ParquetRecordReaderWrapper.&lt;init&gt;(ParquetRecordReaderWrapper.java:<span class="number">98</span>)</span><br><span class="line">        at org.apache.hadoop.hive.ql.io.parquet.read.ParquetRecordReaderWrapper.&lt;init&gt;(ParquetRecordReaderWrapper.java:<span class="number">60</span>)</span><br><span class="line">        at org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat.getRecordReader(MapredParquetInputFormat.java:<span class="number">92</span>)</span><br><span class="line">        at org.apache.hudi.hadoop.HoodieParquetInputFormat.getRecordReader(HoodieParquetInputFormat.java:<span class="number">216</span>)</span><br><span class="line">        at com.facebook.presto.hive.HiveUtil.createRecordReader(HiveUtil.java:<span class="number">266</span>)</span><br><span class="line">        at com.facebook.presto.hive.GenericHiveRecordCursorProvider.lambda$createRecordCursor$<span class="number">0</span>(GenericHiveRecordCursorProvider.java:<span class="number">74</span>)</span><br><span class="line">        at com.facebook.presto.hive.authentication.UserGroupInformationUtils.lambda$executeActionInDoAs$<span class="number">0</span>(UserGroupInformationUtils.java:<span class="number">29</span>)</span><br><span class="line">        at java.security.AccessController.doPrivileged(Native Method)</span><br><span class="line">        at javax.security.auth.Subject.doAs(Subject.java:<span class="number">360</span>)</span><br><span class="line">        at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:<span class="number">1726</span>)</span><br><span class="line">        at com.facebook.presto.hive.authentication.UserGroupInformationUtils.executeActionInDoAs(UserGroupInformationUtils.java:<span class="number">27</span>)</span><br><span class="line">        at com.facebook.presto.hive.authentication.DirectHdfsAuthentication.doAs(DirectHdfsAuthentication.java:<span class="number">38</span>)</span><br><span class="line">        at com.facebook.presto.hive.HdfsEnvironment.doAs(HdfsEnvironment.java:<span class="number">81</span>)</span><br><span class="line">        at com.facebook.presto.hive.GenericHiveRecordCursorProvider.createRecordCursor(GenericHiveRecordCursorProvider.java:<span class="number">73</span>)</span><br><span class="line">        at com.facebook.presto.hive.HivePageSourceProvider.createHivePageSource(HivePageSourceProvider.java:<span class="number">478</span>)</span><br><span class="line">        at com.facebook.presto.hive.HivePageSourceProvider.createPageSource(HivePageSourceProvider.java:<span class="number">184</span>)</span><br><span class="line">        at com.facebook.presto.spi.connector.classloader.ClassLoaderSafeConnectorPageSourceProvider.createPageSource(ClassLoaderSafeConnectorPageSourceProvider.java:<span class="number">63</span>)</span><br><span class="line">        at com.facebook.presto.split.PageSourceManager.createPageSource(PageSourceManager.java:<span class="number">80</span>)</span><br><span class="line">        at com.facebook.presto.operator.TableScanOperator.getOutput(TableScanOperator.java:<span class="number">249</span>)</span><br><span class="line">        at com.facebook.presto.operator.Driver.processInternal(Driver.java:<span class="number">424</span>)</span><br><span class="line">        at com.facebook.presto.operator.Driver.lambda$processFor$<span class="number">9</span>(Driver.java:<span class="number">307</span>)</span><br><span class="line">        at com.facebook.presto.operator.Driver.tryWithLock(Driver.java:<span class="number">728</span>)</span><br><span class="line">        at com.facebook.presto.operator.Driver.processFor(Driver.java:<span class="number">300</span>)</span><br><span class="line">        at com.facebook.presto.execution.SqlTaskExecution$DriverSplitRunner.processFor(SqlTaskExecution.java:<span class="number">1077</span>)</span><br><span class="line">        at com.facebook.presto.execution.executor.PrioritizedSplitRunner.process(PrioritizedSplitRunner.java:<span class="number">162</span>)</span><br><span class="line">        at com.facebook.presto.execution.executor.TaskExecutor$TaskRunner.run(TaskExecutor.java:<span class="number">599</span>)</span><br><span class="line">        at com.facebook.presto.$gen.Presto_0_265_1_ad1fce6____20211222_010139_1.run(Unknown Source)</span><br><span class="line">        at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:<span class="number">1149</span>)</span><br><span class="line">        at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:<span class="number">624</span>)</span><br><span class="line">        at java.lang.Thread.run(Thread.java:<span class="number">748</span>)</span><br><span class="line">Caused by: java.lang.UnsupportedOperationException: readDirect unsupported in RemoteBlockReader</span><br><span class="line">        at org.apache.hadoop.hdfs.RemoteBlockReader.read(RemoteBlockReader.java:<span class="number">492</span>)</span><br><span class="line">        at org.apache.hadoop.hdfs.DFSInputStream$ByteBufferStrategy.doRead(DFSInputStream.java:<span class="number">789</span>)</span><br><span class="line">        at org.apache.hadoop.hdfs.DFSInputStream.readBuffer(DFSInputStream.java:<span class="number">823</span>)</span><br><span class="line">        at org.apache.hadoop.hdfs.DFSInputStream.readWithStrategy(DFSInputStream.java:<span class="number">883</span>)</span><br><span class="line">        at org.apache.hadoop.hdfs.DFSInputStream.read(DFSInputStream.java:<span class="number">938</span>)</span><br><span class="line">        at org.apache.hadoop.fs.FSDataInputStream.read(FSDataInputStream.java:<span class="number">143</span>)</span><br><span class="line">        at org.apache.parquet.hadoop.util.H2SeekableInputStream$H2Reader.read(H2SeekableInputStream.java:<span class="number">81</span>)</span><br><span class="line">        at org.apache.parquet.hadoop.util.H2SeekableInputStream.readFully(H2SeekableInputStream.java:<span class="number">90</span>)</span><br><span class="line">        at org.apache.parquet.hadoop.util.H2SeekableInputStream.readFully(H2SeekableInputStream.java:<span class="number">75</span>)</span><br><span class="line">        at org.apache.parquet.hadoop.ParquetFileReader$ConsecutiveChunkList.readAll(ParquetFileReader.java:<span class="number">1174</span>)</span><br><span class="line">        at org.apache.parquet.hadoop.ParquetFileReader.readNextRowGroup(ParquetFileReader.java:<span class="number">805</span>)</span><br><span class="line">        at org.apache.parquet.hadoop.InternalParquetRecordReader.checkRead(InternalParquetRecordReader.java:<span class="number">127</span>)</span><br><span class="line">        at org.apache.parquet.hadoop.InternalParquetRecordReader.nextKeyValue(InternalParquetRecordReader.java:<span class="number">222</span>)</span><br></pre></td></tr></table></figure>
+<h2 id="异常原因"><a href="#异常原因" class="headerlink" title="异常原因"></a>异常原因</h2><p>原因是因为hdfs block块没有一个和presto在一个节点上的，要复现这个问题，可以把hdfs副本数改为1，这样可以比较快的复现，关于如何修改hdfs副本数：</p>
+<p>修改hdfs-site.xml：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">name</span>&gt;</span>dfs.replication<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">value</span>&gt;</span>1<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>注意：只修改集群的配置，只是修改了集群的默认值，还要注意客户端里的hdfs-site.xml也要修改，如果有的话</p>
+<p>关于如何查看hdfs block块分布在哪几个节点：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">hdfs fsck  hdfs://cluster1/warehouse/tablespace/managed/hive/test_dkl.db/test_hudi_1/069eddc2-f3bf-4efc-911b-3cb3aa523a8e-0_0-0-0_20211222172800.parquet  -files -blocks -locations</span><br><span class="line"></span><br><span class="line">Connecting to namenode via http://indata-192-168-44-163.indata.com:50070/fsck?ugi=hive&amp;files=1&amp;blocks=1&amp;locations=1&amp;path=%2Fwarehouse%2Ftablespace%2Fmanaged%2Fhive%2Ftest_dkl.db%2Ftest_hudi_1%2F069eddc2-f3bf-4efc-911b-3cb3aa523a8e-0_0-0-0_20211222172800.parquet</span><br><span class="line">FSCK started by hive (auth:KERBEROS_SSL) from /192.168.44.162 for path /warehouse/tablespace/managed/hive/test_dkl.db/test_hudi_1/069eddc2-f3bf-4efc-911b-3cb3aa523a8e-0_0-0-0_20211222172800.parquet at Thu Dec 23 11:01:40 CST 2021</span><br><span class="line">/warehouse/tablespace/managed/hive/test_dkl.db/test_hudi_1/069eddc2-f3bf-4efc-911b-3cb3aa523a8e-0_0-0-0_20211222172800.parquet 435116 bytes, replicated: replication=1, 1 block(s):  OK</span><br><span class="line">0. BP-551234808-192.168.44.164-1628073819744:blk_1073859319_119251 len=435116 Live_repl=1  [DatanodeInfoWithStorage[192.168.44.163:1019,DS-50d15bb1-a076-4e5f-a75a-f729f2bb8db6,DISK]]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Status: HEALTHY</span><br><span class="line"> Number of data-nodes:  3</span><br><span class="line"> Number of racks:               1</span><br><span class="line"> Total dirs:                    0</span><br><span class="line"> Total symlinks:                0</span><br><span class="line"></span><br><span class="line">Replicated Blocks:</span><br><span class="line"> Total size:    435116 B</span><br><span class="line"> Total files:   1</span><br><span class="line"> Total blocks (validated):      1 (avg. block size 435116 B)</span><br><span class="line"> Minimally replicated blocks:   1 (100.0 %)</span><br><span class="line"> Over-replicated blocks:        0 (0.0 %)</span><br><span class="line"> Under-replicated blocks:       0 (0.0 %)</span><br><span class="line"> Mis-replicated blocks:         0 (0.0 %)</span><br><span class="line"> Default replication factor:    1</span><br><span class="line"> Average block replication:     1.0</span><br><span class="line"> Missing blocks:                0</span><br><span class="line"> Corrupt blocks:                0</span><br><span class="line"> Missing replicas:              0 (0.0 %)</span><br><span class="line"></span><br><span class="line">Erasure Coded Block Groups:</span><br><span class="line"> Total size:    0 B</span><br><span class="line"> Total files:   0</span><br><span class="line"> Total block groups (validated):        0</span><br><span class="line"> Minimally erasure-coded block groups:  0</span><br><span class="line"> Over-erasure-coded block groups:       0</span><br><span class="line"> Under-erasure-coded block groups:      0</span><br><span class="line"> Unsatisfactory placement block groups: 0</span><br><span class="line"> Average block group size:      0.0</span><br><span class="line"> Missing block groups:          0</span><br><span class="line"> Corrupt block groups:          0</span><br><span class="line"> Missing internal blocks:       0</span><br><span class="line">FSCK ended at Thu Dec 23 11:01:40 CST 2021 in 1 milliseconds</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">The filesystem under path &apos;/warehouse/tablespace/managed/hive/test_dkl.db/test_hudi_1/069eddc2-f3bf-4efc-911b-3cb3aa523a8e-0_0-0-0_20211222172800.parquet&apos; is HEALTHY</span><br></pre></td></tr></table></figure>
+<p>可以看到该文件只有一个副本在163，而presto实际在162</p>
+<h2 id="异常解决办法"><a href="#异常解决办法" class="headerlink" title="异常解决办法"></a>异常解决办法</h2><p>修改presto catalog下面的配置文件hdfs-site.xml，添加</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">name</span>&gt;</span>dfs.client.use.legacy.blockreader<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">value</span>&gt;</span>false<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>重启presto服务，即可解决问题</p>
+<h2 id="异常解决定位过程"><a href="#异常解决定位过程" class="headerlink" title="异常解决定位过程"></a>异常解决定位过程</h2><p>网上没有搜到该异常的解决办法，只有一个异常与此类似，不过是hive/spark sql之间的异常：<a href="https://dongkelun.com/2018/05/20/hiveQueryException/">https://dongkelun.com/2018/05/20/hiveQueryException/</a>。<br>怀疑是jar包版本问题，通过看源码解决，部分源码（可根据异常信息定位源码位置）</p>
+<p><code>RemoteBlockReader.read</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">read</span><span class="params">(ByteBuffer buf)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">  <span class="keyword">throw</span> <span class="keyword">new</span> UnsupportedOperationException(<span class="string">"readDirect unsupported in RemoteBlockReader"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>发现该方法直接抛异常，并且<code>RemoteBlockReader</code>已经弃用了，在同一个包下面有一个<code>RemoteBlockReader2</code>,并且它的read方法可以使用：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">read</span><span class="params">(ByteBuffer buf)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (curDataSlice == <span class="keyword">null</span> || curDataSlice.remaining() == <span class="number">0</span> &amp;&amp; bytesNeededToFinish &gt; <span class="number">0</span>) &#123;</span><br><span class="line">    TraceScope scope = Trace.startSpan(</span><br><span class="line">        <span class="string">"RemoteBlockReader2#readNextPacket("</span> + blockId + <span class="string">")"</span>, Sampler.NEVER);</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      readNextPacket();</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">      scope.close();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (curDataSlice.remaining() == <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="comment">// we're at EOF now</span></span><br><span class="line">    <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">int</span> nRead = Math.min(curDataSlice.remaining(), buf.remaining());</span><br><span class="line">  ByteBuffer writeSlice = curDataSlice.duplicate();</span><br><span class="line">  writeSlice.limit(writeSlice.position() + nRead);</span><br><span class="line">  buf.put(writeSlice);</span><br><span class="line">  curDataSlice.position(writeSlice.position());</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> nRead;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>那么能不能通过分析源码，让它走<code>RemoteBlockReader2</code>的逻辑呢，我们看一下异常的上一个调用</p>
+<p><code>DFSInputStream$ByteBufferStrategy.doRead</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">doRead</span><span class="params">(BlockReader blockReader, <span class="keyword">int</span> off, <span class="keyword">int</span> len)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> ChecksumException, IOException </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> oldpos = buf.position();</span><br><span class="line">  <span class="keyword">int</span> oldlimit = buf.limit();</span><br><span class="line">  <span class="keyword">boolean</span> success = <span class="keyword">false</span>;</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="keyword">int</span> ret = blockReader.read(buf);</span><br><span class="line">    success = <span class="keyword">true</span>;</span><br><span class="line">    updateReadStatistics(readStatistics, ret, blockReader);</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">  &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (!success) &#123;</span><br><span class="line">      <span class="comment">// Reset to original state so that retries work correctly.</span></span><br><span class="line">      buf.position(oldpos);</span><br><span class="line">      buf.limit(oldlimit);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>查看blockReader的初始化：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">blockReader = <span class="keyword">new</span> BlockReaderFactory(dfsClient.getConf()).</span><br><span class="line">            setInetSocketAddress(targetAddr).</span><br><span class="line">            setRemotePeerFactory(dfsClient).</span><br><span class="line">            setDatanodeInfo(chosenNode).</span><br><span class="line">            setStorageType(storageType).</span><br><span class="line">            setFileName(src).</span><br><span class="line">            setBlock(blk).</span><br><span class="line">            setBlockToken(accessToken).</span><br><span class="line">            setStartOffset(offsetIntoBlock).</span><br><span class="line">            setVerifyChecksum(verifyChecksum).</span><br><span class="line">            setClientName(dfsClient.clientName).</span><br><span class="line">            setLength(blk.getNumBytes() - offsetIntoBlock).</span><br><span class="line">            setCachingStrategy(curCachingStrategy).</span><br><span class="line">            setAllowShortCircuitLocalReads(!shortCircuitForbidden).</span><br><span class="line">            setClientCacheContext(dfsClient.getClientContext()).</span><br><span class="line">            setUserGroupInformation(dfsClient.ugi).</span><br><span class="line">            setConfiguration(dfsClient.getConfiguration()).</span><br><span class="line">            build();</span><br></pre></td></tr></table></figure>
+<p>再看<code>BlockReaderFactory.build</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> BlockReader <span class="title">build</span><span class="params">()</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">  BlockReader reader = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">  Preconditions.checkNotNull(configuration);</span><br><span class="line">  <span class="keyword">if</span> (conf.shortCircuitLocalReads &amp;&amp; allowShortCircuitLocalReads) &#123;</span><br><span class="line">    <span class="keyword">if</span> (clientContext.getUseLegacyBlockReaderLocal()) &#123;</span><br><span class="line">      reader = getLegacyBlockReaderLocal();</span><br><span class="line">      <span class="keyword">if</span> (reader != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (LOG.isTraceEnabled()) &#123;</span><br><span class="line">          LOG.trace(<span class="keyword">this</span> + <span class="string">": returning new legacy block reader local."</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> reader;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      reader = getBlockReaderLocal();</span><br><span class="line">      <span class="keyword">if</span> (reader != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (LOG.isTraceEnabled()) &#123;</span><br><span class="line">          LOG.trace(<span class="keyword">this</span> + <span class="string">": returning new block reader local."</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> reader;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (conf.domainSocketDataTraffic) &#123;</span><br><span class="line">    reader = getRemoteBlockReaderFromDomain();</span><br><span class="line">    <span class="keyword">if</span> (reader != <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">if</span> (LOG.isTraceEnabled()) &#123;</span><br><span class="line">        LOG.trace(<span class="keyword">this</span> + <span class="string">": returning new remote block reader using "</span> +</span><br><span class="line">            <span class="string">"UNIX domain socket on "</span> + pathInfo.getPath());</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">return</span> reader;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  Preconditions.checkState(!DFSInputStream.tcpReadsDisabledForTesting,</span><br><span class="line">      <span class="string">"TCP reads were disabled for testing, but we failed to "</span> +</span><br><span class="line">      <span class="string">"do a non-TCP read."</span>);</span><br><span class="line">  <span class="keyword">return</span> getRemoteBlockReaderFromTcp();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们发现不管是<code>getRemoteBlockReaderFromDomain</code>还是<code>getRemoteBlockReaderFromTcp</code>，都是调用<code>getRemoteBlockReader</code>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (conf.useLegacyBlockReader) &#123;</span><br><span class="line">  <span class="keyword">return</span> RemoteBlockReader.newBlockReader(fileName,</span><br><span class="line">      block, token, startOffset, length, conf.ioBufferSize,</span><br><span class="line">      verifyChecksum, clientName, peer, datanode,</span><br><span class="line">      clientContext.getPeerCache(), cachingStrategy);</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> RemoteBlockReader2.newBlockReader(</span><br><span class="line">      fileName, block, token, startOffset, length,</span><br><span class="line">      verifyChecksum, clientName, peer, datanode,</span><br><span class="line">      clientContext.getPeerCache(), cachingStrategy);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到，当<code>conf.useLegacyBlockReader</code>为false时，就会走到<code>RemoteBlockReader2</code>,那么再看一下<code>conf.useLegacyBlockReader</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">useLegacyBlockReader = conf.getBoolean(</span><br><span class="line">          DFSConfigKeys.DFS_CLIENT_USE_LEGACY_BLOCKREADER,</span><br><span class="line">          DFSConfigKeys.DFS_CLIENT_USE_LEGACY_BLOCKREADER_DEFAULT);</span><br></pre></td></tr></table></figure>
+<p><code>DFS_CLIENT_USE_LEGACY_BLOCKREADER_DEFAULT</code>为false，那么<code>DFS_CLIENT_USE_LEGACY_BLOCKREADER</code>默认的应该为true，我们不用深究<code>DFS_CLIENT_USE_LEGACY_BLOCKREADER</code>为啥为true，我们看看能不能通过修改配置将他的值设置为false</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> String  DFS_CLIENT_USE_LEGACY_BLOCKREADER = <span class="string">"dfs.client.use.legacy.blockreader"</span>;</span><br></pre></td></tr></table></figure>
+<p>我们通过在hdfs-site.xml添加配置<code>dfs.client.use.legacy.blockreader = false</code>,重启presto，发现解决了问题，大功告成！</p>
+
+      
+
+      
+	  
+    </div>
+    <div class="article-info article-info-index">
+      
+	   
+		  
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">HUDI</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">presto</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">异常</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+		  
+
+	  
+	 
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2021/12/23/prestoHudiException/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
     <article id="post-submarinSparkRanger" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -573,109 +689,9 @@
 
 
   
-    <article id="post-dbeaverConnectKerberosHive" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2021/06/03/dbeaverConnectKerberosHive/">通过DBeaver本地访问远程Kerberos环境下的Hive</a>
-    </h1>
-  
-
-        
-        <a href="/2021/06/03/dbeaverConnectKerberosHive/" class="archive-article-date">
-  	<time datetime="2021-06-02T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-06-03</time>
-</a>
-        
-      </header>
-	    
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>本文讲解如何通过数据库客户端界面工具DBeaver连接远程Kerberos环境下的Hive。</p>
-<blockquote>
-<p>因为在远程服务器上的命令行里写SQL查询Hive表，如果数据量和表字段比较多，命令行界面不利于分析表数据，所以需要客户端工具如DBeave远程连接Hive查询数据，但是DBeaver默认的不能访问Kerberos下的Hive，需要一些配置才可以访问，这里记录一下。</p>
-</blockquote>
-<h2 id="1、DBeaver连接Hive"><a href="#1、DBeaver连接Hive" class="headerlink" title="1、DBeaver连接Hive"></a>1、DBeaver连接Hive</h2><p>关于DBeaver如何连接正常的不带Kerberos认证的Hive,请参考<a href="https://dongkelun.com/2018/07/13/dbeaverConnectHive/">通过数据库客户端界面工具DBeaver连接Hive</a>,本文只讲解如何在Windows上用DBeaver对kerberos认证</p>
-<h2 id="2、安装Kerberos客户端"><a href="#2、安装Kerberos客户端" class="headerlink" title="2、安装Kerberos客户端"></a>2、安装Kerberos客户端</h2><p>官网下载<a href="https://web.mit.edu/kerberos/dist/index.html" target="_blank" rel="noopener">https://web.mit.edu/kerberos/dist/index.html</a>,我下载的是这个：<a href="https://web.mit.edu/kerberos/dist/index.html#kfw-4.1" target="_blank" rel="noopener">Kerberos for Windows Release 4.1 - current release</a></p>
-<p>下载下来后，一键安装</p>
-<h2 id="3、krb5-ini"><a href="#3、krb5-ini" class="headerlink" title="3、krb5.ini"></a>3、krb5.ini</h2><p>我的kerberos客户端安装目录为D:\program\company\kerberos，将集群上的/etc/krb5.conf，复制到此目录下，改名为krb5.ini,内容如下：<br>
-        
-          <a class="article-more-a" href="/2021/06/03/dbeaverConnectKerberosHive/#more">more >></a>
-        
-      
-
-      
-	  
-    </div>
-    <div class="article-info article-info-index">
-      
-	   
-		  
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hive</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">DBeaver</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">Kerberos</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-		  
-
-	  
-	 
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2021/06/03/dbeaverConnectKerberosHive/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
   
     <nav id="page-nav">
-      <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/22/">22</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
+      <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/23/">23</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
     </nav>
   
 
@@ -830,14 +846,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -850,14 +858,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
@@ -866,7 +866,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -882,15 +886,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -902,19 +918,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -926,19 +938,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">hbase</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -946,11 +946,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -966,7 +970,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -974,7 +982,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">hbase</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -986,15 +1002,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1006,7 +1018,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+                <a href="javascript:void(0)" class="js-tag color2">presto</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1014,15 +1034,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1034,11 +1050,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1047,6 +1063,18 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">scala</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1062,15 +1090,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">日期</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1094,7 +1114,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1102,7 +1122,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1114,23 +1134,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1146,10 +1158,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">vue</a>
               </li>
              
@@ -1159,6 +1167,18 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
             
             <div class="clearfix"></div>
