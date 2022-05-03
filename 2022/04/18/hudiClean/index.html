@@ -17,7 +17,7 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言源码层面总结分析Hudi Clean是如何实现的，不了解Hudi Clean的可以先看这篇 https://mp.weixin.qq.com/s/jIm0P6GnYXMdG6kyg_8bjA。Hudi Clean主要是清理删除不需要的历史文件，可以根据实际业务需要配置参数，不能影响查询，比如某个查询语句正在用某个文件，Clean如果删除了这个文件，查询就会报错。这里只是删除历史文件，Hudi的">
 <meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2022-04-18T09:30:18.474Z">
+<meta property="og:updated_time" content="2022-04-18T11:00:20.368Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Hudi Clean 清理文件实现分析">
 <meta name="twitter:description" content="前言源码层面总结分析Hudi Clean是如何实现的，不了解Hudi Clean的可以先看这篇 https://mp.weixin.qq.com/s/jIm0P6GnYXMdG6kyg_8bjA。Hudi Clean主要是清理删除不需要的历史文件，可以根据实际业务需要配置参数，不能影响查询，比如某个查询语句正在用某个文件，Clean如果删除了这个文件，查询就会报错。这里只是删除历史文件，Hudi的">
@@ -258,7 +258,7 @@
 <p>postCommit方法里会调用autoCleanOnCommit()执行清理文件</p>
 <h2 id="AbstractHoodieWriteClient-autoCleanOnCommit"><a href="#AbstractHoodieWriteClient-autoCleanOnCommit" class="headerlink" title="AbstractHoodieWriteClient.autoCleanOnCommit"></a>AbstractHoodieWriteClient.autoCleanOnCommit</h2><p><code>autoCleanOnCommit-&gt;clean-&gt;scheduleTableServiceInternal-&gt;HoodieJavaCopyOnWriteTable.clean</code></p>
 <p>首先调用<code>scheduleTableServiceInternal</code>，该方法会根据清理策略配置参数获取最早的需要保留的instant(<code>earliestInstant</code>),然后获取需要清理的分区路径列表（<code>partitionsToClean</code>）,再根据分区路径获取需要删除的文件列表，最后将这些信息封装成<code>HoodieCleanerPlan</code>序列化到新创建的<br>.clean.requested文件中<br>再执行<code>HoodieJavaCopyOnWriteTable.clean</code>,该方法首先获取刚才创建的<code>.clean.requested</code>文件和其他的之前失败的（如果有的话）<code>.clean.inflight</code>,然后反序列化刚才保存的.clean.requested的文件内容为<code>HoodieCleanerPlan</code>，然后通过<code>deleteFilesFunc</code>方法依次删除<code>HoodieCleanerPlan</code>里的要删除的文件列表并返回<code>HoodieCleanStat</code>,最后将<code>HoodieCleanStat</code>作为参数构建<code>HoodieCleanMetadata</code>,然后将<code>HoodieCleanMetadata</code>序列化保存到新创建的<code>.clean</code>文件中，这样整个clean操作就基本完成了。</p>
-<p>如何根据清理策略获取要被清理的文件列表，请看最后面的部分</p>
+<p>如何根据清理策略获取要被清理的文件列表，请看后面的部分:<a href="#获取要删除的文件列表">获取要删除的文件列表</a></p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Handle auto clean during commit.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">autoCleanOnCommit</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (config.isAutoClean()) &#123; <span class="comment">// 默认true</span></span><br><span class="line">    <span class="comment">// Call clean to cleanup if there is anything to cleanup after the commit,</span></span><br><span class="line">    <span class="keyword">if</span> (config.isAsyncClean()) &#123; <span class="comment">// 默认false</span></span><br><span class="line">      LOG.info(<span class="string">"Cleaner has been spawned already. Waiting for it to finish"</span>);</span><br><span class="line">      AsyncCleanerService.waitForCompletion(asyncCleanerService);</span><br><span class="line">      LOG.info(<span class="string">"Cleaner has finished"</span>);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">// Do not reuse instantTime for clean as metadata table requires all changes to have unique instant timestamps.</span></span><br><span class="line">      LOG.info(<span class="string">"Auto cleaning is enabled. Running cleaner now"</span>);</span><br><span class="line">      <span class="comment">// 执行clean操作</span></span><br><span class="line">      clean();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"> <span class="function"><span class="keyword">public</span> HoodieCleanMetadata <span class="title">clean</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> clean(HoodieActiveTimeline.createNewInstantTime());</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"> <span class="function"><span class="keyword">public</span> HoodieCleanMetadata <span class="title">clean</span><span class="params">(String cleanInstantTime)</span> <span class="keyword">throws</span> HoodieIOException </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> clean(cleanInstantTime, <span class="keyword">true</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>前面的只是调用链，下面才到了真正的逻辑</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Clean up any stale/old files/data lying around (either on file storage or index storage) based on the</span></span><br><span class="line"><span class="comment"> * configurations and CleaningPolicy used. (typically files that no longer can be used by a running query can be</span></span><br><span class="line"><span class="comment"> * cleaned). This API provides the flexibility to schedule clean instant asynchronously via</span></span><br><span class="line"><span class="comment"> * &#123;<span class="doctag">@link</span> AbstractHoodieWriteClient#scheduleTableService(String, Option, TableServiceType)&#125; and disable inline scheduling</span></span><br><span class="line"><span class="comment"> * of clean.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> HoodieCleanMetadata <span class="title">clean</span><span class="params">(String cleanInstantTime, <span class="keyword">boolean</span> scheduleInline)</span> <span class="keyword">throws</span> HoodieIOException </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (scheduleInline) &#123;</span><br><span class="line">    <span class="comment">// 主要逻辑为：创建.clean.requested</span></span><br><span class="line">    <span class="comment">// .clean.requested内容为序列化后的（包含了要删除的文件列表等信息的）cleanerPlan</span></span><br><span class="line">    scheduleTableServiceInternal(cleanInstantTime, Option.empty(), TableServiceType.CLEAN);</span><br><span class="line">  &#125;</span><br><span class="line">  LOG.info(<span class="string">"Cleaner started"</span>);</span><br><span class="line">  <span class="keyword">final</span> Timer.Context timerContext = metrics.getCleanCtx();</span><br><span class="line">  LOG.info(<span class="string">"Cleaned failed attempts if any"</span>);</span><br><span class="line">  <span class="comment">// 判断是否执行rollback,默认策略为EAGER，clean期间不执行rollback</span></span><br><span class="line">  CleanerUtils.rollbackFailedWrites(config.getFailedWritesCleanPolicy(),</span><br><span class="line">      HoodieTimeline.CLEAN_ACTION, () -&gt; rollbackFailedWrites());</span><br><span class="line">  <span class="comment">// 执行table.clean,删除需要删除的文件，转化.clean.requested=&gt;.clean.inflight=&gt;.clean,返回HoodieCleanMetadata</span></span><br><span class="line">  <span class="comment">// 这里为HoodieJavaCopyOnWriteTable.clean</span></span><br><span class="line">  HoodieCleanMetadata metadata = createTable(config, hadoopConf).clean(context, cleanInstantTime);</span><br><span class="line">  <span class="keyword">if</span> (timerContext != <span class="keyword">null</span> &amp;&amp; metadata != <span class="keyword">null</span>) &#123;</span><br><span class="line">    <span class="keyword">long</span> durationMs = metrics.getDurationInMs(timerContext.stop());</span><br><span class="line">    metrics.updateCleanMetrics(durationMs, metadata.getTotalFilesDeleted());</span><br><span class="line">    LOG.info(<span class="string">"Cleaned "</span> + metadata.getTotalFilesDeleted() + <span class="string">" files"</span></span><br><span class="line">        + <span class="string">" Earliest Retained Instant :"</span> + metadata.getEarliestCommitToRetain()</span><br><span class="line">        + <span class="string">" cleanerElapsedMs"</span> + durationMs);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 返回metadata</span></span><br><span class="line">  <span class="keyword">return</span> metadata;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -273,7 +273,7 @@
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> HoodieCleanMetadata <span class="title">runClean</span><span class="params">(HoodieTable&lt;T, I, K, O&gt; table, HoodieInstant cleanInstant, HoodieCleanerPlan cleanerPlan)</span> </span>&#123;</span><br><span class="line">  ValidationUtils.checkArgument(cleanInstant.getState().equals(HoodieInstant.State.REQUESTED)</span><br><span class="line">      || cleanInstant.getState().equals(HoodieInstant.State.INFLIGHT));</span><br><span class="line"></span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="keyword">final</span> HoodieInstant inflightInstant;</span><br><span class="line">    <span class="keyword">final</span> HoodieTimer timer = <span class="keyword">new</span> HoodieTimer();</span><br><span class="line">    timer.startTimer();</span><br><span class="line">    <span class="keyword">if</span> (cleanInstant.isRequested()) &#123;</span><br><span class="line">      <span class="comment">// 如果是.clean.requested,转化为.clean.inflight</span></span><br><span class="line">      inflightInstant = table.getActiveTimeline().transitionCleanRequestedToInflight(cleanInstant,</span><br><span class="line">          TimelineMetadataUtils.serializeCleanerPlan(cleanerPlan));</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      inflightInstant = cleanInstant;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 执行clean方法，主要是删除文件，返回HoodieCleanStat列表</span></span><br><span class="line">    <span class="comment">// 具体在实现类，这里是 JavaCleanActionExecutor</span></span><br><span class="line">    List&lt;HoodieCleanStat&gt; cleanStats = clean(context, cleanerPlan);</span><br><span class="line">    <span class="keyword">if</span> (cleanStats.isEmpty()) &#123;</span><br><span class="line">      <span class="keyword">return</span> HoodieCleanMetadata.newBuilder().build();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    table.getMetaClient().reloadActiveTimeline();</span><br><span class="line">    <span class="comment">// 构建HoodieCleanMetadata</span></span><br><span class="line">    HoodieCleanMetadata metadata = CleanerUtils.convertCleanMetadata(</span><br><span class="line">        inflightInstant.getTimestamp(),</span><br><span class="line">        Option.of(timer.endTimer()),</span><br><span class="line">        cleanStats</span><br><span class="line">    );</span><br><span class="line">    <span class="comment">// 生成.clean,并将metadata序列化到.clean</span></span><br><span class="line">    table.getActiveTimeline().transitionCleanInflightToComplete(inflightInstant,</span><br><span class="line">        TimelineMetadataUtils.serializeCleanMetadata(metadata));</span><br><span class="line">    LOG.info(<span class="string">"Marked clean started on "</span> + inflightInstant.getTimestamp() + <span class="string">" as complete"</span>);</span><br><span class="line">    <span class="keyword">return</span> metadata;</span><br><span class="line">  &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> HoodieIOException(<span class="string">"Failed to clean up after commit"</span>, e);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p><code>JavaCleanActionExecutor.clean</code></p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">List&lt;HoodieCleanStat&gt; <span class="title">clean</span><span class="params">(HoodieEngineContext context, HoodieCleanerPlan cleanerPlan)</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 需要被删除的文件列表</span></span><br><span class="line">  Iterator&lt;ImmutablePair&lt;String, CleanFileInfo&gt;&gt; filesToBeDeletedPerPartition = cleanerPlan.getFilePathsToBeDeletedPerPartition().entrySet().stream()</span><br><span class="line">      .flatMap(x -&gt; x.getValue().stream().map(y -&gt; <span class="keyword">new</span> ImmutablePair&lt;&gt;(x.getKey(), <span class="keyword">new</span> CleanFileInfo(y.getFilePath(), y.getIsBootstrapBaseFile())))).iterator();</span><br><span class="line">  <span class="comment">// 通过deleteFilesFunc函数执行删除文件操作，返回PartitionCleanStat</span></span><br><span class="line">  Stream&lt;Pair&lt;String, PartitionCleanStat&gt;&gt; partitionCleanStats =</span><br><span class="line">      deleteFilesFunc(filesToBeDeletedPerPartition, table)</span><br><span class="line">          .collect(Collectors.groupingBy(Pair::getLeft))</span><br><span class="line">          .entrySet().stream()</span><br><span class="line">          .map(x -&gt; <span class="keyword">new</span> ImmutablePair(x.getKey(), x.getValue().stream().map(y -&gt; y.getRight()).reduce(PartitionCleanStat::merge).get()));</span><br><span class="line"></span><br><span class="line">  Map&lt;String, PartitionCleanStat&gt; partitionCleanStatsMap = partitionCleanStats</span><br><span class="line">      .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Return PartitionCleanStat for each partition passed.</span></span><br><span class="line">  <span class="keyword">return</span> cleanerPlan.getFilePathsToBeDeletedPerPartition().keySet().stream().map(partitionPath -&gt; &#123;</span><br><span class="line">    PartitionCleanStat partitionCleanStat = partitionCleanStatsMap.containsKey(partitionPath)</span><br><span class="line">        ? partitionCleanStatsMap.get(partitionPath)</span><br><span class="line">        : <span class="keyword">new</span> PartitionCleanStat(partitionPath);</span><br><span class="line">    HoodieActionInstant actionInstant = cleanerPlan.getEarliestInstantToRetain();</span><br><span class="line">    <span class="keyword">return</span> HoodieCleanStat.newBuilder().withPolicy(config.getCleanerPolicy()).withPartitionPath(partitionPath)</span><br><span class="line">        .withEarliestCommitRetained(Option.ofNullable(</span><br><span class="line">            actionInstant != <span class="keyword">null</span></span><br><span class="line">                ? <span class="keyword">new</span> HoodieInstant(HoodieInstant.State.valueOf(actionInstant.getState()),</span><br><span class="line">                actionInstant.getAction(), actionInstant.getTimestamp())</span><br><span class="line">                : <span class="keyword">null</span>))</span><br><span class="line">        .withDeletePathPattern(partitionCleanStat.deletePathPatterns())</span><br><span class="line">        .withSuccessfulDeletes(partitionCleanStat.successDeleteFiles())</span><br><span class="line">        .withFailedDeletes(partitionCleanStat.failedDeleteFiles())</span><br><span class="line">        .withDeleteBootstrapBasePathPatterns(partitionCleanStat.getDeleteBootstrapBasePathPatterns())</span><br><span class="line">        .withSuccessfulDeleteBootstrapBaseFiles(partitionCleanStat.getSuccessfulDeleteBootstrapBaseFiles())</span><br><span class="line">        .withFailedDeleteBootstrapBaseFiles(partitionCleanStat.getFailedDeleteBootstrapBaseFiles())</span><br><span class="line">        .build();</span><br><span class="line">  &#125;).collect(Collectors.toList());</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> Stream&lt;Pair&lt;String, PartitionCleanStat&gt;&gt; deleteFilesFunc(Iterator&lt;ImmutablePair&lt;String, CleanFileInfo&gt;&gt; iter, HoodieTable table) &#123;</span><br><span class="line">  Map&lt;String, PartitionCleanStat&gt; partitionCleanStatMap = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">  FileSystem fs = table.getMetaClient().getFs();</span><br><span class="line"></span><br><span class="line">  <span class="keyword">while</span> (iter.hasNext()) &#123;</span><br><span class="line">    Pair&lt;String, CleanFileInfo&gt; partitionDelFileTuple = iter.next();</span><br><span class="line">    String partitionPath = partitionDelFileTuple.getLeft();</span><br><span class="line">    Path deletePath = <span class="keyword">new</span> Path(partitionDelFileTuple.getRight().getFilePath());</span><br><span class="line">    String deletePathStr = deletePath.toString();</span><br><span class="line">    Boolean deletedFileResult = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="comment">// 删除文件返回是否删除成功</span></span><br><span class="line">      deletedFileResult = deleteFileAndGetResult(fs, deletePathStr);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">      LOG.error(<span class="string">"Delete file failed"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (!partitionCleanStatMap.containsKey(partitionPath)) &#123;</span><br><span class="line">      partitionCleanStatMap.put(partitionPath, <span class="keyword">new</span> PartitionCleanStat(partitionPath));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">boolean</span> isBootstrapBasePathFile = partitionDelFileTuple.getRight().isBootstrapBaseFile();</span><br><span class="line">    PartitionCleanStat partitionCleanStat = partitionCleanStatMap.get(partitionPath);</span><br><span class="line">    <span class="keyword">if</span> (isBootstrapBasePathFile) &#123;</span><br><span class="line">      <span class="comment">// For Bootstrap Base file deletions, store the full file path.</span></span><br><span class="line">      partitionCleanStat.addDeleteFilePatterns(deletePath.toString(), <span class="keyword">true</span>);</span><br><span class="line">      partitionCleanStat.addDeletedFileResult(deletePath.toString(), deletedFileResult, <span class="keyword">true</span>);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      partitionCleanStat.addDeleteFilePatterns(deletePath.getName(), <span class="keyword">false</span>);</span><br><span class="line">      partitionCleanStat.addDeletedFileResult(deletePath.getName(), deletedFileResult, <span class="keyword">false</span>);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> partitionCleanStatMap.entrySet().stream().map(e -&gt; Pair.of(e.getKey(), e.getValue()));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">static</span> Boolean <span class="title">deleteFileAndGetResult</span><span class="params">(FileSystem fs, String deletePathStr)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">  Path deletePath = <span class="keyword">new</span> Path(deletePathStr);</span><br><span class="line">  LOG.debug(<span class="string">"Working on delete path :"</span> + deletePath);</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="keyword">boolean</span> deleteResult = fs.delete(deletePath, <span class="keyword">false</span>);</span><br><span class="line">    <span class="keyword">if</span> (deleteResult) &#123;</span><br><span class="line">      LOG.debug(<span class="string">"Cleaned file at path :"</span> + deletePath);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> deleteResult;</span><br><span class="line">  &#125; <span class="keyword">catch</span> (FileNotFoundException fio) &#123;</span><br><span class="line">    <span class="comment">// With cleanPlan being used for retried cleaning operations, its possible to clean a file twice</span></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="获取要删除的文件列表"><a href="#获取要删除的文件列表" class="headerlink" title="获取要删除的文件列表"></a>获取要删除的文件列表</h2><p>这里和策略配置参数有关，并且逻辑相对复杂一点，就先贴一下入口的代码，先不深入，以后单独总结</p>
+<h2 id="获取要删除的文件列表"><a href="#获取要删除的文件列表" class="headerlink" title="获取要删除的文件列表"></a>获取要删除的文件列表</h2><p>这里和策略配置参数有关，并且逻辑相对复杂一点，就先贴一下入口的代码，先不深入，以后单独总结<br><a href="#AbstractHoodieWriteClient-autoCleanOnCommit">返回AbstractHoodieWriteClient.autoCleanOnCommit</a></p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Option&lt;HoodieInstant&gt; earliestInstant = planner.getEarliestCommitToRetain();</span><br><span class="line">List&lt;String&gt; partitionsToClean = planner.getPartitionPathsToClean(earliestInstant);</span><br><span class="line">planner.getDeletePaths(partitionPathToClean)</span><br></pre></td></tr></table></figure>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Returns earliest commit to retain based on cleaning policy.</span></span><br><span class="line"><span class="comment"> * 根据清理策略返回最早的需要保留的commit</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Option&lt;HoodieInstant&gt; <span class="title">getEarliestCommitToRetain</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  Option&lt;HoodieInstant&gt; earliestCommitToRetain = Option.empty();</span><br><span class="line">  <span class="keyword">int</span> commitsRetained = config.getCleanerCommitsRetained();</span><br><span class="line">  <span class="keyword">if</span> (config.getCleanerPolicy() == HoodieCleaningPolicy.KEEP_LATEST_COMMITS</span><br><span class="line">      &amp;&amp; commitTimeline.countInstants() &gt; commitsRetained) &#123;</span><br><span class="line">    earliestCommitToRetain = commitTimeline.nthInstant(commitTimeline.countInstants() - commitsRetained);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> earliestCommitToRetain;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Returns list of partitions where clean operations needs to be performed.</span></span><br><span class="line"><span class="comment"> * 返回清理操作需要执行的分区列表</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> earliestRetainedInstant New instant to be retained after this cleanup operation</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> list of partitions to scan for cleaning</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@throws</span> IOException when underlying file-system throws this exception</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> List&lt;String&gt; <span class="title">getPartitionPathsToClean</span><span class="params">(Option&lt;HoodieInstant&gt; earliestRetainedInstant)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">  <span class="keyword">switch</span> (config.getCleanerPolicy()) &#123;</span><br><span class="line">    <span class="keyword">case</span> KEEP_LATEST_COMMITS:</span><br><span class="line">      <span class="keyword">return</span> getPartitionPathsForCleanByCommits(earliestRetainedInstant);</span><br><span class="line">    <span class="keyword">case</span> KEEP_LATEST_FILE_VERSIONS:</span><br><span class="line">      <span class="keyword">return</span> getPartitionPathsForFullCleaning();</span><br><span class="line">    <span class="keyword">default</span>:</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"Unknown Cleaner Policy"</span>);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -401,6 +401,15 @@
 
   
 <nav id="article-nav">
+  
+    <a href="/2022/04/19/hudiCleanPolicy/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          Hudi Clean Policy 清理策略实现分析
+        
+      </div>
+    </a>
   
   
     <a href="/2022/03/25/kyuubiConf/" id="article-nav-older" class="article-nav-link-wrap">
@@ -613,15 +622,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -629,11 +634,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -641,7 +642,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -649,35 +662,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
+                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -689,15 +686,43 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -709,11 +734,31 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -729,31 +774,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">java</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -765,15 +786,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -785,11 +802,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -801,27 +830,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -829,15 +838,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">日期</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -853,6 +854,14 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">持久化</a>
               </li>
              
@@ -862,10 +871,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">persist</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -881,15 +886,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -901,11 +906,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -913,15 +926,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -929,7 +938,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -942,14 +959,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
               </li>
              
               <li class="article-tag-list-item">
