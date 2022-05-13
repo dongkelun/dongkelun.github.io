@@ -7,28 +7,20 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="https://dongkelun.com">
-  <title>Centos7 ELKB 7.2.0版本单机部署 | 伦少的博客</title>
+  <title>Hudi Spark SQL总结 | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="前言本人新手，本文记录简单的ELKB单机部署，ELKB分别指elasticsearch、logstash、kibana、filebeat，用的当前官网最新版本7.2.0，日志用的Nginx产生的日志。  Nginx可以参考我这篇：Nginx 安装配置，我本次用的Nginx和这篇文章是一样的，包括前端。环境：Centos7  先将常用环境配置好（CentOS 初始环境配置）,jdk版本为1.8  1">
-<meta name="keywords" content="centos7,ELKB">
+  <meta name="description" content="前言总结Hudi Spark SQL的使用，本人仍然以Hudi0.9.0版本为例，也会稍微提及最新版的一些改动。Hudi 从0.9.0版本开始支持Spark SQL，是由阿里的pengzhiwei同学贡献的，pengzhiwei目前已不负责Hudi,改由同事YannByron负责，现在又有ForwardXu贡献了很多功能特性。三位都是大佬，都是Apache Committer(YannByron马">
+<meta name="keywords" content="Spark,Hudi">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Centos7 ELKB 7.2.0版本单机部署">
-<meta property="og:url" content="https://dongkelun.com/2019/07/03/elkbConf/index.html">
+<meta property="og:title" content="Hudi Spark SQL总结">
+<meta property="og:url" content="https://dongkelun.com/2022/05/13/hudiSparkSQL/index.html">
 <meta property="og:site_name" content="伦少的博客">
-<meta property="og:description" content="前言本人新手，本文记录简单的ELKB单机部署，ELKB分别指elasticsearch、logstash、kibana、filebeat，用的当前官网最新版本7.2.0，日志用的Nginx产生的日志。  Nginx可以参考我这篇：Nginx 安装配置，我本次用的Nginx和这篇文章是一样的，包括前端。环境：Centos7  先将常用环境配置好（CentOS 初始环境配置）,jdk版本为1.8  1">
+<meta property="og:description" content="前言总结Hudi Spark SQL的使用，本人仍然以Hudi0.9.0版本为例，也会稍微提及最新版的一些改动。Hudi 从0.9.0版本开始支持Spark SQL，是由阿里的pengzhiwei同学贡献的，pengzhiwei目前已不负责Hudi,改由同事YannByron负责，现在又有ForwardXu贡献了很多功能特性。三位都是大佬，都是Apache Committer(YannByron马">
 <meta property="og:locale" content="cn">
-<meta property="og:image" content="https://tva2.sinaimg.cn/large/e44344dcly1g4mnp76eypj21hc0u0433.jpg">
-<meta property="og:image" content="https://tva3.sinaimg.cn/large/e44344dcly1g4mnp7k3jej21hc0t5q6m.jpg">
-<meta property="og:image" content="https://tva1.sinaimg.cn/large/e44344dcly1g4mnp7y71sj21hc0u0go3.jpg">
-<meta property="og:image" content="https://tva4.sinaimg.cn/large/e44344dcly1g4mnp8f25wj21hc0tuacu.jpg">
-<meta property="og:image" content="https://tva3.sinaimg.cn/large/e44344dcly1g4mnp8xho4j21hc0u0tbo.jpg">
-<meta property="og:image" content="https://tva1.sinaimg.cn/large/e44344dcly1g4mnp9cm7yj21hc0u0gsd.jpg">
-<meta property="og:image" content="https://tva2.sinaimg.cn/large/e44344dcly1g4nj9fcg8pj21hc0u0ahg.jpg">
-<meta property="og:updated_time" content="2019-07-04T01:14:54.342Z">
+<meta property="og:updated_time" content="2022-05-13T07:29:09.243Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Centos7 ELKB 7.2.0版本单机部署">
-<meta name="twitter:description" content="前言本人新手，本文记录简单的ELKB单机部署，ELKB分别指elasticsearch、logstash、kibana、filebeat，用的当前官网最新版本7.2.0，日志用的Nginx产生的日志。  Nginx可以参考我这篇：Nginx 安装配置，我本次用的Nginx和这篇文章是一样的，包括前端。环境：Centos7  先将常用环境配置好（CentOS 初始环境配置）,jdk版本为1.8  1">
-<meta name="twitter:image" content="https://tva2.sinaimg.cn/large/e44344dcly1g4mnp76eypj21hc0u0433.jpg">
+<meta name="twitter:title" content="Hudi Spark SQL总结">
+<meta name="twitter:description" content="前言总结Hudi Spark SQL的使用，本人仍然以Hudi0.9.0版本为例，也会稍微提及最新版的一些改动。Hudi 从0.9.0版本开始支持Spark SQL，是由阿里的pengzhiwei同学贡献的，pengzhiwei目前已不负责Hudi,改由同事YannByron负责，现在又有ForwardXu贡献了很多功能特性。三位都是大佬，都是Apache Committer(YannByron马">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -211,20 +203,20 @@
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            <article id="post-elkbConf" class="article article-type-post " itemscope itemprop="blogPost">
+            <article id="post-hudiSparkSQL" class="article article-type-post " itemscope itemprop="blogPost">
   <div class="article-inner">
     
       <header class="article-header">
         
   
     <h1 class="article-title" itemprop="name">
-      Centos7 ELKB 7.2.0版本单机部署
+      Hudi Spark SQL总结
     </h1>
   
 
         
-        <a href="/2019/07/03/elkbConf/" class="archive-article-date">
-  	<time datetime="2019-07-02T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2019-07-03</time>
+        <a href="/2022/05/13/hudiSparkSQL/" class="archive-article-date">
+  	<time datetime="2022-05-12T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2022-05-13</time>
 </a>
         
       </header>
@@ -236,11 +228,11 @@
 		<ul class="article-tag-list">
 			 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">centos7</a>
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
         		</li>
       		 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">ELKB</a>
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
         		</li>
       		
 		</ul>
@@ -254,49 +246,131 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>本人新手，本文记录简单的ELKB单机部署，ELKB分别指elasticsearch、logstash、kibana、filebeat，用的当前官网最新版本7.2.0，日志用的Nginx产生的日志。</p>
-<blockquote>
-<p>Nginx可以参考我这篇：<a href="https://dongkelun.com/2019/04/24/nginxInstallConf/">Nginx 安装配置</a>，我本次用的Nginx和这篇文章是一样的，包括前端。<br>环境：Centos7  先将常用环境配置好（<a href="http://dongkelun.com/2018/04/05/centosInitialConf/">CentOS 初始环境配置</a>）,jdk版本为1.8</p>
-</blockquote>
-<h2 id="1、安装包"><a href="#1、安装包" class="headerlink" title="1、安装包"></a>1、安装包</h2><p>下载地址：<a href="https://www.elastic.co/cn/downloads/" target="_blank" rel="noopener">https://www.elastic.co/cn/downloads/</a></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.2.0-linux-x86_64.tar.gz</span><br><span class="line">wget https://artifacts.elastic.co/downloads/logstash/logstash-7.2.0.tar.gz</span><br><span class="line">wget https://artifacts.elastic.co/downloads/kibana/kibana-7.2.0-linux-x86_64.tar.gz</span><br><span class="line">wget https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-7.2.0-linux-x86_64.tar.gz</span><br></pre></td></tr></table></figure>
-<h2 id="2、解压"><a href="#2、解压" class="headerlink" title="2、解压"></a>2、解压</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">tar -xzf elasticsearch-7.2.0-linux-x86_64.tar.gz</span><br><span class="line">tar -xzf logstash-7.2.0.tar.gz</span><br><span class="line">tar -xzf kibana-7.2.0-linux-x86_64.tar.gz</span><br><span class="line">tar -xzf filebeat-7.2.0-linux-x86_64.tar.gz</span><br></pre></td></tr></table></figure>
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>总结Hudi Spark SQL的使用，本人仍然以Hudi0.9.0版本为例，也会稍微提及最新版的一些改动。Hudi 从0.9.0版本开始支持Spark SQL，是由阿里的pengzhiwei同学贡献的，pengzhiwei目前已不负责Hudi,改由同事YannByron负责，现在又有ForwardXu贡献了很多功能特性。<br>三位都是大佬，都是Apache Committer(YannByron马上)，膜拜大佬，向大佬学习！！！大佬的github:</p>
+<ul>
+<li>彭志伟（阿里） pengzhiwei  <a href="https://github.com/pengzhiwei2018" target="_blank" rel="noopener">https://github.com/pengzhiwei2018</a></li>
+<li>毕言（阿里   YannByron   <a href="https://github.com/YannByron" target="_blank" rel="noopener">https://github.com/YannByron</a></li>
+<li>许前进（腾讯） ForwardXu   <a href="https://github.com/XuQianJin-Stars" target="_blank" rel="noopener">https://github.com/XuQianJin-Stars</a></li>
+</ul>
+<p>当然还有很多其他大佬，如Apache member/Hudi PMC xushiyan/Raymond Xu <a href="https://github.com/xushiyan" target="_blank" rel="noopener">https://github.com/xushiyan</a>,负责整个Spark模块</p>
+<h2 id="配置参数"><a href="#配置参数" class="headerlink" title="配置参数"></a>配置参数</h2><p>核心参数：</p>
+<ul>
+<li>–conf ‘spark.serializer=org.apache.spark.serializer.KryoSerializer’  </li>
+<li>–conf ‘spark.sql.extensions=org.apache.spark.sql.hudi.HoodieSparkSessionExtension’</li>
+</ul>
+<h2 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h2><p>三种方式使用Hudi Spark SQL</p>
 <a id="more"></a>
-<h2 id="3、创建elk用户"><a href="#3、创建elk用户" class="headerlink" title="3、创建elk用户"></a>3、创建elk用户</h2><p>elasticsearch和kibana 要求以非root用户启动，不信可以自己试试~<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">groupadd elk</span><br><span class="line">useradd elk -g elk</span><br><span class="line">chown -R elk:elk elasticsearch-7.2.0 </span><br><span class="line">chown -R elk:elk kibana-7.2.0-linux-x86_64</span><br></pre></td></tr></table></figure></p>
-<h2 id="4、elasticsearch"><a href="#4、elasticsearch" class="headerlink" title="4、elasticsearch"></a>4、elasticsearch</h2><p>创建数据和日志文件夹，并修改权限<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mkdir  -pv  /data/elk/&#123;data,logs&#125;</span><br><span class="line">chown -R elk:elk /data/elk/</span><br></pre></td></tr></table></figure></p>
-<h3 id="4-1-修改配置文件"><a href="#4-1-修改配置文件" class="headerlink" title="4.1 修改配置文件"></a>4.1 修改配置文件</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vim elasticsearch-7.2.0/config/elasticsearch.yml</span><br></pre></td></tr></table></figure>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">path.data: /data/elk/data</span><br><span class="line">path.logs: /data/elk/logs</span><br></pre></td></tr></table></figure>
-<p>其他配置项根据自己需求修改</p>
-<h3 id="4-2-启动"><a href="#4-2-启动" class="headerlink" title="4.2 启动"></a>4.2 启动</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">su - elk</span><br><span class="line"><span class="built_in">cd</span> elasticsearch-7.2.0</span><br><span class="line">nohup bin/elasticsearch &amp;</span><br></pre></td></tr></table></figure>
-<p>查看启动日志,看是否有异常，如果有，根据提示修改<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tail -f nohup.out</span><br></pre></td></tr></table></figure></p>
-<p>测试，如下证明启动成功<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">$ curl 127.0.0.1:9200</span><br><span class="line">&#123;</span><br><span class="line">  &quot;name&quot; : &quot;ambari.master.com&quot;,</span><br><span class="line">  &quot;cluster_name&quot; : &quot;elasticsearch&quot;,</span><br><span class="line">  &quot;cluster_uuid&quot; : &quot;WlKMJOBcTduH9FGLKj7N2w&quot;,</span><br><span class="line">  &quot;version&quot; : &#123;</span><br><span class="line">    &quot;number&quot; : &quot;7.2.0&quot;,</span><br><span class="line">    &quot;build_flavor&quot; : &quot;default&quot;,</span><br><span class="line">    &quot;build_type&quot; : &quot;tar&quot;,</span><br><span class="line">    &quot;build_hash&quot; : &quot;508c38a&quot;,</span><br><span class="line">    &quot;build_date&quot; : &quot;2019-06-20T15:54:18.811730Z&quot;,</span><br><span class="line">    &quot;build_snapshot&quot; : false,</span><br><span class="line">    &quot;lucene_version&quot; : &quot;8.0.0&quot;,</span><br><span class="line">    &quot;minimum_wire_compatibility_version&quot; : &quot;6.8.0&quot;,</span><br><span class="line">    &quot;minimum_index_compatibility_version&quot; : &quot;6.0.0-beta1&quot;</span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;tagline&quot; : &quot;You Know, for Search&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<h2 id="5、logstash"><a href="#5、logstash" class="headerlink" title="5、logstash"></a>5、logstash</h2><p>root下</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> logstash-7.2.0/</span><br></pre></td></tr></table></figure>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cp config/logstash-sample.conf ./</span><br></pre></td></tr></table></figure>
-<p>可以自己看一下这个配置文件里的内容，根据自己的需求修改，本次使用默认</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nohup bin/logstash -f logstash-sample.conf &amp;</span><br></pre></td></tr></table></figure>
-<p>看一下启动日志是否成功</p>
-<h2 id="6-kibana"><a href="#6-kibana" class="headerlink" title="6 kibana"></a>6 kibana</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">su - elk</span><br><span class="line"><span class="built_in">cd</span> kibana-7.2.0-linux-x86_64</span><br></pre></td></tr></table></figure>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vim config/kibana.yml</span><br></pre></td></tr></table></figure>
-<p>修改host，这样可以在其他机器上的浏览器，用ip+端口去访问kibana<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">server.host: <span class="string">"0.0.0.0"</span></span><br></pre></td></tr></table></figure></p>
-<p>启动,Kibana也不能用root用户启动</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nohup bin/kibana &amp;</span><br></pre></td></tr></table></figure>
-<p>在浏览器里，输入yourip:5601 访问成功即代表启动成功</p>
-<h2 id="7-filebeat"><a href="#7-filebeat" class="headerlink" title="7 filebeat"></a>7 filebeat</h2><p>root下<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> filebeat-7.2.0-linux-x86_64</span><br></pre></td></tr></table></figure></p>
-<blockquote>
-<p>下面主要是将filebeat.inputs的enabled改为true,paths改为需要采集的日志文件，这里使用的Nginx的日志，然后将output.elasticsearch注释掉，output.logstash打开，也就是用filebeat将日志采集传给logstash，然后再由logstash传给elasticsearch，而不是默认的直接传，注意：当然还有其他默认的注释的我没有贴出来</p>
-</blockquote>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">filebeat.inputs:</span><br><span class="line"> <span class="comment"># Change to true to enable this input configuration.</span></span><br><span class="line">  enabled: <span class="literal">true</span></span><br><span class="line"></span><br><span class="line">  <span class="comment"># Paths that should be crawled and fetched. Glob based paths.</span></span><br><span class="line">  paths:</span><br><span class="line">    - /var/<span class="built_in">log</span>/nginx/*.<span class="built_in">log</span></span><br><span class="line">filebeat.config.modules:</span><br><span class="line">  <span class="comment"># Glob pattern for configuration loading</span></span><br><span class="line">  path: <span class="variable">$&#123;path.config&#125;</span>/modules.d/*.yml</span><br><span class="line"></span><br><span class="line">  <span class="comment"># Set to true to enable config reloading</span></span><br><span class="line">  reload.enabled: <span class="literal">false</span></span><br><span class="line"></span><br><span class="line">  <span class="comment"># Period on which files under path should be checked for changes</span></span><br><span class="line">  <span class="comment">#reload.period: 10s</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#==================== Elasticsearch template setting ==========================</span></span><br><span class="line"></span><br><span class="line">setup.template.settings:</span><br><span class="line">  index.number_of_shards: 1</span><br><span class="line">  <span class="comment">#-------------------------- Elasticsearch output ------------------------------</span></span><br><span class="line"><span class="comment">#output.elasticsearch:</span></span><br><span class="line">  <span class="comment"># Array of hosts to connect to.</span></span><br><span class="line"> <span class="comment"># hosts: ["localhost:9200"]</span></span><br><span class="line"></span><br><span class="line">  <span class="comment"># Optional protocol and basic auth credentials.</span></span><br><span class="line">  <span class="comment">#protocol: "https"</span></span><br><span class="line">  <span class="comment">#username: "elastic"</span></span><br><span class="line">  <span class="comment">#password: "changeme"</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#----------------------------- Logstash output --------------------------------</span></span><br><span class="line">output.logstash:</span><br><span class="line">  <span class="comment"># The Logstash hosts</span></span><br><span class="line">  hosts: [<span class="string">"localhost:5044"</span>]</span><br><span class="line"><span class="comment"># Configure processors to enhance or manipulate events generated by the beat.</span></span><br><span class="line"></span><br><span class="line">processors:</span><br><span class="line">  - add_host_metadata: ~</span><br><span class="line">  - add_cloud_metadata: ~</span><br></pre></td></tr></table></figure>
-<p>启动<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nohup  ./filebeat -e -c filebeat.yml &amp;</span><br></pre></td></tr></table></figure></p>
-<h2 id="8-Kibana界面配置"><a href="#8-Kibana界面配置" class="headerlink" title="8 Kibana界面配置"></a>8 Kibana界面配置</h2><p>启动好了之后，在浏览器里访问前端页面（Nginx作为服务器），这样使Nginx产生访问日志，之后再按下面图片的顺序进行操作</p>
-<p><img src="https://tva2.sinaimg.cn/large/e44344dcly1g4mnp76eypj21hc0u0433.jpg" alt=""></p>
-<p>点击Discover</p>
-<p><img src="https://tva3.sinaimg.cn/large/e44344dcly1g4mnp7k3jej21hc0t5q6m.jpg" alt=""></p>
-<p>如果配置正确，并且有Nginx日志产生，那么就会出现如标1的显示，然后再按步骤填写2，出现3，再点击4~<br><img src="https://tva1.sinaimg.cn/large/e44344dcly1g4mnp7y71sj21hc0u0go3.jpg" alt=""><br><img src="https://tva4.sinaimg.cn/large/e44344dcly1g4mnp8f25wj21hc0tuacu.jpg" alt=""><br><img src="https://tva3.sinaimg.cn/large/e44344dcly1g4mnp8xho4j21hc0u0tbo.jpg" alt=""><br>再点击Discover，就会看到Nginx的日志了<br><img src="https://tva1.sinaimg.cn/large/e44344dcly1g4mnp9cm7yj21hc0u0gsd.jpg" alt=""></p>
-<h2 id="9、追加日志数据源"><a href="#9、追加日志数据源" class="headerlink" title="9、追加日志数据源"></a>9、追加日志数据源</h2><p>创建新的测试日志，当然你有现成的日志文件，比如后端Springboot的日志，可以直接用这个文件就可以了<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p /data/<span class="built_in">test</span>/<span class="built_in">log</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">'test1'</span> &gt;&gt; /data/<span class="built_in">test</span>/<span class="built_in">log</span>/test.log</span><br><span class="line"><span class="built_in">echo</span> <span class="string">'测试中文'</span> &gt;&gt; /data/<span class="built_in">test</span>/<span class="built_in">log</span>/test.log</span><br></pre></td></tr></table></figure></p>
-<p>然后修改filebeat的配置文件，添加第二个数据源<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">- type: log</span><br><span class="line"></span><br><span class="line">  enabled: true</span><br><span class="line">  paths:</span><br><span class="line">    - /data/test/log/*.log</span><br></pre></td></tr></table></figure></p>
-<p>然后重启filebeat，再刷新kibana,即可看到新的日志<br><img src="https://tva2.sinaimg.cn/large/e44344dcly1g4nj9fcg8pj21hc0u0ahg.jpg" alt=""></p>
-<p>到此，顺利完成了简单的第一步，后续可以自己个性化修改配置等，等我学习有了进展，再更新~</p>
+<h3 id="Spark-Thrift-Server"><a href="#Spark-Thrift-Server" class="headerlink" title="Spark Thrift Server"></a>Spark Thrift Server</h3><p>启动hudi-spark-thrift-server</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --master yarn --deploy-mode client --executor-memory 2G --num-executors 3 --executor-cores 2 --driver-memory 2G --driver-cores 2 --class org.apache.spark.sql.hive.thriftserver.HiveThriftServer2 --name hudi-spark-thrift-server  --conf &apos;spark.serializer=org.apache.spark.serializer.KryoSerializer&apos;  --conf &apos;spark.sql.extensions=org.apache.spark.sql.hudi.HoodieSparkSessionExtension&apos; --principal spark/indata-10-110-105-163.indata.com@INDATA.COM --keytab /etc/security/keytabs/spark.service.keytab --hiveconf hive.server2.thrift.http.port=20003</span><br></pre></td></tr></table></figure>
+<p>连接hudi-spark-thrift-server</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/usr/hdp/3.1.0.0-78/spark2/bin/beeline -u &quot;jdbc:hive2://10.110.105.163:20003/default;principal=HTTP/indata-10-110-105-163.indata.com@INDATA.COM?hive.server2.transport.mode=http;hive.server2.thrift.http.path=cliservice&quot;</span><br></pre></td></tr></table></figure>
+<h3 id="spark-sql脚本"><a href="#spark-sql脚本" class="headerlink" title="spark-sql脚本"></a>spark-sql脚本</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spark-sql --master yarn --deploy-mode client --executor-memory 2G --num-executors 3 --executor-cores 2 --driver-memory 2G --driver-cores 2 --conf &apos;spark.serializer=org.apache.spark.serializer.KryoSerializer&apos;  --conf &apos;spark.sql.extensions=org.apache.spark.sql.hudi.HoodieSparkSessionExtension&apos; --principal spark/indata-10-110-105-163.indata.com@INDATA.COM --keytab /etc/security/keytabs/spark.service.keytab</span><br></pre></td></tr></table></figure>
+<h3 id="Spark-程序"><a href="#Spark-程序" class="headerlink" title="Spark 程序"></a>Spark 程序</h3><p>配置好参数后，直接使用<code>spark.sql(sql)</code>即可</p>
+<h2 id="建表"><a href="#建表" class="headerlink" title="建表"></a>建表</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> test_hudi_table (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span>,</span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="keyword">long</span>,</span><br><span class="line">  dt <span class="keyword">string</span></span><br><span class="line">) <span class="keyword">using</span> hudi</span><br><span class="line"> partitioned <span class="keyword">by</span> (dt)</span><br><span class="line"> options (</span><br><span class="line">  primaryKey = <span class="string">'id'</span>,</span><br><span class="line">  preCombineField = <span class="string">'ts'</span>,</span><br><span class="line">  <span class="keyword">type</span> = <span class="string">'cow'</span></span><br><span class="line"> )</span><br><span class="line">location <span class="string">'/tmp/test_hudi_table'</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>primaryKey 主键，不设置的话，则表示该表没有主键，0.9.0版本以后必须设置</li>
+<li>preCombineField 预合并字段</li>
+<li>type 表类型</li>
+</ul>
+<p>也支持其他hudi参数：hoodie开头的一些配置参数，表参数优先级较高，可以覆盖其他SQL默认参数，慎用，因为有些参数可能有bug，比如 <code>hoodie.table.name</code>和<code>hoodie.datasource.write.operation</code>,详情参考PR：<a href="https://github.com/apache/hudi/pull/5495" target="_blank" rel="noopener">https://github.com/apache/hudi/pull/5495</a></p>
+<ul>
+<li>location 指定了外部路径，那么表默认为外部表，如果不指定则使用数据库路径，为内部表</li>
+</ul>
+<p>0.9.0版本以后 <code>options</code> 建议用 <code>tblproperties</code>, <code>options</code>可以继续使用</p>
+<p>执行完建表语句，会在对应的表路径下初始化Hudi表，生成.hoodie元数据目录，并且会将Hudi表元数据信息同步到Hive表中，可以自行在Hive中验证内部表外部表的逻辑，Spark SQL目前不能验证，即使为外部表也不显示，不知道是否为bug</p>
+<h2 id="insert"><a href="#insert" class="headerlink" title="insert"></a>insert</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test_hudi_table <span class="keyword">values</span> (<span class="number">1</span>,<span class="string">'hudi'</span>,<span class="number">10</span>,<span class="number">100</span>,<span class="string">'2021-05-05'</span>),(<span class="number">2</span>,<span class="string">'hudi'</span>,<span class="number">10</span>,<span class="number">100</span>,<span class="string">'2021-05-05'</span>)</span><br></pre></td></tr></table></figure>
+<p>或<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test_hudi_table</span><br><span class="line"><span class="keyword">select</span> <span class="number">1</span> <span class="keyword">as</span> <span class="keyword">id</span>, <span class="string">'hudi'</span> <span class="keyword">as</span> <span class="keyword">name</span>, <span class="number">10</span> <span class="keyword">as</span> price, <span class="number">100</span> <span class="keyword">as</span> ts, <span class="string">'2021-05-05'</span> <span class="keyword">as</span> dt <span class="keyword">union</span></span><br><span class="line"><span class="keyword">select</span> <span class="number">2</span> <span class="keyword">as</span> <span class="keyword">id</span>, <span class="string">'hudi'</span> <span class="keyword">as</span> <span class="keyword">name</span>, <span class="number">10</span> <span class="keyword">as</span> price, <span class="number">100</span> <span class="keyword">as</span> ts, <span class="string">'2021-05-05'</span> <span class="keyword">as</span> dt</span><br></pre></td></tr></table></figure></p>
+<p>insert完查询验证一下，数据是否成功插入<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">select * from test_hudi_table</span><br><span class="line"></span><br><span class="line">+----------------------+-----------------------+---------------------+-------------------------+--------------------------------------------------------------------------+-----+-------+--------+------+-------------+--+</span><br><span class="line">| _hoodie_commit_time  | _hoodie_commit_seqno  | _hoodie_record_key  | _hoodie_partition_path  |                            _hoodie_file_name                             | id  | name  | price  |  ts  |     dt      |</span><br><span class="line">+----------------------+-----------------------+---------------------+-------------------------+--------------------------------------------------------------------------+-----+-------+--------+------+-------------+--+</span><br><span class="line">| 20220513110302       | 20220513110302_0_1    | id:2                | dt=2021-05-05           | 083f7be7-ecbd-4c60-a5c2-51b04bb5a3d5-0_0-27-2009_20220513110302.parquet  | 2   | hudi  | 10.0   | 100  | 2021-05-05  |</span><br><span class="line">| 20220513110302       | 20220513110302_0_2    | id:1                | dt=2021-05-05           | 083f7be7-ecbd-4c60-a5c2-51b04bb5a3d5-0_0-27-2009_20220513110302.parquet  | 1   | hudi  | 10.0   | 100  | 2021-05-05  |</span><br><span class="line">+----------------------+-----------------------+---------------------+-------------------------+--------------------------------------------------------------------------+-----+-------+--------+------+-------------+--+</span><br></pre></td></tr></table></figure></p>
+<p>另外备注一下：insert默认是会随机更新的，随机指某些情况下，这和Hudi合并小文件有关，原理这里不详细解释，可以自行查看源码（以后可能会单独总结一篇相关的文章，和Hudi写文件、合并文件有关）。<br>要想是insert操作不更新，可以使用以下配置：<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hoodie.merge.allow.duplicate.on.inserts = <span class="literal">true</span></span><br></pre></td></tr></table></figure></p>
+<p>相关PR：<a href="https://github.com/apache/hudi/pull/3644" target="_blank" rel="noopener">https://github.com/apache/hudi/pull/3644</a>,这个PR是在Java客户端支持这个参数的，Spark客户端本身（在这之前）就支持这个参数</p>
+<h2 id="update"><a href="#update" class="headerlink" title="update"></a>update</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">update</span> test_hudi_table <span class="keyword">set</span> price = <span class="number">20.0</span> <span class="keyword">where</span> <span class="keyword">id</span> = <span class="number">1</span></span><br></pre></td></tr></table></figure>
+<p>price字段已经成功更新<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">+----------------------+-----------------------+---------------------+-------------------------+--------------------------------------------------------------------------+-----+-------+--------+------+-------------+--+</span><br><span class="line">| _hoodie_commit_time  | _hoodie_commit_seqno  | _hoodie_record_key  | _hoodie_partition_path  |                            _hoodie_file_name                             | id  | name  | price  |  ts  |     dt      |</span><br><span class="line">+----------------------+-----------------------+---------------------+-------------------------+--------------------------------------------------------------------------+-----+-------+--------+------+-------------+--+</span><br><span class="line">| 20220513110302       | 20220513110302_0_1    | id:2                | dt=2021-05-05           | 083f7be7-ecbd-4c60-a5c2-51b04bb5a3d5-0_0-27-2009_20220513110302.parquet  | 2   | hudi  | 10.0   | 100  | 2021-05-05  |</span><br><span class="line">| 20220513143459       | 20220513143459_0_1    | id:1                | dt=2021-05-05           | 083f7be7-ecbd-4c60-a5c2-51b04bb5a3d5-0_0-57-3422_20220513143459.parquet  | 1   | hudi  | 20.0   | 100  | 2021-05-05  |</span><br><span class="line">+----------------------+-----------------------+---------------------+-------------------------+--------------------------------------------------------------------------+-----+-------+--------+------+-------------+--+</span><br></pre></td></tr></table></figure></p>
+<h2 id="delete"><a href="#delete" class="headerlink" title="delete"></a>delete</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">delete</span> <span class="keyword">from</span> test_hudi_table <span class="keyword">where</span> <span class="keyword">id</span> = <span class="number">1</span></span><br></pre></td></tr></table></figure>
+<p>id为1的记录被成功删除<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">+----------------------+-----------------------+---------------------+-------------------------+--------------------------------------------------------------------------+-----+-------+--------+------+-------------+--+</span><br><span class="line">| _hoodie_commit_time  | _hoodie_commit_seqno  | _hoodie_record_key  | _hoodie_partition_path  |                            _hoodie_file_name                             | id  | name  | price  |  ts  |     dt      |</span><br><span class="line">+----------------------+-----------------------+---------------------+-------------------------+--------------------------------------------------------------------------+-----+-------+--------+------+-------------+--+</span><br><span class="line">| 20220513110302       | 20220513110302_0_1    | id:2                | dt=2021-05-05           | 083f7be7-ecbd-4c60-a5c2-51b04bb5a3d5-0_0-27-2009_20220513110302.parquet  | 2   | hudi  | 10.0   | 100  | 2021-05-05  |</span><br><span class="line">+----------------------+-----------------------+---------------------+-------------------------+--------------------------------------------------------------------------+-----+-------+--------+------+-------------+--+</span><br></pre></td></tr></table></figure></p>
+<h2 id="merge"><a href="#merge" class="headerlink" title="merge"></a>merge</h2><p>HUDI 支持MERGE语句，有merge into 、merge update和merge delte。可以把增删改统一为：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">merge</span> <span class="keyword">into</span> test_hudi_table <span class="keyword">as</span> t0</span><br><span class="line"><span class="keyword">using</span> (</span><br><span class="line">  <span class="keyword">select</span> <span class="number">1</span> <span class="keyword">as</span> <span class="keyword">id</span>, <span class="string">'hudi'</span> <span class="keyword">as</span> <span class="keyword">name</span>, <span class="number">112</span> <span class="keyword">as</span> price, <span class="number">98</span> <span class="keyword">as</span> ts, <span class="string">'2021-05-05'</span> <span class="keyword">as</span> dt,<span class="string">'INSERT'</span> <span class="keyword">as</span> opt_type <span class="keyword">union</span></span><br><span class="line">  <span class="keyword">select</span> <span class="number">2</span> <span class="keyword">as</span> <span class="keyword">id</span>, <span class="string">'hudi_2'</span> <span class="keyword">as</span> <span class="keyword">name</span>, <span class="number">10</span> <span class="keyword">as</span> price, <span class="number">100</span> <span class="keyword">as</span> ts, <span class="string">'2021-05-05'</span> <span class="keyword">as</span> dt,<span class="string">'UPDATE'</span> <span class="keyword">as</span> opt_type <span class="keyword">union</span></span><br><span class="line">  <span class="keyword">select</span> <span class="number">3</span> <span class="keyword">as</span> <span class="keyword">id</span>, <span class="string">'hudi'</span> <span class="keyword">as</span> <span class="keyword">name</span>, <span class="number">10</span> <span class="keyword">as</span> price, <span class="number">100</span> <span class="keyword">as</span> ts, <span class="string">'2021-05-05'</span> <span class="keyword">as</span> dt ,<span class="string">'DELETE'</span> <span class="keyword">as</span> opt_type</span><br><span class="line"> ) <span class="keyword">as</span> s0</span><br><span class="line"><span class="keyword">on</span> t0.id = s0.id</span><br><span class="line"><span class="keyword">when</span> <span class="keyword">matched</span> <span class="keyword">and</span> opt_type!=<span class="string">'DELETE'</span> <span class="keyword">then</span> <span class="keyword">update</span> <span class="keyword">set</span> *</span><br><span class="line"><span class="keyword">when</span> <span class="keyword">matched</span> <span class="keyword">and</span> opt_type=<span class="string">'DELETE'</span> <span class="keyword">then</span> <span class="keyword">delete</span></span><br><span class="line"><span class="keyword">when</span> <span class="keyword">not</span> <span class="keyword">matched</span> <span class="keyword">and</span> opt_type!=<span class="string">'DELETE'</span> <span class="keyword">then</span> <span class="keyword">insert</span> *</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">+----------------------+-----------------------+---------------------+-------------------------+---------------------------------------------------------------------------+-----+---------+--------+------+-------------+--+</span><br><span class="line">| _hoodie_commit_time  | _hoodie_commit_seqno  | _hoodie_record_key  | _hoodie_partition_path  |                             _hoodie_file_name                             | id  |  name   | price  |  ts  |     dt      |</span><br><span class="line">+----------------------+-----------------------+---------------------+-------------------------+---------------------------------------------------------------------------+-----+---------+--------+------+-------------+--+</span><br><span class="line">| 20220513143914       | 20220513143914_0_1    | id:2                | dt=2021-05-05           | 083f7be7-ecbd-4c60-a5c2-51b04bb5a3d5-0_0-137-7255_20220513143914.parquet  | 2   | hudi_2  | 10.0   | 100  | 2021-05-05  |</span><br><span class="line">| 20220513143914       | 20220513143914_0_2    | id:1                | dt=2021-05-05           | 083f7be7-ecbd-4c60-a5c2-51b04bb5a3d5-0_0-137-7255_20220513143914.parquet  | 1   | hudi    | 112.0  | 98   | 2021-05-05  |</span><br><span class="line">+----------------------+-----------------------+---------------------+-------------------------+---------------------------------------------------------------------------+-----+---------+--------+------+-------------+--+</span><br></pre></td></tr></table></figure>
+<p>这样的好处有：<br>1、把所有的类型统一为一个SQL,避免产生过多的job<br>2、避免产生异常，对于insert，如果新insert的主键已经存在会产生异常<br>3、减少程序复杂度，对于update和delete，不用判断where条件和要修改哪些字段，再去拼接sql（从binlog里可能不能获取这些内容）<br>4、提升性能，对于批量DELETE， merge的性能要比使用in 好。<br>但是需要注意，当没有设置preCombineField = ‘ts’时，新来的数据会直接防覆盖掉历史数据，这种情况存在于新数据的到达时间早于旧数据的到达时间的情况。</p>
+<h2 id="merge-values"><a href="#merge-values" class="headerlink" title="merge values"></a>merge values</h2><p>在<a href="#merge">merge</a>的基础上对源码进行优化（代码没有推到社区），使Hudi SQL 支持 merge values形式，示例如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">merge into test_hudi_table as t0</span><br><span class="line">using </span><br><span class="line">(1, &apos;hudi&apos;, 112, 98, &apos;2021-05-05&apos;,&apos;INSERT&apos;),</span><br><span class="line">(2, &apos;hudi_2&apos;, 1, 100, &apos;2021-05-05&apos;,&apos;UPDATE&apos;),</span><br><span class="line">(3, &apos;hudi&apos;, 10, 100, &apos;2021-05-05&apos;,&apos;DELETE&apos;)</span><br><span class="line">as s0 (id,name,price,ts,dt,opt_type)</span><br><span class="line">on t0.id = s0.id</span><br><span class="line">when matched and opt_type!=&apos;DELETE&apos; then update set *</span><br><span class="line">when matched and opt_type=&apos;DELETE&apos; then delete</span><br><span class="line">when not matched and opt_type!=&apos;DELETE&apos; then insert *</span><br></pre></td></tr></table></figure>
+<p>对于想要SQL实现数据同步：这样修改的原因是<a href="#merge">merge</a>是merge subQuery的形式，当拼接SQL很长时，如7000条记录，这样等于7000个select的语句，程序用递归的形式解析SQL很慢，仅解析subQuery的时间就要10分钟，这样不能满足我们的分钟级事务的需求。而通过修改源码支持 merge values的形式，通过values传值 ，这样解析时间从10分钟降低到几秒，后面在用程序将values转成表，直接upsert,大大提升了每个批次的事务时间。经过测试，千万级历史数据，千万级日增量，即平均每分钟7000条，可以实现分钟级事务的需求。</p>
+<h2 id="测评"><a href="#测评" class="headerlink" title="测评"></a>测评</h2><p>记录用<a href="#merge-values">merge values</a>语句测试的性能结果</p>
+<h3 id="Spark-Thrift-Server配置参数"><a href="#Spark-Thrift-Server配置参数" class="headerlink" title="Spark Thrift Server配置参数"></a>Spark Thrift Server配置参数</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">--executor-memory 4G --num-executors 15 --executor-cores 2 --driver-memory 6G --driver-cores 2</span><br></pre></td></tr></table></figure>
+<h3 id="历史数据"><a href="#历史数据" class="headerlink" title="历史数据"></a>历史数据</h3><p>本次测评数据采用TPC-DS的web_sales表，历史数据一千万，模拟日增量一千万，需要注意的是，源数据表的小数类型同样为double类型，不能是decimal，否在在后面增量数据同步时会有异常(Hudi Spark SQL 对于decimal类型有bug)</p>
+<h3 id="增量数据"><a href="#增量数据" class="headerlink" title="增量数据"></a>增量数据</h3><p>程序读取增量数据拼接SQL，jdbc连接Spark Thrift Server实现增量同步，拼接SQL性能：一万条记录1秒之内完成</p>
+<h3 id="测评结果"><a href="#测评结果" class="headerlink" title="测评结果"></a>测评结果</h3><table>
+<thead>
+<tr>
+<th>Spark Server</th>
+<th></th>
+<th></th>
+<th>Streaming</th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>批次</td>
+<td>批次数据量</td>
+<td>时间(s)</td>
+<td>批次</td>
+<td>批次数据量</td>
+<td>时间(s)</td>
+</tr>
+<tr>
+<td>1</td>
+<td>6000</td>
+<td>119</td>
+<td>1</td>
+<td>6898</td>
+<td>59</td>
+</tr>
+<tr>
+<td>2</td>
+<td>6000</td>
+<td>79</td>
+<td>2</td>
+<td>3211</td>
+<td>27</td>
+</tr>
+<tr>
+<td>3</td>
+<td>6000</td>
+<td>70</td>
+<td>3</td>
+<td>5999</td>
+<td>36</td>
+</tr>
+<tr>
+<td>4</td>
+<td>6000</td>
+<td>68</td>
+<td>4</td>
+<td>5999</td>
+<td>33</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>5</td>
+<td>5902</td>
+<td>32</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>6</td>
+<td>5995</td>
+<td>35</td>
+</tr>
+</tbody>
+</table>
+<p>Spark Server为Java程序通过JDBC连接Spark Thrift Server，在第一次没有缓存的情况下时间为120秒，在有缓存的情况下为70秒。<br>Streaming 为用Structured Streaming在每个批次中拼接Merge SQL，然后调用spark.sql()实现，从结果上看Streaming要比Spark Server快30秒，主要原因是Spark Server 的延迟调度时间比Streaming 的时间长，目前还没有找到解决方案使Spark Server的时间缩减到和Streaming的时间相当。</p>
+<p>本次测评模拟的增量数据每分钟包含所有分区，没有起到分区过滤的效果。实际生产数据只包含部分少量分区，可以起到分区过滤的效果，增量同步的性能优于本次测评。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>本文主要总结了Hudi0.9.0版本Spark SQL常用的SQL命令的使用以及一些注意事项，其实还支持其他SQL语义，并且新版本支持的更多，大家可以自己学习测试。</p>
 
       
 
@@ -340,9 +414,9 @@
  <p>非商业转载请注明作者及出处。商业转载请联系作者本人。</p>
 
  
- <p>本文标题：<a href="https://dongkelun.com/2019/07/03/elkbConf/">Centos7 ELKB 7.2.0版本单机部署</a> </p>
+ <p>本文标题：<a href="https://dongkelun.com/2022/05/13/hudiSparkSQL/">Hudi Spark SQL总结</a> </p>
  
- <p>本文链接：<a href="https://dongkelun.com/2019/07/03/elkbConf/">https://dongkelun.com/2019/07/03/elkbConf/</a></p>
+ <p>本文链接：<a href="https://dongkelun.com/2022/05/13/hudiSparkSQL/">https://dongkelun.com/2022/05/13/hudiSparkSQL/</a></p>
  <p>--------------------</p>
  <p>作者联系方式：</p>
  <p>QQ：1412359494</p>
@@ -406,7 +480,7 @@
     <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="http://qr.liantu.com/api.php?text=https://dongkelun.com/2019/07/03/elkbConf/" alt="微信分享二维码">
+      <img src="http://qr.liantu.com/api.php?text=https://dongkelun.com/2022/05/13/hudiSparkSQL/" alt="微信分享二维码">
     </div>
 </div>
 
@@ -420,18 +494,9 @@
   
 <nav id="article-nav">
   
-    <a href="/2019/07/16/ideaMavenScalaJava/" id="article-nav-newer" class="article-nav-link-wrap">
-      <i class="icon-circle-left"></i>
-      <div class="article-nav-title">
-        
-          IDEA 新建Maven项目同时支持Java和Scala两种语言
-        
-      </div>
-    </a>
   
-  
-    <a href="/2019/06/10/kafkaLearing/" id="article-nav-older" class="article-nav-link-wrap">
-      <div class="article-nav-title">Kafka学习笔记（1）</div>
+    <a href="/2022/05/12/hudiIntroduction/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Apache Hudi 入门学习总结</div>
       <i class="icon-circle-right"></i>
     </a>
   
@@ -458,7 +523,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1、安装包"><span class="toc-number">2.</span> <span class="toc-text">1、安装包</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2、解压"><span class="toc-number">3.</span> <span class="toc-text">2、解压</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3、创建elk用户"><span class="toc-number">4.</span> <span class="toc-text">3、创建elk用户</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4、elasticsearch"><span class="toc-number">5.</span> <span class="toc-text">4、elasticsearch</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-修改配置文件"><span class="toc-number">5.1.</span> <span class="toc-text">4.1 修改配置文件</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-启动"><span class="toc-number">5.2.</span> <span class="toc-text">4.2 启动</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5、logstash"><span class="toc-number">6.</span> <span class="toc-text">5、logstash</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#6-kibana"><span class="toc-number">7.</span> <span class="toc-text">6 kibana</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#7-filebeat"><span class="toc-number">8.</span> <span class="toc-text">7 filebeat</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#8-Kibana界面配置"><span class="toc-number">9.</span> <span class="toc-text">8 Kibana界面配置</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#9、追加日志数据源"><span class="toc-number">10.</span> <span class="toc-text">9、追加日志数据源</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#配置参数"><span class="toc-number">2.</span> <span class="toc-text">配置参数</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#使用"><span class="toc-number">3.</span> <span class="toc-text">使用</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Spark-Thrift-Server"><span class="toc-number">3.1.</span> <span class="toc-text">Spark Thrift Server</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#spark-sql脚本"><span class="toc-number">3.2.</span> <span class="toc-text">spark-sql脚本</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Spark-程序"><span class="toc-number">3.3.</span> <span class="toc-text">Spark 程序</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#建表"><span class="toc-number">4.</span> <span class="toc-text">建表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#insert"><span class="toc-number">5.</span> <span class="toc-text">insert</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#update"><span class="toc-number">6.</span> <span class="toc-text">update</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#delete"><span class="toc-number">7.</span> <span class="toc-text">delete</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#merge"><span class="toc-number">8.</span> <span class="toc-text">merge</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#merge-values"><span class="toc-number">9.</span> <span class="toc-text">merge values</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#测评"><span class="toc-number">10.</span> <span class="toc-text">测评</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Spark-Thrift-Server配置参数"><span class="toc-number">10.1.</span> <span class="toc-text">Spark Thrift Server配置参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#历史数据"><span class="toc-number">10.2.</span> <span class="toc-text">历史数据</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#增量数据"><span class="toc-number">10.3.</span> <span class="toc-text">增量数据</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#测评结果"><span class="toc-number">10.4.</span> <span class="toc-text">测评结果</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">11.</span> <span class="toc-text">总结</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -474,7 +539,7 @@
   
 
   
-  <div id="SOHUCS" sid="elkbConf" ></div> 
+  <div id="SOHUCS" sid="hudiSparkSQL" ></div> 
 <script charset="utf-8" type="text/javascript" src="//changyan.sohu.com/upload/changyan.js" ></script>
 <script type="text/javascript">
     window.changyan.api.config({
