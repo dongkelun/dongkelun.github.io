@@ -17,7 +17,7 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言总结 HUDI preCombinedField,分两大类总结，一类是Spark SQL,这里指的是merge，因为只有merge语句中有多条记录，讨论preCombinedField才有意义；一类是Spark DF，HUDI0.9版本支持SQL建表和增删改查 总结先说结论：  Spark DF建表写数据时（含更新）：1、UPSERT，当数据重复时（这里指同一主键对应多条记录），程序在写数据前">
 <meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2021-12-01T06:47:48.641Z">
+<meta property="og:updated_time" content="2022-05-17T11:44:01.852Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="HUDI preCombinedField 总结">
 <meta name="twitter:description" content="前言总结 HUDI preCombinedField,分两大类总结，一类是Spark SQL,这里指的是merge，因为只有merge语句中有多条记录，讨论preCombinedField才有意义；一类是Spark DF，HUDI0.9版本支持SQL建表和增删改查 总结先说结论：  Spark DF建表写数据时（含更新）：1、UPSERT，当数据重复时（这里指同一主键对应多条记录），程序在写数据前">
@@ -83,9 +83,9 @@
 	        
 				<li><a href="/contactme/contactme.html">加我交流</a></li>
 	        
-				<li><a href="http://gh.dongkelun.com/gh-vue-echarts-bigscreen">大屏</a></li>
+				<li><a href="http://dongkelun.com/gh-vue-echarts-bigscreen">大屏</a></li>
 	        
-				<li><a href="http://gh.dongkelun.com/echarts-map">Echarts</a></li>
+				<li><a href="http://dongkelun.com/echarts-map">Echarts</a></li>
 	        
 				<li><a href="/leadingend/">前端</a></li>
 	        
@@ -184,9 +184,9 @@
 		        
 					<li style="width: 14.285714285714286%"><a href="/contactme/contactme.html">加我交流</a></li>
 		        
-					<li style="width: 14.285714285714286%"><a href="http://gh.dongkelun.com/gh-vue-echarts-bigscreen">大屏</a></li>
+					<li style="width: 14.285714285714286%"><a href="http://dongkelun.com/gh-vue-echarts-bigscreen">大屏</a></li>
 		        
-					<li style="width: 14.285714285714286%"><a href="http://gh.dongkelun.com/echarts-map">Echarts</a></li>
+					<li style="width: 14.285714285714286%"><a href="http://dongkelun.com/echarts-map">Echarts</a></li>
 		        
 					<li style="width: 14.285714285714286%"><a href="/leadingend/">前端</a></li>
 		        
@@ -277,7 +277,7 @@
 <h2 id="SQL与DF结合"><a href="#SQL与DF结合" class="headerlink" title="SQL与DF结合"></a>SQL与DF结合</h2><p>先用SQL建表，再用DF写数据。这种情况主要是想建表时不想多一列ts字段，而在预合并时可以添加一列预合并字段进行去重，因为目前的版本SQL没有实现该功能。在SQL建表时如果指定了 preCombineField = ‘ts’，则表结构中必须有ts这个字段。</p>
 <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> tableName = <span class="string">"test_hudi_table4"</span></span><br><span class="line">spark.sql(</span><br><span class="line">  <span class="string">s""</span><span class="string">"</span></span><br><span class="line"><span class="string">     | create table $&#123;tableName&#125; (</span></span><br><span class="line"><span class="string">     |  id int,</span></span><br><span class="line"><span class="string">     |  name string,</span></span><br><span class="line"><span class="string">     |  price double,</span></span><br><span class="line"><span class="string">     |  dt string</span></span><br><span class="line"><span class="string">     |) using hudi</span></span><br><span class="line"><span class="string">     | partitioned by (dt)</span></span><br><span class="line"><span class="string">     | options (</span></span><br><span class="line"><span class="string">     |  primaryKey = 'id',</span></span><br><span class="line"><span class="string">     |  type = 'cow'</span></span><br><span class="line"><span class="string">     | )</span></span><br><span class="line"><span class="string">     | location '/tmp/$&#123;tableName&#125;'</span></span><br><span class="line"><span class="string">     |"</span><span class="string">""</span>.stripMargin)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> data = <span class="type">Array</span>((<span class="number">7</span>, <span class="string">"name12"</span>, <span class="number">1.21</span>, <span class="number">106</span>L, <span class="string">"2021-05-06"</span>), (<span class="number">7</span>, <span class="string">"name2"</span>, <span class="number">2.22</span>, <span class="number">108</span>L, <span class="string">"2021-05-06"</span>),</span><br><span class="line">  (<span class="number">7</span>, <span class="string">"name3"</span>, <span class="number">3.45</span>, <span class="number">107</span>L, <span class="string">"2021-05-06"</span>)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> df = spark.createDataFrame(data).toDF(<span class="string">"id"</span>, <span class="string">"name"</span>, <span class="string">"price"</span>, <span class="string">"ts"</span>, <span class="string">"dt"</span>)</span><br><span class="line"></span><br><span class="line">df.show()</span><br><span class="line">df.write.format(<span class="string">"hudi"</span>).</span><br><span class="line">  options(getQuickstartWriteConfigs).</span><br><span class="line">  option(<span class="type">PRECOMBINE_FIELD</span>.key(), <span class="string">"ts"</span>). <span class="comment">//指定preCombinedField=ts</span></span><br><span class="line">  option(<span class="type">RECORDKEY_FIELD</span>.key(), <span class="string">"id"</span>).</span><br><span class="line">  option(<span class="type">PARTITIONPATH_FIELD</span>.key(), <span class="string">"dt"</span>).</span><br><span class="line">  option(<span class="type">HIVE_STYLE_PARTITIONING</span>.key(), <span class="literal">true</span>). <span class="comment">//hive 分区路径的格式是否和hive一样，如果true，则：分区字段=</span></span><br><span class="line">  option(<span class="string">"hoodie.table.name"</span>, tableName).</span><br><span class="line">  <span class="comment">//      option("hoodie.datasource.write.insert.drop.duplicates", true). //不更新</span></span><br><span class="line">  <span class="comment">//      option(OPERATION.key(), "INSERT").</span></span><br><span class="line">  option(<span class="type">KEYGENERATOR_CLASS_NAME</span>.key(), <span class="string">"org.apache.hudi.keygen.ComplexKeyGenerator"</span>).</span><br><span class="line">  save(<span class="string">s"/tmp/<span class="subst">$&#123;tableName&#125;</span>"</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> read_df = spark.</span><br><span class="line">  read.</span><br><span class="line">  format(<span class="string">"hudi"</span>).</span><br><span class="line">  load(<span class="string">s"/tmp/<span class="subst">$&#123;tableName&#125;</span>"</span> + <span class="string">"/*"</span>)</span><br><span class="line"></span><br><span class="line">read_df.show()</span><br><span class="line">spark.table(tableName).show()</span><br></pre></td></tr></table></figure>
 <p>上面的程序主要是用SQL先建了表的元数据，然后再用程序指定了PRECOMBINE_FIELD_OPT_KEY=ts,这样就实现了既可以预合并去重，也不用在建表中指定ts字段。但是打印中发现用程序读parquet文件时多了ts列，读表时因为元数据里没有ts列，没有打印出来，实际文件存储的有ts这一列。</p>
-<p>上面只是模拟了这一场景，而我们想实现的时下面的</p>
+<p>上面只是模拟了这一场景，而我们想实现的是下面的</p>
 <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">spark.sql(</span><br><span class="line">  <span class="string">s""</span><span class="string">"</span></span><br><span class="line"><span class="string">     | create table $&#123;tableName&#125; (</span></span><br><span class="line"><span class="string">     |  id int,</span></span><br><span class="line"><span class="string">     |  name string,</span></span><br><span class="line"><span class="string">     |  price double,</span></span><br><span class="line"><span class="string">     |  dt string</span></span><br><span class="line"><span class="string">     |) using hudi</span></span><br><span class="line"><span class="string">     | partitioned by (dt)</span></span><br><span class="line"><span class="string">     | options (</span></span><br><span class="line"><span class="string">     |  primaryKey = 'id',</span></span><br><span class="line"><span class="string">     |  preCombineField = 'ts',</span></span><br><span class="line"><span class="string">     |  type = 'cow'</span></span><br><span class="line"><span class="string">     | )</span></span><br><span class="line"><span class="string">     | location '/tmp/$&#123;tableName&#125;'</span></span><br><span class="line"><span class="string">     |"</span><span class="string">""</span>.stripMargin)</span><br><span class="line">spark.sql(</span><br><span class="line">  <span class="string">s""</span><span class="string">"</span></span><br><span class="line"><span class="string">     |merge into $&#123;tableName&#125; as t0</span></span><br><span class="line"><span class="string">     |using (</span></span><br><span class="line"><span class="string">     |  select 1 as id, 'hudi' as name, 97 as price, 99 as ts, '2021-05-05' as dt,'INSERT' as opt_type union</span></span><br><span class="line"><span class="string">     |  select 1 as id, 'hudi_2' as name, 98 as price, 99 as ts, '2021-05-05' as dt,'UPDATE' as opt_type union</span></span><br><span class="line"><span class="string">     |  select 1 as id, 'hudi_2' as name, 99 as price, 99 as ts, '2021-05-05' as dt,'UPDATE' as opt_type union</span></span><br><span class="line"><span class="string">     |  select 3 as id, 'hudi' as name, 10 as price, 110 as ts, '2021-05-05' as dt ,'DELETE' as opt_type</span></span><br><span class="line"><span class="string">     | ) as s0</span></span><br><span class="line"><span class="string">     |on t0.id = s0.id</span></span><br><span class="line"><span class="string">     |when matched and opt_type!='DELETE' then update set *</span></span><br><span class="line"><span class="string">     |when matched and opt_type='DELETE' then delete</span></span><br><span class="line"><span class="string">     |when not matched and opt_type!='DELETE' then insert *</span></span><br><span class="line"><span class="string">     |"</span><span class="string">""</span>.stripMargin)</span><br></pre></td></tr></table></figure>
 <p>在建表时指定了preCombineField = ‘ts’，但是表结构中没有ts字段，而且后面的merge sql拼接时添加这一列。目前master分支还不支持这种情况，如果想实现这一情况，可以自己尝试修改源码支持。</p>
 <h2 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h2><p>示例代码已上传到<a href="https://gitee.com/dongkelun/spark-hudi/blob/master/src/main/scala/com/dkl/blog/hudi/TestHuDiPreCombinedFiled.scala" target="_blank" rel="noopener">gitee</a>,由于公司网把github屏蔽了，以后暂时转到gitee上。</p>
@@ -346,7 +346,7 @@
  <p>QQ：1412359494</p>
  <p>微信：dongkelun</p>
  <p>--------------------</p>
- <p>新建的同名公众号，方便在手机上看，有需要的可以在关注一下~
+ <p>新建的同名公众号，方便在手机上看，有需要的可以再关注一下~
  </p>
  <img src='https://tva1.sinaimg.cn/large/e44344dcly1g04tejxxf0j2076076q3d.jpg' style='margin:10px'/>
 </div>
@@ -646,31 +646,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -682,15 +658,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -702,15 +686,43 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">hbase</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -722,26 +734,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
               </li>
              
@@ -750,11 +742,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -766,7 +758,35 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -782,47 +802,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">hbase</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">MySQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">presto</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -834,7 +818,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">MySQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -850,7 +850,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -859,22 +859,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -894,7 +878,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -903,6 +891,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -926,19 +922,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -946,7 +938,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -954,7 +950,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -966,11 +966,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -983,6 +979,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
               </li>
             
             <div class="clearfix"></div>

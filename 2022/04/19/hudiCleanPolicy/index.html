@@ -17,7 +17,7 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言总结Hudi Clean Policy清理策略,从源码层面分析如何实现，上一篇文章Hudi Clean 清理文件实现分析从源码层面分析总结了Hudi Clean的整体流程，但是对于和策略有关的获取要删除的文件列表部分没有深入分析，这一篇详细分析KEEP_LATEST_COMMITS策略是如何实现的。 getEarliestCommitToRetain获取最早需要保留的commitKEEP_LA">
 <meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2022-05-03T06:14:37.771Z">
+<meta property="og:updated_time" content="2022-05-16T00:41:19.793Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Hudi Clean Policy 清理策略实现分析">
 <meta name="twitter:description" content="前言总结Hudi Clean Policy清理策略,从源码层面分析如何实现，上一篇文章Hudi Clean 清理文件实现分析从源码层面分析总结了Hudi Clean的整体流程，但是对于和策略有关的获取要删除的文件列表部分没有深入分析，这一篇详细分析KEEP_LATEST_COMMITS策略是如何实现的。 getEarliestCommitToRetain获取最早需要保留的commitKEEP_LA">
@@ -83,9 +83,9 @@
 	        
 				<li><a href="/contactme/contactme.html">加我交流</a></li>
 	        
-				<li><a href="http://gh.dongkelun.com/gh-vue-echarts-bigscreen">大屏</a></li>
+				<li><a href="http://dongkelun.com/gh-vue-echarts-bigscreen">大屏</a></li>
 	        
-				<li><a href="http://gh.dongkelun.com/echarts-map">Echarts</a></li>
+				<li><a href="http://dongkelun.com/echarts-map">Echarts</a></li>
 	        
 				<li><a href="/leadingend/">前端</a></li>
 	        
@@ -184,9 +184,9 @@
 		        
 					<li style="width: 14.285714285714286%"><a href="/contactme/contactme.html">加我交流</a></li>
 		        
-					<li style="width: 14.285714285714286%"><a href="http://gh.dongkelun.com/gh-vue-echarts-bigscreen">大屏</a></li>
+					<li style="width: 14.285714285714286%"><a href="http://dongkelun.com/gh-vue-echarts-bigscreen">大屏</a></li>
 		        
-					<li style="width: 14.285714285714286%"><a href="http://gh.dongkelun.com/echarts-map">Echarts</a></li>
+					<li style="width: 14.285714285714286%"><a href="http://dongkelun.com/echarts-map">Echarts</a></li>
 		        
 					<li style="width: 14.285714285714286%"><a href="/leadingend/">前端</a></li>
 		        
@@ -269,7 +269,7 @@
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> &lt;T1, T2, R&gt; <span class="function">R <span class="title">execute</span><span class="params">(T1 val, T2 val2, Function2&lt;T1, T2, R&gt; preferredFunction,</span></span></span><br><span class="line"><span class="function"><span class="params">    Function2&lt;T1, T2, R&gt; secondaryFunction)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (errorOnPreferredView) &#123; <span class="comment">// 默认false</span></span><br><span class="line">    LOG.warn(<span class="string">"Routing request to secondary file-system view"</span>);</span><br><span class="line">    <span class="keyword">return</span> secondaryFunction.apply(val, val2);</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="comment">/**</span></span><br><span class="line"><span class="comment">       * 对于getReplacedFileGroupsBefore：</span></span><br><span class="line"><span class="comment">       *    这里调用的是`preferredView::getReplacedFileGroupsBefore`</span></span><br><span class="line"><span class="comment">       *    即`RemoteHoodieTableFileSystemView.getReplacedFileGroupsBefore`</span></span><br><span class="line"><span class="comment">       */</span></span><br><span class="line">      <span class="keyword">return</span> preferredFunction.apply(val, val2);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (RuntimeException re) &#123;</span><br><span class="line">      LOG.error(<span class="string">"Got error running preferred function. Trying secondary"</span>, re);</span><br><span class="line">      errorOnPreferredView = <span class="keyword">true</span>;</span><br><span class="line">      <span class="keyword">return</span> secondaryFunction.apply(val, val2);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Stream&lt;HoodieFileGroup&gt; <span class="title">getReplacedFileGroupsBefore</span><span class="params">(String maxCommitTime, String partitionPath)</span> </span>&#123;</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * HashMap</span></span><br><span class="line"><span class="comment">   *  "partition" -&gt; "partitionPath"</span></span><br><span class="line"><span class="comment">   *  "maxinstant" -&gt; "earliestCommitToRetain"</span></span><br><span class="line"><span class="comment">   *  "basepath" -&gt; "basepath"</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  Map&lt;String, String&gt; paramsMap = getParamsWithAdditionalParam(partitionPath, MAX_INSTANT_PARAM, maxCommitTime);</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="comment">// 这里是通过HttpRequest.get api接口的方式实现的，接口为 `/v1/hoodie/view/filegroups/replaced/before/`</span></span><br><span class="line">    <span class="comment">// 接口是在类`RequestHandler`添加的，具体的实现在`registerFileSlicesAPI`方法中，这一块还不太懂</span></span><br><span class="line">    <span class="comment">// 这里（目前遇到的都是）返回的是空，以后再深入研究</span></span><br><span class="line">    List&lt;FileGroupDTO&gt; fileGroups = executeRequest(ALL_REPLACED_FILEGROUPS_BEFORE, paramsMap,</span><br><span class="line">        <span class="keyword">new</span> TypeReference&lt;List&lt;FileGroupDTO&gt;&gt;() &#123;&#125;, RequestMethod.GET);</span><br><span class="line">    <span class="keyword">return</span> fileGroups.stream().map(dto -&gt; FileGroupDTO.toFileGroup(dto, metaClient));</span><br><span class="line">  &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> HoodieRemoteException(e);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h3 id="getFilesToCleanKeepingLatestVersions"><a href="#getFilesToCleanKeepingLatestVersions" class="headerlink" title="getFilesToCleanKeepingLatestVersions"></a>getFilesToCleanKeepingLatestVersions</h3><blockquote>
-<p>1、遍历fileGroups<br>2、获取每个<code>fileGroup</code>对应的所有的数据（parquet）,过滤掉需要为<code>compaction</code>操作保留的文件：<code>fileSliceIterator</code><br>3、如果该<code>fileGroup</code>在<code>PendingCompaction</code>中,保留版本数建减一<br>4、遍历<code>fileSliceIterator</code>,保留对应的版本数的最新文件，其余的都是要删除的文件，添加的返回列表中</p>
+<p>1、遍历fileGroups<br>2、获取每个<code>fileGroup</code>对应的所有的数据（parquet）,过滤掉需要为<code>compaction</code>操作保留的文件：<code>fileSliceIterator</code><br>3、如果该<code>fileGroup</code>在<code>PendingCompaction</code>中,保留版本数减一<br>4、遍历<code>fileSliceIterator</code>,保留对应的版本数的最新文件，其余的都是要删除的文件，添加的返回列表中</p>
 </blockquote>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Selects the older versions of files for cleaning, such that it bounds the number of versions of each file. This</span></span><br><span class="line"><span class="comment"> * policy is useful, if you are simply interested in querying the table, and you don't want too many versions for a</span></span><br><span class="line"><span class="comment"> * single file (i.e run it with versionsRetained = 1)</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * 选择需要清理的旧版本文件，以限制每个文件的版本数。</span></span><br><span class="line"><span class="comment"> * 如果你只对查询表感兴趣，并且不希望一个文件有太多版本（比如保留一个文件版本）,那么策略很有用</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> List&lt;CleanFileInfo&gt; <span class="title">getFilesToCleanKeepingLatestVersions</span><span class="params">(String partitionPath)</span> </span>&#123;</span><br><span class="line">  LOG.info(<span class="string">"Cleaning "</span> + partitionPath + <span class="string">", retaining latest "</span> + config.getCleanerFileVersionsRetained()</span><br><span class="line">      + <span class="string">" file versions. "</span>);</span><br><span class="line">  <span class="comment">// 初始化需要删除的路径列表，类型为`CleanFileInfo`</span></span><br><span class="line">  List&lt;CleanFileInfo&gt; deletePaths = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">  <span class="comment">// Collect all the datafiles savepointed by all the savepoints</span></span><br><span class="line">  <span class="comment">// 所有的通过savepoints保存的文件</span></span><br><span class="line">  List&lt;String&gt; savepointedFiles = hoodieTable.getSavepoints().stream()</span><br><span class="line">      .flatMap(<span class="keyword">this</span>::getSavepointedDataFiles)</span><br><span class="line">      .collect(Collectors.toList());</span><br><span class="line"></span><br><span class="line">  <span class="comment">// In this scenario, we will assume that once replaced a file group automatically becomes eligible for cleaning completely</span></span><br><span class="line">  <span class="comment">// In other words, the file versions only apply to the active file groups.</span></span><br><span class="line">  deletePaths.addAll(getReplacedFilesEligibleToClean(savepointedFiles, partitionPath, Option.empty()));</span><br><span class="line">  <span class="comment">// 所有的fileGroup,简单说fileId一样的为一组</span></span><br><span class="line">  List&lt;HoodieFileGroup&gt; fileGroups = fileSystemView.getAllFileGroups(partitionPath).collect(Collectors.toList());</span><br><span class="line">  <span class="keyword">for</span> (HoodieFileGroup fileGroup : fileGroups) &#123; <span class="comment">// 遍历fileGroups</span></span><br><span class="line">    <span class="comment">// 需要保留的文件版本数，通过`hoodie.cleaner.fileversions.retained`配置，默认3</span></span><br><span class="line">    <span class="keyword">int</span> keepVersions = config.getCleanerFileVersionsRetained();</span><br><span class="line">    <span class="comment">// do not cleanup slice required for pending compaction</span></span><br><span class="line">    <span class="comment">// 每个fileGroup对应的所有的数据（parquet）,过滤掉需要为`compaction`操作保留的文件</span></span><br><span class="line">    Iterator&lt;FileSlice&gt; fileSliceIterator =</span><br><span class="line">        fileGroup.getAllFileSlices().filter(fs -&gt; !isFileSliceNeededForPendingCompaction(fs)).iterator();</span><br><span class="line">    <span class="keyword">if</span> (isFileGroupInPendingCompaction(fileGroup)) &#123; <span class="comment">// 如果fileGroup在PendingCompaction中</span></span><br><span class="line">      <span class="comment">// We have already saved the last version of file-groups for pending compaction Id</span></span><br><span class="line">      <span class="comment">// 版本数减一，因为我们已经将最新的版本保存在`pending compaction`中了</span></span><br><span class="line">      keepVersions--;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 遍历需要保留的版本文件</span></span><br><span class="line">    <span class="keyword">while</span> (fileSliceIterator.hasNext() &amp;&amp; keepVersions &gt; <span class="number">0</span>) &#123; <span class="comment">// 当有历史版本且keepVersions&gt;0</span></span><br><span class="line">      <span class="comment">// Skip this most recent version</span></span><br><span class="line">      <span class="comment">// 取下一个版本的文件</span></span><br><span class="line">      FileSlice nextSlice = fileSliceIterator.next();</span><br><span class="line">      Option&lt;HoodieBaseFile&gt; dataFile = nextSlice.getBaseFile();</span><br><span class="line">      <span class="keyword">if</span> (dataFile.isPresent() &amp;&amp; savepointedFiles.contains(dataFile.get().getFileName())) &#123;</span><br><span class="line">        <span class="comment">// do not clean up a savepoint data file</span></span><br><span class="line">        <span class="comment">// 不清理`savepoint data file`</span></span><br><span class="line">        <span class="keyword">continue</span>;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="comment">// 版本数减一</span></span><br><span class="line">      keepVersions--;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Delete the remaining files</span></span><br><span class="line">    <span class="comment">// 剩下的文件都是需要删除的文件</span></span><br><span class="line">    <span class="keyword">while</span> (fileSliceIterator.hasNext()) &#123;</span><br><span class="line">      FileSlice nextSlice = fileSliceIterator.next();</span><br><span class="line">      deletePaths.addAll(getCleanFileInfoForSlice(nextSlice));</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> deletePaths;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><h3 id="相同点"><a href="#相同点" class="headerlink" title="相同点"></a>相同点</h3><p>不管是哪种策略，都是先遍历<code>fileGroups</code>,再遍历<code>fileGroup</code>每个对应的<code>FileSlices</code>，每种策略都不删除<code>savepoints</code>和<code>PendingCompaction</code>文件，都保留文件的最新版本</p>
@@ -326,7 +326,7 @@
  <p>QQ：1412359494</p>
  <p>微信：dongkelun</p>
  <p>--------------------</p>
- <p>新建的同名公众号，方便在手机上看，有需要的可以在关注一下~
+ <p>新建的同名公众号，方便在手机上看，有需要的可以再关注一下~
  </p>
  <img src='https://tva1.sinaimg.cn/large/e44344dcly1g04tejxxf0j2076076q3d.jpg' style='margin:10px'/>
 </div>
@@ -626,31 +626,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -662,15 +638,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -682,15 +666,43 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">hbase</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -702,26 +714,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
               </li>
              
@@ -730,11 +722,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -746,7 +738,35 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -762,47 +782,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">hbase</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">MySQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">presto</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -814,7 +798,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">MySQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -830,7 +830,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -839,22 +839,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -874,7 +858,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -883,6 +871,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -906,19 +902,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -926,7 +918,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -934,7 +930,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -946,11 +946,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -963,6 +959,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
               </li>
             
             <div class="clearfix"></div>
