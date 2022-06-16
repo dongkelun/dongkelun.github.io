@@ -17,7 +17,7 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言总计如何利用Hudi DeltaStreamer工具从外部数据源读取数据并写入新的Hudi表，HoodieDeltaStreamer是hudi-utilities-bundle的一部分，按照Apache Hudi 入门学习总结,将hudi-spark-bundle包拷贝至$SPARK_HOME/jars目录下即可。 HoodieDeltaStreamer提供了从DFS或Kafka等不同来源进行">
 <meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2022-06-16T07:46:16.380Z">
+<meta property="og:updated_time" content="2022-06-16T08:50:50.921Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Hudi DeltaStreamer使用总结">
 <meta name="twitter:description" content="前言总计如何利用Hudi DeltaStreamer工具从外部数据源读取数据并写入新的Hudi表，HoodieDeltaStreamer是hudi-utilities-bundle的一部分，按照Apache Hudi 入门学习总结,将hudi-spark-bundle包拷贝至$SPARK_HOME/jars目录下即可。 HoodieDeltaStreamer提供了从DFS或Kafka等不同来源进行">
@@ -268,7 +268,7 @@
 <p>最新版本已支持这些参数,PR：<a href="https://github.com/apache/hudi/pull/4175" target="_blank" rel="noopener">https://github.com/apache/hudi/pull/4175</a></p>
 <h3 id="配置文件"><a href="#配置文件" class="headerlink" title="配置文件"></a>配置文件</h3><h4 id="common-properties"><a href="#common-properties" class="headerlink" title="common.properties"></a>common.properties</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">hoodie.datasource.write.hive_style_partitioning=true</span><br><span class="line">hoodie.datasource.write.keygenerator.class=org.apache.hudi.keygen.ComplexKeyGenerator</span><br><span class="line">hoodie.datasource.hive_sync.use_jdbc=false</span><br><span class="line">hoodie.datasource.hive_sync.partition_extractor_class=org.apache.hudi.hive.MultiPartKeysValueExtractor</span><br></pre></td></tr></table></figure>
 <h4 id="sql-source-properties"><a href="#sql-source-properties" class="headerlink" title="sql_source.properties"></a>sql_source.properties</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">include=common.properties</span><br><span class="line">hoodie.datasource.write.recordkey.field=id</span><br><span class="line">hoodie.datasource.write.partitionpath.field=dt</span><br><span class="line"># 非分区表配置 hoodie.datasource.write.partitionpath.field=</span><br><span class="line">hoodie.deltastreamer.source.sql.sql.query = select * from test.test_source</span><br><span class="line"># 和同步Hive相关的配置</span><br><span class="line">hoodie.datasource.hive_sync.table=test_hudi_target</span><br><span class="line">hoodie.datasource.hive_sync.database=hudi</span><br><span class="line">## 非分区表可以不设置</span><br><span class="line">hoodie.datasource.hive_sync.partition_fields=dt</span><br><span class="line">## 内部表，默认外部表，0.9.0版本不支持</span><br><span class="line">hoodie.datasource.hive_sync.create_managed_table = true</span><br><span class="line">## 0.9.0版本不支持</span><br><span class="line">hoodie.datasource.hive_sync.serde_properties = primaryKey=id</span><br></pre></td></tr></table></figure>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --conf &quot;spark.sql.catalogImplementation=hive&quot; \</span><br><span class="line">--master yarn --deploy-mode client --executor-memory 2G --num-executors 3 --executor-cores 2 --driver-memory 4G --driver-cores 2 \</span><br><span class="line">--principal spark/indata-10-110-105-163.indata.com@INDATA.COM --keytab /etc/security/keytabs/spark.service.keytab \</span><br><span class="line">--class org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer /usr/hdp/3.1.0.0-78/spark2/jars/hudi-utilities-bundle_2.11-0.9.0.jar \</span><br><span class="line">--props file:///opt/dkl/sql_source.properties  \</span><br><span class="line">--target-base-path /hudi/test_hudi_target \</span><br><span class="line">--target-table test_hudi_target \</span><br><span class="line">--op BULK_INSERT \</span><br><span class="line">--table-type COPY_ON_WRITE \</span><br><span class="line">--source-ordering-field ts \</span><br><span class="line">--source-class org.apache.hudi.utilities.sources.SqlSource \</span><br><span class="line">--enable-sync  \</span><br><span class="line">--checkpoint earliest \</span><br><span class="line">--hoodie-conf &apos;hoodie.datasource.hive_sync.create_managed_table = true&apos; \</span><br><span class="line">--hoodie-conf &apos;hoodie.datasource.hive_sync.serde_properties = primaryKey=id&apos;</span><br></pre></td></tr></table></figure>
+<h3 id="命令"><a href="#命令" class="headerlink" title="命令"></a>命令</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --conf <span class="string">"spark.sql.catalogImplementation=hive"</span> \</span><br><span class="line">--master yarn --deploy-mode client --executor-memory 2G --num-executors 3 --executor-cores 2 --driver-memory 4G --driver-cores 2 \</span><br><span class="line">--principal spark/indata-10-110-105-163.indata.com@INDATA.COM --keytab /etc/security/keytabs/spark.service.keytab \</span><br><span class="line">--class org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer /usr/hdp/3.1.0.0-78/spark2/jars/hudi-utilities-bundle_2.11-0.9.0.jar \</span><br><span class="line">--props file:///opt/dkl/sql_source.properties  \</span><br><span class="line">--target-base-path /hudi/test_hudi_target \</span><br><span class="line">--target-table test_hudi_target \</span><br><span class="line">--op BULK_INSERT \</span><br><span class="line">--table-type COPY_ON_WRITE \</span><br><span class="line">--<span class="built_in">source</span>-ordering-field ts \</span><br><span class="line">--<span class="built_in">source</span>-class org.apache.hudi.utilities.sources.SqlSource \</span><br><span class="line">--<span class="built_in">enable</span>-sync  \</span><br><span class="line">--checkpoint earliest \</span><br><span class="line">--hoodie-conf <span class="string">'hoodie.datasource.hive_sync.create_managed_table = true'</span> \</span><br><span class="line">--hoodie-conf <span class="string">'hoodie.datasource.hive_sync.serde_properties = primaryKey=id'</span></span><br></pre></td></tr></table></figure>
 <blockquote>
 <p>enable-hive-sync和enable-sync都是开启同步Hive的，不过enable-hive-sync已弃用，建议用enable-sync<br>这里需要加参数<code>spark.sql.catalogImplementation=hive</code>,因为源码里的Spark默认没有开启支持hive即<code>enableHiveSupport</code>，而enableHiveSupport的实现就是通过配置<code>spark.sql.catalogImplementation=hive</code></p>
 </blockquote>
@@ -295,7 +295,7 @@
 <h3 id="配置文件-1"><a href="#配置文件-1" class="headerlink" title="配置文件"></a>配置文件</h3><p>dfs_source.properties</p>
 <p>这里演示非分区表</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">include=common.properties</span><br><span class="line"></span><br><span class="line">hoodie.datasource.write.recordkey.field=id</span><br><span class="line">hoodie.datasource.write.partitionpath.field=</span><br><span class="line">hoodie.deltastreamer.source.dfs.root=/test/test_source_json</span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.jdbc.connection.url=jdbc:hive2://10.110.105.163:10000/hudi;principal=hive/indata-10-110-105-163.indata.com@INDATA.COM</span><br><span class="line"></span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.jdbc.driver.type=org.apache.hive.jdbc.HiveDriver</span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.jdbc.username=user</span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.jdbc.password=password</span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.jdbc.dbtable=test.test_source_json</span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.jdbc.timeout=100</span><br><span class="line"></span><br><span class="line">hoodie.datasource.hive_sync.table=test_hudi_target_json</span><br><span class="line">hoodie.datasource.hive_sync.database=hudi</span><br></pre></td></tr></table></figure>
-<h3 id="命令"><a href="#命令" class="headerlink" title="命令"></a>命令</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --principal hive/indata-10-110-105-163.indata.com@INDATA.COM --keytab /etc/security/keytabs/hive.service.keytab \</span><br><span class="line">--class org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer /usr/hdp/3.1.0.0-78/spark2/jars/hudi-utilities-bundle_2.11-0.9.0.jar \</span><br><span class="line">--props file:///opt/dkl/dfs_source.properties \</span><br><span class="line">--target-base-path /hudi/test_hudi_target_json \</span><br><span class="line">--target-table test_hudi_target_json \</span><br><span class="line">--op BULK_INSERT \</span><br><span class="line">--table-type COPY_ON_WRITE \</span><br><span class="line">--schemaprovider-class org.apache.hudi.utilities.schema.JdbcbasedSchemaProvider \</span><br><span class="line">--enable-sync</span><br></pre></td></tr></table></figure>
+<h3 id="命令-1"><a href="#命令-1" class="headerlink" title="命令"></a>命令</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --principal hive/indata-10-110-105-163.indata.com@INDATA.COM --keytab /etc/security/keytabs/hive.service.keytab \</span><br><span class="line">--class org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer /usr/hdp/3.1.0.0-78/spark2/jars/hudi-utilities-bundle_2.11-0.9.0.jar \</span><br><span class="line">--props file:///opt/dkl/dfs_source.properties \</span><br><span class="line">--target-base-path /hudi/test_hudi_target_json \</span><br><span class="line">--target-table test_hudi_target_json \</span><br><span class="line">--op BULK_INSERT \</span><br><span class="line">--table-type COPY_ON_WRITE \</span><br><span class="line">--schemaprovider-class org.apache.hudi.utilities.schema.JdbcbasedSchemaProvider \</span><br><span class="line">--<span class="built_in">enable</span>-sync</span><br></pre></td></tr></table></figure>
 <blockquote>
 <p>这里没有指定<code>--source-class</code>的原因是，它的默认值就是<code>JsonDFSSource</code><br>用<code>JdbcbasedSchemaProvider</code>获取Schema的原因是因为我对于生成avsc文件没有经验，两者选其一，所以选择了通过配置jdbc的形式获取Schema</p>
 </blockquote>
@@ -320,7 +320,7 @@
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">/usr/hdp/3.1.0.0-78/kafka/bin/kafka-console-consumer.sh --bootstrap-server indata-10-110-105-163.indata.com:6667 --from-beginning --topic test_hudi_target_topic  --group dkl_hudi --consumer-property security.protocol=SASL_PLAINTEXT</span><br><span class="line">&#123;&quot;id&quot;:1,&quot;name&quot;:&quot;hudi&quot;,&quot;price&quot;:11.0,&quot;ts&quot;:100,&quot;dt&quot;:&quot;2021-05-05&quot;&#125;</span><br><span class="line">&#123;&quot;id&quot;:2,&quot;name&quot;:&quot;hudi&quot;,&quot;price&quot;:12.0,&quot;ts&quot;:100,&quot;dt&quot;:&quot;2021-05-05&quot;&#125;</span><br><span class="line">&#123;&quot;id&quot;:3,&quot;name&quot;:&quot;hudi&quot;,&quot;price&quot;:13.0,&quot;ts&quot;:100,&quot;dt&quot;:&quot;2021-05-06&quot;&#125;</span><br></pre></td></tr></table></figure>
 <h3 id="Hudi配置文件"><a href="#Hudi配置文件" class="headerlink" title="Hudi配置文件"></a>Hudi配置文件</h3><h4 id="kafka-source-properties"><a href="#kafka-source-properties" class="headerlink" title="kafka_source.properties"></a>kafka_source.properties</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">include=common.properties</span><br><span class="line"></span><br><span class="line">hoodie.datasource.write.recordkey.field=id</span><br><span class="line">hoodie.datasource.write.partitionpath.field=dt</span><br><span class="line"></span><br><span class="line">hoodie.deltastreamer.source.kafka.topic=test_hudi_target_topic</span><br><span class="line">bootstrap.servers=indata-10-110-105-162.indata.com:6667,indata-10-110-105-163.indata.com:6667,indata-10-110-105-164.indata.com:6667</span><br><span class="line">auto.offset.reset=earliest</span><br><span class="line">group.id=dkl_hudi</span><br><span class="line">security.protocol=SASL_PLAINTEXT</span><br><span class="line"></span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.jdbc.connection.url=jdbc:hive2://10.110.105.163:10000/default;principal=hive/indata-10-110-105-163.indata.com@INDATA.COM</span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.jdbc.driver.type=org.apache.hive.jdbc.HiveDriver</span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.jdbc.username=user</span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.jdbc.password=password</span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.jdbc.dbtable=test.test_source_json</span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.jdbc.timeout=100</span><br><span class="line"></span><br><span class="line">hoodie.datasource.hive_sync.table=test_hudi_target_kafka</span><br><span class="line">hoodie.datasource.hive_sync.database=hudi</span><br><span class="line">hoodie.datasource.hive_sync.partition_fields=dt</span><br></pre></td></tr></table></figure>
 <p>kafkaSource和dfsSource一样也需要提供表Schema，由于这里读取kafka，而没有源表，这里从上面dfsSource建的表<code>test.test_source_json</code>读取schema，从哪个表读取Schema都行，只要表结构一致即可</p>
-<h3 id="命令-1"><a href="#命令-1" class="headerlink" title="命令"></a>命令</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --principal hive/indata-10-110-105-163.indata.com@INDATA.COM --keytab /etc/security/keytabs/hive.service.keytab \</span><br><span class="line">--files ./kafka_client_jaas.conf,./kafka.service.keytab \</span><br><span class="line">--conf &quot;spark.executor.extraJavaOptions=-Djava.security.auth.login.config=./kafka_client_jaas.conf&quot; \</span><br><span class="line">--driver-java-options &quot;-Djava.security.auth.login.config=./kafka_client_jaas.conf&quot; \</span><br><span class="line">--class org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer /usr/hdp/3.1.0.0-78/spark2/jars/hudi-utilities-bundle_2.11-0.9.0.jar \</span><br><span class="line">--props file:///opt/dkl/kafka_source.properties \</span><br><span class="line">--target-base-path /hudi/test_hudi_target_kafka \</span><br><span class="line">--target-table test_hudi_target_kafka \</span><br><span class="line">--op UPSERT \</span><br><span class="line">--table-type COPY_ON_WRITE \</span><br><span class="line">--schemaprovider-class org.apache.hudi.utilities.schema.JdbcbasedSchemaProvider \</span><br><span class="line">--source-class org.apache.hudi.utilities.sources.JsonKafkaSource \</span><br><span class="line">--enable-sync</span><br></pre></td></tr></table></figure>
+<h3 id="命令-2"><a href="#命令-2" class="headerlink" title="命令"></a>命令</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --principal hive/indata-10-110-105-163.indata.com@INDATA.COM --keytab /etc/security/keytabs/hive.service.keytab \</span><br><span class="line">--files ./kafka_client_jaas.conf,./kafka.service.keytab \</span><br><span class="line">--conf <span class="string">"spark.executor.extraJavaOptions=-Djava.security.auth.login.config=./kafka_client_jaas.conf"</span> \</span><br><span class="line">--driver-java-options <span class="string">"-Djava.security.auth.login.config=./kafka_client_jaas.conf"</span> \</span><br><span class="line">--class org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer /usr/hdp/3.1.0.0-78/spark2/jars/hudi-utilities-bundle_2.11-0.9.0.jar \</span><br><span class="line">--props file:///opt/dkl/kafka_source.properties \</span><br><span class="line">--target-base-path /hudi/test_hudi_target_kafka \</span><br><span class="line">--target-table test_hudi_target_kafka \</span><br><span class="line">--op UPSERT \</span><br><span class="line">--table-type COPY_ON_WRITE \</span><br><span class="line">--schemaprovider-class org.apache.hudi.utilities.schema.JdbcbasedSchemaProvider \</span><br><span class="line">--<span class="built_in">source</span>-class org.apache.hudi.utilities.sources.JsonKafkaSource \</span><br><span class="line">--<span class="built_in">enable</span>-sync</span><br></pre></td></tr></table></figure>
 <p>上面的都是一次性读取转化，kafka也可以连续模式读取增量数据，通过参数<code>--continuous</code>,即：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --principal hive/indata-10-110-105-163.indata.com@INDATA.COM --keytab /etc/security/keytabs/hive.service.keytab \</span><br><span class="line">--files ./kafka_client_jaas.conf,./kafka.service.keytab \</span><br><span class="line">--conf <span class="string">"spark.executor.extraJavaOptions=-Djava.security.auth.login.config=./kafka_client_jaas.conf"</span> \</span><br><span class="line">--driver-java-options <span class="string">"-Djava.security.auth.login.config=./kafka_client_jaas.conf"</span> \</span><br><span class="line">--class org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer /usr/hdp/3.1.0.0-78/spark2/jars/hudi-utilities-bundle_2.11-0.9.0.jar \</span><br><span class="line">--props file:///opt/dkl/kafka_source.properties \</span><br><span class="line">--target-base-path /hudi/test_hudi_target_kafka \</span><br><span class="line">--target-table test_hudi_target_kafka \</span><br><span class="line">--op UPSERT \</span><br><span class="line">--table-type COPY_ON_WRITE \</span><br><span class="line">--schemaprovider-class org.apache.hudi.utilities.schema.JdbcbasedSchemaProvider \</span><br><span class="line">--<span class="built_in">source</span>-class org.apache.hudi.utilities.sources.JsonKafkaSource \</span><br><span class="line">--<span class="built_in">enable</span>-sync \</span><br><span class="line">--continuous</span><br></pre></td></tr></table></figure>
 <p>连续模式默认间隔0s即没有间隔连续性的读取checkpoint判断kafka（和offset对比）里是否有增量，可以通过参数<code>--min-sync-interval-seconds</code>来修改间隔，比如 –min-sync-interval-seconds 60，设置60s读取一次</p>
@@ -331,7 +331,7 @@
 <h4 id="config-table-1-properties"><a href="#config-table-1-properties" class="headerlink" title="config_table_1.properties"></a>config_table_1.properties</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">include=common.properties</span><br><span class="line">hoodie.datasource.write.recordkey.field=id</span><br><span class="line">hoodie.datasource.write.partitionpath.field=dt</span><br><span class="line"></span><br><span class="line">hoodie.deltastreamer.source.kafka.topic=test_hudi_target_topic_1</span><br><span class="line"></span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.jdbc.connection.url=jdbc:hive2://10.110.105.163:10000/default;principal=hive/indata-10-110-105-163.indata.com@INDATA.COM</span><br><span class="line"></span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.jdbc.driver.type=org.apache.hive.jdbc.HiveDriver</span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.jdbc.username=user</span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.jdbc.password=password</span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.jdbc.dbtable=test.test_source_json_1</span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.jdbc.timeout=100</span><br><span class="line"></span><br><span class="line">hoodie.datasource.hive_sync.table=test_hudi_target_kafka_1</span><br><span class="line">hoodie.datasource.hive_sync.database=hudi</span><br><span class="line">hoodie.datasource.hive_sync.partition_fields=dt</span><br></pre></td></tr></table></figure>
 <h4 id="config-table-2-properties"><a href="#config-table-2-properties" class="headerlink" title="config_table_2.properties"></a>config_table_2.properties</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">include=common.properties</span><br><span class="line">hoodie.datasource.write.recordkey.field=id</span><br><span class="line">hoodie.datasource.write.partitionpath.field=dt</span><br><span class="line"></span><br><span class="line">hoodie.deltastreamer.source.kafka.topic=test_hudi_target_topic_2</span><br><span class="line"></span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.jdbc.connection.url=jdbc:hive2://10.110.105.163:10000/default;principal=hive/indata-10-110-105-163.indata.com@INDATA.COM</span><br><span class="line"></span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.jdbc.driver.type=org.apache.hive.jdbc.HiveDriver</span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.jdbc.username=user</span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.jdbc.password=password</span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.jdbc.dbtable=test.test_source_json_2</span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.jdbc.timeout=100</span><br><span class="line"></span><br><span class="line">hoodie.datasource.hive_sync.table=test_hudi_target_kafka_2</span><br><span class="line">hoodie.datasource.hive_sync.database=hudi</span><br><span class="line">hoodie.datasource.hive_sync.partition_fields=dt</span><br></pre></td></tr></table></figure>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --principal hive/indata-10-110-105-163.indata.com@INDATA.COM --keytab /etc/security/keytabs/hive.service.keytab \</span><br><span class="line">--files &quot;./kafka_client_jaas.conf,./kafka.service.keytab&quot; \</span><br><span class="line">--conf &quot;spark.executor.extraJavaOptions=-Djava.security.auth.login.config=./kafka_client_jaas.conf&quot; \</span><br><span class="line">--driver-java-options &quot;-Djava.security.auth.login.config=./kafka_client_jaas.conf&quot; \</span><br><span class="line">--class org.apache.hudi.utilities.deltastreamer.HoodieMultiTableDeltaStreamer /usr/hdp/3.1.0.0-78/spark2/jars/hudi-utilities-bundle_2.11-0.9.0.jar \</span><br><span class="line">--props file:///opt/dkl/multi/kafka_source_multi_table.properties \</span><br><span class="line">--base-path-prefix / \</span><br><span class="line">--config-folder file:///opt/dkl/multi \</span><br><span class="line">--target-table test_hudi_target_kafka_1 \</span><br><span class="line">--op UPSERT \</span><br><span class="line">--table-type COPY_ON_WRITE \</span><br><span class="line">--schemaprovider-class org.apache.hudi.utilities.schema.JdbcbasedSchemaProvider \</span><br><span class="line">--source-class org.apache.hudi.utilities.sources.JsonKafkaSource \</span><br><span class="line">--enable-hive-sync</span><br></pre></td></tr></table></figure>
-<p>注意这里<code>--target-table</code>是必填项，我们填其中一个表名即可，不过我认为不应该设置为必填，因为两个表名已经在配置文件中了还有0.9.0版本同步hive只有<code>--enable-hive-sync</code>参数没有<code>--enable-sync</code>,在最新版本里是有这个参数的，但是新版中<code>--enable-hive-sync</code>并没有弃用，可见<code>HoodieMultiTableDeltaStreamer</code>和<code>HoodieDeltaStreamer</code>对于相同的参数并没有保持一致，可能用的人不多，贡献的也就不多<br>这里我们并没有指定target-base-path，那么程序又是怎么知道表路径是什么呢，通过阅读源码发现，表路径为：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">String targetBasePath = basePathPrefix + <span class="string">"/"</span> + database + <span class="string">"/"</span> + tableName;</span><br></pre></td></tr></table></figure></p>
+<p>注意这里<code>--target-table</code>是必填项，我们填其中一个表名即可，不过我认为不应该设置为必填，因为两个表名已经在配置文件中了还有0.9.0版本同步hive只有<code>--enable-hive-sync</code>参数没有<code>--enable-sync</code>,在最新版本里是有这个参数的，但是新版中<code>--enable-hive-sync</code>并没有弃用，可见<code>HoodieMultiTableDeltaStreamer</code>和<code>HoodieDeltaStreamer</code>对于相同的参数并没有保持一致，可能用的人不多，贡献的也就不多。关于是否可以去掉<code>--target-table</code>参数的问题我已经提交了PR：<a href="https://github.com/apache/hudi/pull/5883" target="_blank" rel="noopener">https://github.com/apache/hudi/pull/5883</a><br>这里我们并没有指定target-base-path，那么程序又是怎么知道表路径是什么呢，通过阅读源码发现，表路径为：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">String targetBasePath = basePathPrefix + <span class="string">"/"</span> + database + <span class="string">"/"</span> + tableName;</span><br></pre></td></tr></table></figure></p>
 <p>具体代码在方法<code>resetTarget</code>,因为我们创建的数据库路径为<code>/hudi</code>,所以这里<code>--base-path-prefix</code>的值为<code>/</code></p>
 <p>执行上面的命令检查是否成功从每个topic里读取数据并写到对应的表中</p>
 <h2 id="HiveSchemaProvider"><a href="#HiveSchemaProvider" class="headerlink" title="HiveSchemaProvider"></a>HiveSchemaProvider</h2><p>对应类：<code>org.apache.hudi.utilities.schema.HiveSchemaProvider</code></p>
@@ -343,7 +343,7 @@
 <p>json_dfs_source.properties</p>
 <p>这里演示非分区表</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">include=common.properties</span><br><span class="line"></span><br><span class="line">hoodie.datasource.write.recordkey.field=id</span><br><span class="line">hoodie.datasource.write.partitionpath.field=</span><br><span class="line">hoodie.deltastreamer.source.dfs.root=/test/test_source_json</span><br><span class="line"></span><br><span class="line"># 通过HiveSchemaProvider获取Schema</span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.hive.database=test</span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.hive.table=test_source_json</span><br><span class="line"></span><br><span class="line">hoodie.datasource.hive_sync.table=test_hudi_target_json_2</span><br><span class="line">hoodie.datasource.hive_sync.database=hudi</span><br></pre></td></tr></table></figure>
-<h3 id="命令-2"><a href="#命令-2" class="headerlink" title="命令"></a>命令</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --conf &quot;spark.sql.catalogImplementation=hive&quot; \</span><br><span class="line">--principal hive/indata-10-110-105-163.indata.com@INDATA.COM --keytab /etc/security/keytabs/hive.service.keytab \</span><br><span class="line">--class org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer /usr/hdp/3.1.0.0-78/spark2/jars/hudi-utilities-bundle_2.11-0.11.0.jar \</span><br><span class="line">--props file:///opt/dkl/json_dfs_source.properties \</span><br><span class="line">--target-base-path /hudi/test_hudi_target_json_2 \</span><br><span class="line">--target-table test_hudi_target_json_2 \</span><br><span class="line">--op BULK_INSERT \</span><br><span class="line">--table-type COPY_ON_WRITE \</span><br><span class="line">--schemaprovider-class org.apache.hudi.utilities.schema.HiveSchemaProvider \</span><br><span class="line">--enable-sync</span><br></pre></td></tr></table></figure>
+<h3 id="命令-3"><a href="#命令-3" class="headerlink" title="命令"></a>命令</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --conf <span class="string">"spark.sql.catalogImplementation=hive"</span> \</span><br><span class="line">--principal hive/indata-10-110-105-163.indata.com@INDATA.COM --keytab /etc/security/keytabs/hive.service.keytab \</span><br><span class="line">--class org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer /usr/hdp/3.1.0.0-78/spark2/jars/hudi-utilities-bundle_2.11-0.11.0.jar \</span><br><span class="line">--props file:///opt/dkl/json_dfs_source.properties \</span><br><span class="line">--target-base-path /hudi/test_hudi_target_json_2 \</span><br><span class="line">--target-table test_hudi_target_json_2 \</span><br><span class="line">--op BULK_INSERT \</span><br><span class="line">--table-type COPY_ON_WRITE \</span><br><span class="line">--schemaprovider-class org.apache.hudi.utilities.schema.HiveSchemaProvider \</span><br><span class="line">--<span class="built_in">enable</span>-sync</span><br></pre></td></tr></table></figure>
 <p>我们先把jar升到0.11.0版本及以上，然后执行上面的命令,可能会报下面的异常，原因是因为<code>HiveSchemaProvider</code>,在获取json格式的表时需要用到<code>hive-hcatalog-core.jar</code>，我们去hive lib下面执行<code>ls | grep hcatalog-core</code>,找到该jar包，然后将jar拷贝至spark jars目录下再执行，就可以成功读取表schema并将json数据转为Hudi目标表。</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">22</span>/<span class="number">06</span>/<span class="number">15</span> <span class="number">16</span>:<span class="number">12</span>:<span class="number">09</span> ERROR log: error in initSerDe: java.lang.ClassNotFoundException Class org.apache.hive.hcatalog.data.JsonSerDe not found</span><br><span class="line">java.lang.ClassNotFoundException: Class org.apache.hive.hcatalog.data.JsonSerDe not found</span><br><span class="line">        at org.apache.hadoop.conf.Configuration.getClassByName(Configuration.java:<span class="number">2500</span>)</span><br><span class="line">        at org.apache.hadoop.hive.metastore.MetaStoreUtils.getDeserializer(MetaStoreUtils.java:<span class="number">385</span>)</span><br><span class="line">        at org.apache.hadoop.hive.ql.metadata.Table.getDeserializerFromMetaStore(Table.java:<span class="number">276</span>)</span><br><span class="line">        at org.apache.hadoop.hive.ql.metadata.Table.getDeserializer(Table.java:<span class="number">258</span>)</span><br><span class="line">        at org.apache.hadoop.hive.ql.metadata.Table.getCols(Table.java:<span class="number">605</span>)</span><br><span class="line">        at org.apache.spark.sql.hive.client.HiveClientImpl$$anonfun$getTableOption$<span class="number">1</span>$$anonfun$apply$<span class="number">7</span>.apply(HiveClientImpl.scala:<span class="number">373</span>)</span><br><span class="line">        at org.apache.spark.sql.hive.client.HiveClientImpl$$anonfun$getTableOption$<span class="number">1</span>$$anonfun$apply$<span class="number">7</span>.apply(HiveClientImpl.scala:<span class="number">370</span>)</span><br><span class="line">        at scala.Option.map(Option.scala:<span class="number">146</span>)</span><br><span class="line">        at org.apache.spark.sql.hive.client.HiveClientImpl$$anonfun$getTableOption$<span class="number">1</span>.apply(HiveClientImpl.scala:<span class="number">370</span>)</span><br><span class="line">        at org.apache.spark.sql.hive.client.HiveClientImpl$$anonfun$getTableOption$<span class="number">1</span>.apply(HiveClientImpl.scala:<span class="number">368</span>)</span><br><span class="line">        at org.apache.spark.sql.hive.client.HiveClientImpl$$anonfun$withHiveState$<span class="number">1</span>.apply(HiveClientImpl.scala:<span class="number">277</span>)</span><br><span class="line">        at org.apache.spark.sql.hive.client.HiveClientImpl.liftedTree1$<span class="number">1</span>(HiveClientImpl.scala:<span class="number">215</span>)</span><br><span class="line">        at org.apache.spark.sql.hive.client.HiveClientImpl.retryLocked(HiveClientImpl.scala:<span class="number">214</span>)</span><br><span class="line">        at org.apache.spark.sql.hive.client.HiveClientImpl.withHiveState(HiveClientImpl.scala:<span class="number">260</span>)</span><br><span class="line">        at org.apache.spark.sql.hive.client.HiveClientImpl.getTableOption(HiveClientImpl.scala:<span class="number">368</span>)</span><br><span class="line">        at org.apache.spark.sql.hive.client.HiveClient$class.getTable(HiveClient.scala:81)</span><br><span class="line">        at org.apache.spark.sql.hive.client.HiveClientImpl.getTable(HiveClientImpl.scala:<span class="number">84</span>)</span><br><span class="line">        at org.apache.spark.sql.hive.HiveExternalCatalog.getRawTable(HiveExternalCatalog.scala:<span class="number">118</span>)</span><br><span class="line">        at org.apache.spark.sql.hive.HiveExternalCatalog$$anonfun$getTable$<span class="number">1</span>.apply(HiveExternalCatalog.scala:<span class="number">700</span>)</span><br><span class="line">        at org.apache.spark.sql.hive.HiveExternalCatalog$$anonfun$getTable$<span class="number">1</span>.apply(HiveExternalCatalog.scala:<span class="number">700</span>)</span><br><span class="line">        at org.apache.spark.sql.hive.HiveExternalCatalog.withClient(HiveExternalCatalog.scala:<span class="number">97</span>)</span><br><span class="line">        at org.apache.spark.sql.hive.HiveExternalCatalog.getTable(HiveExternalCatalog.scala:<span class="number">699</span>)</span><br><span class="line">        at org.apache.spark.sql.catalyst.catalog.ExternalCatalogWithListener.getTable(ExternalCatalogWithListener.scala:<span class="number">138</span>)</span><br><span class="line">        at org.apache.spark.sql.catalyst.catalog.SessionCatalog.getTableMetadata(SessionCatalog.scala:<span class="number">434</span>)</span><br><span class="line">        at org.apache.hudi.utilities.schema.HiveSchemaProvider.&lt;init&gt;(HiveSchemaProvider.java:<span class="number">65</span>)</span><br><span class="line">        at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)</span><br><span class="line">        at sun.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:<span class="number">62</span>)</span><br><span class="line">        at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:<span class="number">45</span>)</span><br><span class="line">        at java.lang.reflect.Constructor.newInstance(Constructor.java:<span class="number">423</span>)</span><br><span class="line">        at org.apache.hudi.common.util.ReflectionUtils.loadClass(ReflectionUtils.java:<span class="number">89</span>)</span><br><span class="line">        at org.apache.hudi.common.util.ReflectionUtils.loadClass(ReflectionUtils.java:<span class="number">118</span>)</span><br><span class="line">        at org.apache.hudi.utilities.UtilHelpers.createSchemaProvider(UtilHelpers.java:<span class="number">155</span>)</span><br><span class="line">        at org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer$DeltaSyncService.&lt;init&gt;(HoodieDeltaStreamer.java:<span class="number">656</span>)</span><br><span class="line">        at org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer.&lt;init&gt;(HoodieDeltaStreamer.java:<span class="number">143</span>)</span><br><span class="line">        at org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer.&lt;init&gt;(HoodieDeltaStreamer.java:<span class="number">116</span>)</span><br><span class="line">        at org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer.main(HoodieDeltaStreamer.java:<span class="number">557</span>)</span><br><span class="line">        at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)</span><br><span class="line">        at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:<span class="number">62</span>)</span><br><span class="line">        at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:<span class="number">43</span>)</span><br><span class="line">        at java.lang.reflect.Method.invoke(Method.java:<span class="number">498</span>)</span><br><span class="line">        at org.apache.spark.deploy.JavaMainApplication.start(SparkApplication.scala:<span class="number">52</span>)</span><br><span class="line">        at org.apache.spark.deploy.SparkSubmit.org$apache$spark$deploy$SparkSubmit$$runMain(SparkSubmit.scala:<span class="number">845</span>)</span><br><span class="line">        at org.apache.spark.deploy.SparkSubmit.doRunMain$<span class="number">1</span>(SparkSubmit.scala:<span class="number">161</span>)</span><br><span class="line">        at org.apache.spark.deploy.SparkSubmit.submit(SparkSubmit.scala:<span class="number">184</span>)</span><br><span class="line">        at org.apache.spark.deploy.SparkSubmit.doSubmit(SparkSubmit.scala:<span class="number">86</span>)</span><br><span class="line">        at org.apache.spark.deploy.SparkSubmit$$anon$<span class="number">2</span>.doSubmit(SparkSubmit.scala:<span class="number">920</span>)</span><br><span class="line">        at org.apache.spark.deploy.SparkSubmit$.main(SparkSubmit.scala:<span class="number">929</span>)</span><br><span class="line">        at org.apache.spark.deploy.SparkSubmit.main(SparkSubmit.scala)</span><br><span class="line"><span class="number">22</span>/<span class="number">06</span>/<span class="number">15</span> <span class="number">16</span>:<span class="number">12</span>:<span class="number">09</span> ERROR Table: Unable to get field from serde: org.apache.hive.hcatalog.data.JsonSerDe</span><br><span class="line">java.lang.RuntimeException: MetaException(message:java.lang.ClassNotFoundException Class org.apache.hive.hcatalog.data.JsonSerDe not found)</span><br></pre></td></tr></table></figure>
 <p>通过示例中的配置可以看到利用<code>HiveSchemaProvider</code>获取schema时的配置比较简单，方便使用，如果有targetSchema和sourceShcema不一致的需求，大家可以通过配置targetSchema的库名表名自己尝试。对于其他类型的Source，大家觉得<code>HiveSchemaProvider</code>比较方便的话，也可以自行修改配置参数等。</p>
@@ -500,7 +500,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Hive设置"><span class="toc-number">2.</span> <span class="toc-text">Hive设置</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#SqlSource"><span class="toc-number">3.</span> <span class="toc-text">SqlSource</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#创建Hive历史表"><span class="toc-number">3.1.</span> <span class="toc-text">创建Hive历史表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Spark-SQL创建Hudi目标表"><span class="toc-number">3.2.</span> <span class="toc-text">Spark SQL创建Hudi目标表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#配置文件"><span class="toc-number">3.3.</span> <span class="toc-text">配置文件</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#common-properties"><span class="toc-number">3.3.1.</span> <span class="toc-text">common.properties</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#sql-source-properties"><span class="toc-number">3.3.2.</span> <span class="toc-text">sql_source.properties</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#DFSSource"><span class="toc-number">4.</span> <span class="toc-text">DFSSource</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#创建hive历史表，存储格式JSON"><span class="toc-number">4.1.</span> <span class="toc-text">创建hive历史表，存储格式JSON</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#插入数据"><span class="toc-number">4.2.</span> <span class="toc-text">插入数据</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#配置文件-1"><span class="toc-number">4.3.</span> <span class="toc-text">配置文件</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#命令"><span class="toc-number">4.4.</span> <span class="toc-text">命令</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#KafkaSource"><span class="toc-number">5.</span> <span class="toc-text">KafkaSource</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Kafka配置文件"><span class="toc-number">5.1.</span> <span class="toc-text">Kafka配置文件</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#kafka-client-jaas-conf"><span class="toc-number">5.1.1.</span> <span class="toc-text">kafka_client_jaas.conf</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#producer-properties"><span class="toc-number">5.1.2.</span> <span class="toc-text">producer.properties</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#造数"><span class="toc-number">5.2.</span> <span class="toc-text">造数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#消费"><span class="toc-number">5.3.</span> <span class="toc-text">消费</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Hudi配置文件"><span class="toc-number">5.4.</span> <span class="toc-text">Hudi配置文件</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#kafka-source-properties"><span class="toc-number">5.4.1.</span> <span class="toc-text">kafka_source.properties</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#命令-1"><span class="toc-number">5.5.</span> <span class="toc-text">命令</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#多表转化"><span class="toc-number">6.</span> <span class="toc-text">多表转化</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#配置文件-2"><span class="toc-number">6.1.</span> <span class="toc-text">配置文件</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#kafka-source-multi-table-properties"><span class="toc-number">6.1.1.</span> <span class="toc-text">kafka_source_multi_table.properties</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#config-table-1-properties"><span class="toc-number">6.1.2.</span> <span class="toc-text">config_table_1.properties</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#config-table-2-properties"><span class="toc-number">6.1.3.</span> <span class="toc-text">config_table_2.properties</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#HiveSchemaProvider"><span class="toc-number">7.</span> <span class="toc-text">HiveSchemaProvider</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#配置参数"><span class="toc-number">7.1.</span> <span class="toc-text">配置参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#命令-2"><span class="toc-number">7.2.</span> <span class="toc-text">命令</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">8.</span> <span class="toc-text">总结</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Hive设置"><span class="toc-number">2.</span> <span class="toc-text">Hive设置</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#SqlSource"><span class="toc-number">3.</span> <span class="toc-text">SqlSource</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#创建Hive历史表"><span class="toc-number">3.1.</span> <span class="toc-text">创建Hive历史表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Spark-SQL创建Hudi目标表"><span class="toc-number">3.2.</span> <span class="toc-text">Spark SQL创建Hudi目标表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#配置文件"><span class="toc-number">3.3.</span> <span class="toc-text">配置文件</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#common-properties"><span class="toc-number">3.3.1.</span> <span class="toc-text">common.properties</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#sql-source-properties"><span class="toc-number">3.3.2.</span> <span class="toc-text">sql_source.properties</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#命令"><span class="toc-number">3.4.</span> <span class="toc-text">命令</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#DFSSource"><span class="toc-number">4.</span> <span class="toc-text">DFSSource</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#创建hive历史表，存储格式JSON"><span class="toc-number">4.1.</span> <span class="toc-text">创建hive历史表，存储格式JSON</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#插入数据"><span class="toc-number">4.2.</span> <span class="toc-text">插入数据</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#配置文件-1"><span class="toc-number">4.3.</span> <span class="toc-text">配置文件</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#命令-1"><span class="toc-number">4.4.</span> <span class="toc-text">命令</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#KafkaSource"><span class="toc-number">5.</span> <span class="toc-text">KafkaSource</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Kafka配置文件"><span class="toc-number">5.1.</span> <span class="toc-text">Kafka配置文件</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#kafka-client-jaas-conf"><span class="toc-number">5.1.1.</span> <span class="toc-text">kafka_client_jaas.conf</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#producer-properties"><span class="toc-number">5.1.2.</span> <span class="toc-text">producer.properties</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#造数"><span class="toc-number">5.2.</span> <span class="toc-text">造数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#消费"><span class="toc-number">5.3.</span> <span class="toc-text">消费</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Hudi配置文件"><span class="toc-number">5.4.</span> <span class="toc-text">Hudi配置文件</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#kafka-source-properties"><span class="toc-number">5.4.1.</span> <span class="toc-text">kafka_source.properties</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#命令-2"><span class="toc-number">5.5.</span> <span class="toc-text">命令</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#多表转化"><span class="toc-number">6.</span> <span class="toc-text">多表转化</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#配置文件-2"><span class="toc-number">6.1.</span> <span class="toc-text">配置文件</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#kafka-source-multi-table-properties"><span class="toc-number">6.1.1.</span> <span class="toc-text">kafka_source_multi_table.properties</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#config-table-1-properties"><span class="toc-number">6.1.2.</span> <span class="toc-text">config_table_1.properties</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#config-table-2-properties"><span class="toc-number">6.1.3.</span> <span class="toc-text">config_table_2.properties</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#HiveSchemaProvider"><span class="toc-number">7.</span> <span class="toc-text">HiveSchemaProvider</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#配置参数"><span class="toc-number">7.1.</span> <span class="toc-text">配置参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#命令-3"><span class="toc-number">7.2.</span> <span class="toc-text">命令</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">8.</span> <span class="toc-text">总结</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -678,6 +678,14 @@ var _hmt = _hmt || [];
           <ul class="article-tag-list" q-show="showTags">
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">english</a>
               </li>
              
@@ -690,27 +698,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -722,43 +710,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -770,7 +734,35 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -782,6 +774,26 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
@@ -790,23 +802,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
+                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -830,10 +826,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
               </li>
              
@@ -850,10 +842,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">sql</a>
               </li>
              
@@ -862,19 +850,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -886,11 +870,35 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">scala</a>
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">日期</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">scala</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -902,15 +910,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+                <a href="javascript:void(0)" class="js-tag color3">日期</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -926,19 +930,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+                <a href="javascript:void(0)" class="js-tag color5">压缩文件</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -947,10 +951,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -966,7 +966,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -982,15 +990,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -999,14 +999,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Vue</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1022,11 +1014,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">压缩文件</a>
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
               </li>
             
             <div class="clearfix"></div>
