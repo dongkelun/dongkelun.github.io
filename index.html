@@ -203,6 +203,196 @@
           <div id="js-content" class="content-ll">
             
   
+    <article id="post-hudiQueryTypes" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2022/06/29/hudiQueryTypes/">Hudi查询类型/视图总结</a>
+    </h1>
+  
+
+        
+        <a href="/2022/06/29/hudiQueryTypes/" class="archive-article-date">
+  	<time datetime="2022-06-28T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2022-06-29</time>
+</a>
+        
+      </header>
+	    
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>上面文章<a href="https://dongkelun.com/2022/06/27/hiveIncrQueryHudi/">Hive增量查询Hudi表</a>提到Hudi表有读优化视图和实时视图，其实当时并没有完全掌握，所以现在单独学习总结。Hudi官网文档<a href="https://hudi.apache.org/cn/docs/0.9.0/concepts/" target="_blank" rel="noopener">中文</a>称之为视图，其实<a href="https://hudi.apache.org/cn/docs/concepts/#views" target="_blank" rel="noopener">英文</a>为query types翻译过来为查询类型</p>
+<h2 id="Query-types"><a href="#Query-types" class="headerlink" title="Query types"></a>Query types</h2><p>Hudi 支持下面三种视图</p>
+<ul>
+<li><p>Snapshot Queries 快照查询/实时视图 Queries see the latest snapshot of the table as of a given commit or compaction action. In case of merge on read table, it exposes near-real time data(few mins) by merging the base and delta files of the latest file slice on-the-fly. For copy on write table, it provides a drop-in replacement for existing parquet tables, while providing upsert/delete and other write side features. 在此视图上的查询可以查看给定提交或压缩操作时表的最新快照。对于读时合并表（MOR表） 该视图通过动态合并最新文件切片的基本文件(例如parquet)和增量文件(例如avro)来提供近实时数据集（几分钟的延迟）。对于写时复制表（COW表），它提供了现有parquet表的插入式替换，同时提供了插入/删除和其他写侧功能。</p>
+</li>
+<li><p>Incremental Queries 增量查询/增量视图，也就是上篇文章讲的增量查询 Queries only see new data written to the table, since a given commit/compaction. This effectively provides change streams to enable incremental data pipelines. 对该视图的查询只能看到从某个提交/压缩后写入数据集的新数据。该视图有效地提供了更改流，来支持增量数据管道。</p>
+</li>
+<li><p>Read Optimized Queries 读优化查询/读优化视图 : Queries see the latest snapshot of table as of a given commit/compaction action. Exposes only the base/columnar files in latest file slices and guarantees the same columnar query performance compared to a non-hudi columnar table. 在此视图上的查询将查看给定提交或压缩操作中数据集的最新快照。 该视图仅将最新文件切片中的基本/列文件暴露给查询，并保证与非Hudi列式数据集相比，具有相同的列式查询性能。</p>
+</li>
+</ul>
+        
+          <a class="article-more-a" href="/2022/06/29/hudiQueryTypes/#more">more >></a>
+        
+      
+
+      
+	  
+    </div>
+    <div class="article-info article-info-index">
+      
+	   
+		  
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hive</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+		  
+
+	  
+	 
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2022/06/29/hudiQueryTypes/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-hiveIncrQueryHudi" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2022/06/27/hiveIncrQueryHudi/">Hive增量查询Hudi表</a>
+    </h1>
+  
+
+        
+        <a href="/2022/06/27/hiveIncrQueryHudi/" class="archive-article-date">
+  	<time datetime="2022-06-26T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2022-06-27</time>
+</a>
+        
+      </header>
+	    
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>简单总结如何利用Hive增量查询Hudi表</p>
+<h2 id="同步Hive"><a href="#同步Hive" class="headerlink" title="同步Hive"></a>同步Hive</h2><p>我们在写数据时，可以配置同步Hive参数，生成对应的Hive表，用来查询Hudi表，具体来说，在写入过程中传递了两个由<code>table name</code>命名的Hive表。 例如，如果<code>table name = hudi_tbl</code>，我们得到</p>
+<p><code>hudi_tbl</code> 实现了由 <code>HoodieParquetInputFormat</code> 支持的数据集的读优化视图，从而提供了纯列式数据。<br><code>hudi_tbl_rt</code> 实现了由 <code>HoodieParquetRealtimeInputFormat</code> 支持的数据集的实时视图，从而提供了基础数据和日志数据的合并视图。</p>
+<p>上面的两条对比摘自官网，这里解释一下：其中实时视图<code>_rt</code>表只有在MOR表同步Hive元数据时才会有,并且<code>hudi_tbl</code>在表类型为MOR时并且为配置<code>skipROSuffix=true</code>时才为读优化视图，当为false(默认为false)时，读优化视图应该为<code>hudi_tbl_ro</code>,当表类型为COW时，<code>hudi_tbl</code>应该为实时视图，所以官网对这一块解释有一点问题大家注意</p>
+<h2 id="Hive查询Hudi"><a href="#Hive查询Hudi" class="headerlink" title="Hive查询Hudi"></a>Hive查询Hudi</h2><p>按照我之前总结的<a href="https://dongkelun.com/2022/05/12/hudiIntroduction/">Apache Hudi 入门学习总结</a>中Hive和Tez部分配置，就可以在Hive命令行里用Hive SQL查询Hudi表了</p>
+<h2 id="增量查询"><a href="#增量查询" class="headerlink" title="增量查询"></a>增量查询</h2><h3 id="修改配置hive-site-xml"><a href="#修改配置hive-site-xml" class="headerlink" title="修改配置hive-site.xml"></a>修改配置hive-site.xml</h3><p>在Hive SQL白名单里添加hoodie.<em>,其他均为已存在的配置，还可以根据需要添加其他白名单，如：`tez.</em>|parquet.<em>|planner.</em>`<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hive.security.authorization.sqlstd.confwhitelist.append hoodie.*|mapred.*|hive.*|mapreduce.*|spark.*</span><br></pre></td></tr></table></figure></p>
+<h3 id="设置参数"><a href="#设置参数" class="headerlink" title="设置参数"></a>设置参数</h3><p>以表名为hudi_tbl为例：<br>连接Hive connect/Hive Shell</p>
+<h4 id="设置该表为增量表"><a href="#设置该表为增量表" class="headerlink" title="设置该表为增量表"></a>设置该表为增量表</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> hoodie.hudi_tbl.consume.mode=INCREMENTAL;</span><br></pre></td></tr></table></figure>
+<h4 id="设置增量开始的时间戳（不包含）-作用：起到文件级别过滤，减少map数。"><a href="#设置增量开始的时间戳（不包含）-作用：起到文件级别过滤，减少map数。" class="headerlink" title="设置增量开始的时间戳（不包含）,作用：起到文件级别过滤，减少map数。"></a>设置增量开始的时间戳（不包含）,作用：起到文件级别过滤，减少map数。</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> hoodie.hudi_tbl.consume.start.timestamp=<span class="number">20211015182330</span>;</span><br></pre></td></tr></table></figure>
+<h4 id="设置增量消费的commit次数，默认设置为-1即可，表示增量消费到目前新数据。"><a href="#设置增量消费的commit次数，默认设置为-1即可，表示增量消费到目前新数据。" class="headerlink" title="设置增量消费的commit次数，默认设置为-1即可，表示增量消费到目前新数据。"></a>设置增量消费的commit次数，默认设置为-1即可，表示增量消费到目前新数据。</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> hoodie.hudi_tbl.consume.max.commits=<span class="number">-1</span>;</span><br></pre></td></tr></table></figure>
+<p>自己根据需要修改commit次数</p>
+<h4 id="查询语句"><a href="#查询语句" class="headerlink" title="查询语句"></a>查询语句</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> hudi_tbl <span class="keyword">where</span> <span class="string">`_hoodie_commit_time`</span> &gt; <span class="string">"20211015182330"</span>;</span><br></pre></td></tr></table></figure>
+<p>因小文件合并机制，在新的commit时间戳的文件中，包含旧数据，因此需要再加where做二次过滤。</p>
+<p>注：这里的设置设置参数有效范围为<code>connect session</code><br>Hudi 0.9.0版本只支持表名参数，不支持数据库限定，这样设置了<code>hudi_tbl</code>为增量表后，所有数据库的该表名的表查询时都为增量查询模式，起始时间等参数为最后一次设定值，在后面的新版本中，添加了数据库限定，如hudi数据库</p>
+
+      
+
+      
+	  
+    </div>
+    <div class="article-info article-info-index">
+      
+	   
+		  
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hive</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+		  
+
+	  
+	 
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2022/06/27/hiveIncrQueryHudi/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
     <article id="post-hadoopSourceCodeCompilation" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -227,12 +417,6 @@
         <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>记录总结Hadoop源码编译打包过程，根据源码里的文档，一开始以为不支持在Windows系统上打包，只支持Unix和Mac，所以这里我在自己虚拟机centos7系统上编译，后来在文档后面部分才发现也支持在Windows上编译，不过还需要安装Visual Studio 2010，可能不如还不如在虚拟机上编译简单，如果想尝试在Windows上编译，可以看源码里的文档<code>BUILDING.txt</code>中<code>Building on Windows</code>的部分</p>
 <h2 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h2><p>因之前没有下载过hadoop的源码，所以需要先下载hadoop的源码</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> https://github.com/apache/hadoop.git</span><br></pre></td></tr></table></figure>
-<p>git命令克隆源码，克隆的过程中可能会有异常：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">error: unable to create file hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/test/java/org/apache/hadoop/yarn/server/resourcemanager/monitor/capacity/mockframework/ProportionalCapacityPreemptionPolicyMockFramework.java: Filename too <span class="keyword">long</span></span><br><span class="line">error: unable to create file hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-timelineservice-documentstore/src/main/java/org/apache/hadoop/yarn/server/timelineservice/documentstore/collection/document/flowactivity/FlowActivityDocument.java: Filename too <span class="keyword">long</span></span><br><span class="line">error: unable to create file hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-timelineservice-hbase/hadoop-yarn-server-timelineservice-hbase-client/src/main/java/org/apache/hadoop/yarn/server/timelineservice/reader/filter/TimelineFilterUtils.java: Filename too <span class="keyword">long</span></span><br><span class="line">error: unable to create file hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-timelineservice-hbase/hadoop-yarn-server-timelineservice-hbase-client/src/main/java/org/apache/hadoop/yarn/server/timelineservice/reader/filter/<span class="keyword">package</span>-info.java: Filename too <span class="keyword">long</span></span><br><span class="line">error: unable to create file hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-timelineservice-hbase/hadoop-yarn-server-timelineservice-hbase-client/src/main/java/org/apache/hadoop/yarn/server/timelineservice/storage/HBaseStorageMonitor.java: Filename too <span class="keyword">long</span></span><br><span class="line">error: unable to create file hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-timelineservice-hbase/hadoop-yarn-server-timelineservice-hbase-client/src/main/java/org/apache/hadoop/yarn/server/timelineservice/storage/HBaseTimelineReaderImpl.java: Filename too <span class="keyword">long</span></span><br><span class="line">error: unable to create file hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-timelineservice-hbase/hadoop-yarn-server-timelineservice-hbase-client/src/main/java/org/apache/hadoop/yarn/server/timelineservice/storage/HBaseTimelineSchemaCreator.java: Filename too <span class="keyword">long</span></span><br><span class="line">error: unable to create file hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-timelineservice-hbase/hadoop-yarn-server-timelineservice-hbase-client/src/main/java/org/apache/hadoop/yarn/server/timelineservice/storage/HBaseTimelineWriterImpl.java: Filename too <span class="keyword">long</span></span><br><span class="line">fatal: cannot create directory at <span class="string">'hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-timelineservice-hbase/hadoop-yarn-server-timelineservice-hbase-client/src/main/java/org/apache/hadoop/yarn/server/timelineservice/storage/application'</span>: Filename too <span class="keyword">long</span></span><br></pre></td></tr></table></figure>
-<p>因文件名过长，不能创建文件，只需要修改配置</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git config --global core.longpaths <span class="literal">true</span></span><br></pre></td></tr></table></figure>
-<p>删除clone失败的文件，重新clone就可以了，然后切换自己想要打包的版本分支，我这里使用的是分支3.3.1: <code>branch-3.3.1</code></p>
-<p>这里最好在虚拟机上clone代码，如果在Windows系统上克隆代码再上传到虚拟机上，则在编译打包时会出现脚本因行结尾字符不一致导致的问题，后面有说明解决方法</p>
         
           <a class="article-more-a" href="/2022/06/22/hadoopSourceCodeCompilation/#more">more >></a>
         
@@ -317,7 +501,7 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>总计如何利用Hudi DeltaStreamer工具从外部数据源读取数据并写入新的Hudi表，<code>HoodieDeltaStreamer</code>是hudi-utilities-bundle的一部分，按照<a href="https://dongkelun.com/2022/05/12/hudiIntroduction/#Hudi-%E5%AE%89%E8%A3%85">Apache Hudi 入门学习总结</a>,将hudi-spark-bundle包拷贝至$SPARK_HOME/jars目录下即可。</p>
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>总结如何利用Hudi DeltaStreamer工具从外部数据源读取数据并写入新的Hudi表，<code>HoodieDeltaStreamer</code>是hudi-utilities-bundle的一部分，按照<a href="https://dongkelun.com/2022/05/12/hudiIntroduction/#Hudi-%E5%AE%89%E8%A3%85">Apache Hudi 入门学习总结</a>,将hudi-spark-bundle包拷贝至$SPARK_HOME/jars目录下即可。</p>
 <p><code>HoodieDeltaStreamer</code>提供了从DFS或Kafka等不同来源进行摄取的方式，并具有以下功能。</p>
 <ul>
 <li>从Kafka单次摄取新事件，从Sqoop、HiveIncrementalPuller输出或DFS文件夹中的多个文件 增量导入</li>
@@ -487,188 +671,9 @@
 
 
   
-    <article id="post-hudiIntroduction" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2022/05/12/hudiIntroduction/">Apache Hudi 入门学习总结</a>
-    </h1>
-  
-
-        
-        <a href="/2022/05/12/hudiIntroduction/" class="archive-article-date">
-  	<time datetime="2022-05-11T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2022-05-12</time>
-</a>
-        
-      </header>
-	    
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>学习和使用Hudi近一年了，由于之前忙于工作和学习，没时间总结，现在从头开始总结一下，先从入门开始</p>
-<h2 id="Hudi-概念"><a href="#Hudi-概念" class="headerlink" title="Hudi 概念"></a>Hudi 概念</h2><p>Apache Hudi 是一个支持插入、更新、删除的增量数据湖处理框架，有两种表类型：COW和MOR，可以自动合并小文件，Hudi自己管理元数据，元数据目录为<code>.hoodie</code>,<br>具体的概念可以查看官网<a href="https://hudi.apache.org/cn/docs/0.9.0/overview" target="_blank" rel="noopener">https://hudi.apache.org/cn/docs/0.9.0/overview</a></p>
-<h2 id="Hudi-学习"><a href="#Hudi-学习" class="headerlink" title="Hudi 学习"></a>Hudi 学习</h2><ul>
-<li>Hudi 官网 <a href="https://hudi.apache.org/cn/docs/0.9.0/overview/" target="_blank" rel="noopener">https://hudi.apache.org/cn/docs/0.9.0/overview/</a>(因本人最开始学习时Hudi的版本为0.9.0版本，所以这里列的也是0.9.0的连接)</li>
-<li>Hudi 官方公众号号：ApacheHudi （Hudi PMC leesf 运营的）,自己搜索即可，这里不贴二维码了</li>
-<li>Github <a href="https://github.com/leesf/hudi-resources" target="_blank" rel="noopener">https://github.com/leesf/hudi-resources</a> 这个是Hudi PMC leesf整理的公众号上的文章，PC 浏览器上看比较方便</li>
-<li>GitHub 源码 <a href="https://github.com/apache/hudi" target="_blank" rel="noopener">https://github.com/apache/hudi</a> 想要深入学习，还是得看源码并多和社区交流</li>
-</ul>
-        
-          <a class="article-more-a" href="/2022/05/12/hudiIntroduction/#more">more >></a>
-        
-      
-
-      
-	  
-    </div>
-    <div class="article-info article-info-index">
-      
-	   
-		  
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hive</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-		  
-
-	  
-	 
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2022/05/12/hudiIntroduction/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-hudiCleanPolicy" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2022/04/19/hudiCleanPolicy/">Hudi Clean Policy 清理策略实现分析</a>
-    </h1>
-  
-
-        
-        <a href="/2022/04/19/hudiCleanPolicy/" class="archive-article-date">
-  	<time datetime="2022-04-18T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2022-04-19</time>
-</a>
-        
-      </header>
-	    
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>总结Hudi Clean Policy清理策略,从源码层面分析如何实现，上一篇文章<a href="https://dongkelun.com/2022/04/18/hudiClean/">Hudi Clean 清理文件实现分析</a>从源码层面分析总结了Hudi Clean的整体流程，但是对于和策略有关的<a href="https://dongkelun.com/2022/04/18/hudiClean/#%E8%8E%B7%E5%8F%96%E8%A6%81%E5%88%A0%E9%99%A4%E7%9A%84%E6%96%87%E4%BB%B6%E5%88%97%E8%A1%A8">获取要删除的文件列表</a>部分没有深入分析，这一篇详细分析<code>KEEP_LATEST_COMMITS</code>策略是如何实现的。</p>
-<h2 id="getEarliestCommitToRetain"><a href="#getEarliestCommitToRetain" class="headerlink" title="getEarliestCommitToRetain"></a>getEarliestCommitToRetain</h2><p>获取最早需要保留的commit<br><code>KEEP_LATEST_FILE_VERSIONS</code>: 返回空<br><code>KEEP_LATEST_COMMITS</code>：如果目前完成状态的commit数小于等于<code>hoodie.cleaner.commits.retained</code>，则返回空，否则，返回倒数第<code>hoodie.cleaner.commits.retained</code>(默认10)个<code>.commit</code></p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Returns earliest commit to retain based on cleaning policy.</span></span><br><span class="line"><span class="comment"> * 根据清理策略返回最早的需要保留的commit</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Option&lt;HoodieInstant&gt; <span class="title">getEarliestCommitToRetain</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  Option&lt;HoodieInstant&gt; earliestCommitToRetain = Option.empty();</span><br><span class="line">  <span class="comment">// 获取最大保留commit次数，默认值10，配置参数为`hoodie.cleaner.commits.retained`</span></span><br><span class="line">  <span class="keyword">int</span> commitsRetained = config.getCleanerCommitsRetained();</span><br><span class="line">  <span class="keyword">if</span> (config.getCleanerPolicy() == HoodieCleaningPolicy.KEEP_LATEST_COMMITS</span><br><span class="line">      &amp;&amp; commitTimeline.countInstants() &gt; commitsRetained) &#123;</span><br><span class="line">    <span class="comment">// 如果清理策略为KEEP_LATEST_COMMITS,且commit的总数大于commitsRetained</span></span><br><span class="line">    <span class="comment">// 那么最早需要保留的commit为最新的第10个commit,也就倒数第10个</span></span><br><span class="line">    <span class="comment">// commitTimeline.instants是按照时间从小到大排序的，具体实现在`HoodieTableMetaClient.scanHoodieInstantsFromFileSystem`</span></span><br><span class="line">    <span class="comment">// 假如commit为1、2、3...11,那么`commitTimeline.countInstants() - commitsRetained`等于1，</span></span><br><span class="line">    <span class="comment">// 也就是返回commitTimeline.instants.get(1),返回`commit 2`(下标从0开始)，也就是倒数第10个</span></span><br><span class="line">    <span class="comment">// 当策略为KEEP_LATEST_FILE_VERSIONS，直接返回空</span></span><br><span class="line">    earliestCommitToRetain = commitTimeline.nthInstant(commitTimeline.countInstants() - commitsRetained);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> earliestCommitToRetain;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-        
-          <a class="article-more-a" href="/2022/04/19/hudiCleanPolicy/#more">more >></a>
-        
-      
-
-      
-	  
-    </div>
-    <div class="article-info article-info-index">
-      
-	   
-		  
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-		  
-
-	  
-	 
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2022/04/19/hudiCleanPolicy/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
   
     <nav id="page-nav">
-      <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/24/">24</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
+      <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/25/">25</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
     </nav>
   
 
@@ -823,6 +828,14 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -835,27 +848,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">SQL</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -867,15 +868,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -884,6 +877,18 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -896,18 +901,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -927,6 +920,22 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
@@ -935,19 +944,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -963,11 +972,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+                <a href="javascript:void(0)" class="js-tag color5">java</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">java</a>
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -975,7 +984,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -983,11 +992,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -999,30 +1016,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
@@ -1031,15 +1024,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Python</a>
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1047,7 +1036,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1059,7 +1048,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">原理</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1099,19 +1108,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1119,19 +1120,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1140,6 +1137,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1167,7 +1172,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
             
             <div class="clearfix"></div>

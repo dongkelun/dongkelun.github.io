@@ -19,7 +19,7 @@
 <meta property="og:locale" content="cn">
 <meta property="og:image" content="https://tva2.sinaimg.cn/large/e44344dcly1h3gultr3x4j21la09fwk8.jpg">
 <meta property="og:image" content="https://tva4.sinaimg.cn/large/e44344dcly1h3gulkx55uj20lv1f0e33.jpg">
-<meta property="og:updated_time" content="2022-06-22T03:30:18.922Z">
+<meta property="og:updated_time" content="2022-06-28T08:45:36.527Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Hadoop源码编译打包">
 <meta name="twitter:description" content="前言记录总结Hadoop源码编译打包过程，根据源码里的文档，一开始以为不支持在Windows系统上打包，只支持Unix和Mac，所以这里我在自己虚拟机centos7系统上编译，后来在文档后面部分才发现也支持在Windows上编译，不过还需要安装Visual Studio 2010，可能不如还不如在虚拟机上编译简单，如果想尝试在Windows上编译，可以看源码里的文档BUILDING.txt中Bui">
@@ -252,13 +252,14 @@
         <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>记录总结Hadoop源码编译打包过程，根据源码里的文档，一开始以为不支持在Windows系统上打包，只支持Unix和Mac，所以这里我在自己虚拟机centos7系统上编译，后来在文档后面部分才发现也支持在Windows上编译，不过还需要安装Visual Studio 2010，可能不如还不如在虚拟机上编译简单，如果想尝试在Windows上编译，可以看源码里的文档<code>BUILDING.txt</code>中<code>Building on Windows</code>的部分</p>
 <h2 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h2><p>因之前没有下载过hadoop的源码，所以需要先下载hadoop的源码</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> https://github.com/apache/hadoop.git</span><br></pre></td></tr></table></figure>
+<a id="more"></a>
 <p>git命令克隆源码，克隆的过程中可能会有异常：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">error: unable to create file hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/test/java/org/apache/hadoop/yarn/server/resourcemanager/monitor/capacity/mockframework/ProportionalCapacityPreemptionPolicyMockFramework.java: Filename too <span class="keyword">long</span></span><br><span class="line">error: unable to create file hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-timelineservice-documentstore/src/main/java/org/apache/hadoop/yarn/server/timelineservice/documentstore/collection/document/flowactivity/FlowActivityDocument.java: Filename too <span class="keyword">long</span></span><br><span class="line">error: unable to create file hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-timelineservice-hbase/hadoop-yarn-server-timelineservice-hbase-client/src/main/java/org/apache/hadoop/yarn/server/timelineservice/reader/filter/TimelineFilterUtils.java: Filename too <span class="keyword">long</span></span><br><span class="line">error: unable to create file hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-timelineservice-hbase/hadoop-yarn-server-timelineservice-hbase-client/src/main/java/org/apache/hadoop/yarn/server/timelineservice/reader/filter/<span class="keyword">package</span>-info.java: Filename too <span class="keyword">long</span></span><br><span class="line">error: unable to create file hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-timelineservice-hbase/hadoop-yarn-server-timelineservice-hbase-client/src/main/java/org/apache/hadoop/yarn/server/timelineservice/storage/HBaseStorageMonitor.java: Filename too <span class="keyword">long</span></span><br><span class="line">error: unable to create file hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-timelineservice-hbase/hadoop-yarn-server-timelineservice-hbase-client/src/main/java/org/apache/hadoop/yarn/server/timelineservice/storage/HBaseTimelineReaderImpl.java: Filename too <span class="keyword">long</span></span><br><span class="line">error: unable to create file hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-timelineservice-hbase/hadoop-yarn-server-timelineservice-hbase-client/src/main/java/org/apache/hadoop/yarn/server/timelineservice/storage/HBaseTimelineSchemaCreator.java: Filename too <span class="keyword">long</span></span><br><span class="line">error: unable to create file hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-timelineservice-hbase/hadoop-yarn-server-timelineservice-hbase-client/src/main/java/org/apache/hadoop/yarn/server/timelineservice/storage/HBaseTimelineWriterImpl.java: Filename too <span class="keyword">long</span></span><br><span class="line">fatal: cannot create directory at <span class="string">'hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-timelineservice-hbase/hadoop-yarn-server-timelineservice-hbase-client/src/main/java/org/apache/hadoop/yarn/server/timelineservice/storage/application'</span>: Filename too <span class="keyword">long</span></span><br></pre></td></tr></table></figure>
 <p>因文件名过长，不能创建文件，只需要修改配置</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git config --global core.longpaths <span class="literal">true</span></span><br></pre></td></tr></table></figure>
 <p>删除clone失败的文件，重新clone就可以了，然后切换自己想要打包的版本分支，我这里使用的是分支3.3.1: <code>branch-3.3.1</code></p>
 <p>这里最好在虚拟机上clone代码，如果在Windows系统上克隆代码再上传到虚拟机上，则在编译打包时会出现脚本因行结尾字符不一致导致的问题，后面有说明解决方法</p>
-<a id="more"></a>
+<!-- more -->
 <h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><h3 id="BUILDING-txt"><a href="#BUILDING-txt" class="headerlink" title="BUILDING.txt"></a>BUILDING.txt</h3><p>源码BUILDING.txt里，对必要环境依赖做了说明：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">----------------------------------------------------------------------------------</span><br><span class="line">Requirements:</span><br><span class="line"></span><br><span class="line">* Unix System</span><br><span class="line">* JDK <span class="number">1.8</span></span><br><span class="line">* Maven <span class="number">3.3</span> or later</span><br><span class="line">* Protocol Buffers <span class="number">3.7</span>.1 (<span class="keyword">if</span> compiling <span class="keyword">native</span> code)</span><br><span class="line">* CMake <span class="number">3.1</span> <span class="function">or <span class="title">newer</span> <span class="params">(<span class="keyword">if</span> compiling <span class="keyword">native</span> code)</span></span></span><br><span class="line"><span class="function">* Zlib <span class="title">devel</span> <span class="params">(<span class="keyword">if</span> compiling <span class="keyword">native</span> code)</span></span></span><br><span class="line"><span class="function">* Cyrus SASL <span class="title">devel</span> <span class="params">(<span class="keyword">if</span> compiling <span class="keyword">native</span> code)</span></span></span><br><span class="line"><span class="function">* One of the compilers that support thread_local storage: GCC 4.8.1 or later, Visual Studio,</span></span><br><span class="line"><span class="function">  <span class="title">Clang</span> <span class="params">(community version)</span>, <span class="title">Clang</span> <span class="params">(version <span class="keyword">for</span> iOS <span class="number">9</span> and later)</span> <span class="params">(<span class="keyword">if</span> compiling <span class="keyword">native</span> code)</span></span></span><br><span class="line"><span class="function">* openssl <span class="title">devel</span> <span class="params">(<span class="keyword">if</span> compiling <span class="keyword">native</span> hadoop-pipes and to get the best HDFS encryption performance)</span></span></span><br><span class="line"><span class="function">* Linux <span class="title">FUSE</span> <span class="params">(Filesystem in Userspace)</span> version 2.6 or <span class="title">above</span> <span class="params">(<span class="keyword">if</span> compiling fuse_dfs)</span></span></span><br><span class="line"><span class="function">* <span class="title">Doxygen</span> <span class="params">( <span class="keyword">if</span> compiling libhdfspp and generating the documents )</span></span></span><br><span class="line"><span class="function">* Internet connection <span class="keyword">for</span> first <span class="title">build</span> <span class="params">(to fetch all Maven and Hadoop dependencies)</span></span></span><br><span class="line"><span class="function">* <span class="title">python</span> <span class="params">(<span class="keyword">for</span> releasedocs)</span></span></span><br><span class="line"><span class="function">* <span class="title">bats</span> <span class="params">(<span class="keyword">for</span> shell code testing)</span></span></span><br><span class="line"><span class="function">* Node.js / bower / Ember-<span class="title">cli</span> <span class="params">(<span class="keyword">for</span> YARN UI v2 building)</span></span></span><br><span class="line"><span class="function"></span></span><br><span class="line"><span class="function">----------------------------------------------------------------------------------</span></span><br></pre></td></tr></table></figure>
 <h3 id="已有环境依赖"><a href="#已有环境依赖" class="headerlink" title="已有环境依赖"></a>已有环境依赖</h3><ul>
@@ -269,7 +270,7 @@
 <li>Python 3.8.0 （之前有使用需求，非必要）</li>
 <li>Node v12.16.3 </li>
 </ul>
-<h3 id="Native-libraries"><a href="#Native-libraries" class="headerlink" title="Native libraries"></a>Native libraries</h3><p>可以看到如果要编译Hadoop Native libraries，需要安装很多依赖，如果选择不编译则会简单很多，这里选择编译，关于Hadoop Native libraries，大家如果有不懂得可以自己查资料了解</p>
+<h3 id="Native-libraries"><a href="#Native-libraries" class="headerlink" title="Native libraries"></a>Native libraries</h3><p>可以看到如果要编译Hadoop Native libraries，需要安装很多依赖，如果选择不编译则会简单很多，这里选择编译，关于Hadoop Native libraries，大家如果有不懂的可以自己查资料了解</p>
 <p>Hadoop源码文档里提供了Ubuntu 14.04的安装命令，因为这里是centos系统，将<code>apt-get</code>改成<code>yum</code>试一下<br>（其实也提供了centos的安装命令，不过是centos8，不知centos8和7的差别大不大，我没有再尝试，因为我已经安装完依赖并打包成功了）</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum install -y   build-essential autoconf automake libtool cmake zlib1g-dev pkg-config libssl-dev libsasl2-dev</span><br></pre></td></tr></table></figure>
 <p>结果发现<code>autoconf</code>和<code>automake</code>已安装，build-essential zlib1g-dev pkg-config libssl-dev libsasl2-dev找不到相关的包，这样只安装了<code>cmake</code></p>
@@ -431,6 +432,15 @@
 
   
 <nav id="article-nav">
+  
+    <a href="/2022/06/27/hiveIncrQueryHudi/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          Hive增量查询Hudi表
+        
+      </div>
+    </a>
   
   
     <a href="/2022/06/12/hudiDeltaStreamer/" id="article-nav-older" class="article-nav-link-wrap">
@@ -643,6 +653,14 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -655,27 +673,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">SQL</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -687,15 +693,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -704,6 +702,18 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -716,18 +726,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -747,6 +745,22 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
@@ -755,19 +769,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -783,11 +797,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+                <a href="javascript:void(0)" class="js-tag color5">java</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">java</a>
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -795,7 +809,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -803,11 +817,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -819,30 +841,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
@@ -851,15 +849,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Python</a>
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -867,7 +861,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -879,7 +873,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">原理</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -919,19 +933,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -939,19 +945,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -960,6 +962,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -987,7 +997,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
             
             <div class="clearfix"></div>
