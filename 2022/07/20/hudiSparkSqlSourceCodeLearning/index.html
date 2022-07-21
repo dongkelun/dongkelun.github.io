@@ -17,7 +17,7 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言简要总结Hudi Spark Sql源码执行逻辑，从建表开始。其实从去年开始接触Hudi的时候就研究学习了Hudi Spark SQL的部分源码，并贡献了几个PR，但是完整的逻辑有些地方还没有完全梳理清楚，所以现在想要从头开始学习，搞懂一些知识难点，这样以后看相关源码的时候就不会导致因为一些关键点不懂影响进度。  由于本人能力和精力有限，本人只讲解自己觉得比较关键的点，主要目的是梳理整个流程。">
 <meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2022-07-21T02:01:25.214Z">
+<meta property="og:updated_time" content="2022-07-21T02:26:24.017Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Hudi Spark SQL源码学习总结-Create Table">
 <meta name="twitter:description" content="前言简要总结Hudi Spark Sql源码执行逻辑，从建表开始。其实从去年开始接触Hudi的时候就研究学习了Hudi Spark SQL的部分源码，并贡献了几个PR，但是完整的逻辑有些地方还没有完全梳理清楚，所以现在想要从头开始学习，搞懂一些知识难点，这样以后看相关源码的时候就不会导致因为一些关键点不懂影响进度。  由于本人能力和精力有限，本人只讲解自己觉得比较关键的点，主要目的是梳理整个流程。">
@@ -254,14 +254,7 @@
 <blockquote>
 <p>由于本人能力和精力有限，本人只讲解自己觉得比较关键的点，主要目的是梳理整个流程。</p>
 </blockquote>
-<h2 id="Spark-SQL源码"><a href="#Spark-SQL源码" class="headerlink" title="Spark SQL源码"></a>Spark SQL源码</h2><p>既然是学习Hudi Spark SQL源码，那么肯定离不开Spark SQL源码，所以需要先学习了解Spark SQL的源码，在CSDN上发现一位作者写的几篇文章不错，这几天我也主要是参考他写的这几篇文章结合源码进行学习的，大家可以参考一下：</p>
-<ul>
-<li><a href="https://blog.csdn.net/Shockang/article/details/122181886" target="_blank" rel="noopener">Spark SQL 工作流程源码解析（一）总览（基于 Spark 3.3.0）</a></li>
-<li><a href="https://blog.csdn.net/Shockang/article/details/122522780" target="_blank" rel="noopener">Spark SQL 工作流程源码解析（二）parsing 阶段（基于 Spark 3.3.0）</a></li>
-<li><a href="https://blog.csdn.net/Shockang/article/details/123122650" target="_blank" rel="noopener">Spark SQL 工作流程源码解析（三）analysis 阶段（基于 Spark 3.3.0）</a></li>
-<li><a href="https://blog.csdn.net/Shockang/article/details/123930918" target="_blank" rel="noopener">Spark SQL 工作流程源码解析（四）optimization 阶段（基于 Spark 3.3.0）</a></li>
-<li><a href="https://blog.csdn.net/Shockang/article/details/124461650" target="_blank" rel="noopener">Spark SQL 工作流程源码解析（五）planning 阶段（基于 Spark 3.3.0）</a></li>
-</ul>
+<h2 id="Spark-SQL源码"><a href="#Spark-SQL源码" class="headerlink" title="Spark SQL源码"></a>Spark SQL源码</h2><p>既然是学习Hudi Spark SQL源码，那么肯定离不开Spark SQL源码，所以需要先学习了解Spark SQL的源码，在CSDN上发现一位作者写的几篇文章不错，这几天我也主要是参考他写的这几篇文章并结合源码进行学习的,我把它们放在后面的参考文章中，大家可以参考一下。</p>
 <h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>Spark 2.4.4<br>Hudi master分支 0.12.0-SNAPSHOT</p>
 <p>虽然在学习Spark SQL源码的时候用的是Spark3.3,但是因为Hudi源码默认的Spark版本是2.4.4，如果改版本在IDEA调试的话比较麻烦，所以是用Spark2.4.4版本，但我和Spark3.3对比了一下，大致逻辑是一样的。</p>
 <a id="more"></a>
@@ -277,7 +270,7 @@
 <ul>
 <li><p>hudi-spark模块下的 <code>HoodieSqlCommon.g4</code></p>
 </li>
-<li><p>hudi-spark2模块下的 <code>SqlBase.g4</code></p>
+<li><p>hudi-spark2模块下的 <code>SqlBase.g4</code>，这个其实是拷贝的Spark2.4.5源码里的<code>SqlBase.g4</code></p>
 </li>
 <li><p>hudi-spark2模块下的 <code>HoodieSqlBase.g4</code>  其中导入了上面的<code>SqlBase.g4</code>:<code>import SqlBase</code></p>
 </li>
@@ -365,7 +358,7 @@
 <p>可以看出来如果是spark3的话，还有别的规则，因为这里是spark2,所以只看默认的规则就可以了</p>
 <p>看完<code>sparkSession.sessionState.analyzer</code>的定义，接下来就看<code>analysis</code>具体的实现方法了</p>
 <h3 id="executeAndCheck"><a href="#executeAndCheck" class="headerlink" title="executeAndCheck"></a>executeAndCheck</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">def <span class="title">executeAndCheck</span><span class="params">(plan: LogicalPlan)</span>: LogicalPlan </span>= AnalysisHelper.markInAnalyzer &#123;</span><br><span class="line">  val analyzed = execute(plan)</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    checkAnalysis(analyzed)</span><br><span class="line">    analyzed</span><br><span class="line">  &#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> e: AnalysisException =&gt;</span><br><span class="line">      val ae = <span class="keyword">new</span> AnalysisException(e.message, e.line, e.startPosition, Option(analyzed))</span><br><span class="line">      ae.setStackTrace(e.getStackTrace)</span><br><span class="line">      <span class="keyword">throw</span> ae</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>根据开头提到的文章中的学习，我们知道，主要分为2 步：<br>1、执行 execute(plan)<br>2、校验 checkAnalysis(analyzed)</p>
+<p>根据参考文章中的学习，我们知道，主要分为2 步：<br>1、执行 execute(plan)<br>2、校验 checkAnalysis(analyzed)</p>
 <p>这里主要讲Hudi的实现，我们知道在执行阶段实际是调用父类<code>RuleExecutor</code>的<code>execute</code>方法，它会遍历规则批中的规则，并应用规则，调用规则的<code>apply</code>方法</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">override def <span class="title">execute</span><span class="params">(plan: LogicalPlan)</span>: LogicalPlan </span>= &#123;</span><br><span class="line">  AnalysisContext.reset()</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    executeSameContext(plan)</span><br><span class="line">  &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    AnalysisContext.reset()</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> def <span class="title">executeSameContext</span><span class="params">(plan: LogicalPlan)</span>: LogicalPlan </span>= <span class="keyword">super</span>.execute(plan)</span><br></pre></td></tr></table></figure>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">def <span class="title">execute</span><span class="params">(plan: TreeType)</span>: TreeType </span>= &#123;</span><br><span class="line">    var curPlan = plan</span><br><span class="line">    val queryExecutionMetrics = RuleExecutor.queryExecutionMeter</span><br><span class="line"></span><br><span class="line">    batches.foreach &#123; batch =&gt;</span><br><span class="line">      val batchStartPlan = curPlan</span><br><span class="line">      var iteration = <span class="number">1</span></span><br><span class="line">      var lastPlan = curPlan</span><br><span class="line">      var <span class="keyword">continue</span> = <span class="keyword">true</span></span><br><span class="line"></span><br><span class="line">      <span class="comment">// Run until fix point (or the max number of iterations as specified in the strategy.</span></span><br><span class="line">      <span class="keyword">while</span> (<span class="keyword">continue</span>) &#123;</span><br><span class="line">        curPlan = batch.rules.foldLeft(curPlan) &#123;</span><br><span class="line">          <span class="keyword">case</span> (plan, rule) =&gt;</span><br><span class="line">            val startTime = System.nanoTime()</span><br><span class="line">            <span class="comment">// 调用规则的`apply`方法</span></span><br><span class="line">            val result = rule(plan)</span><br><span class="line">            val runTime = System.nanoTime() - startTime</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (!result.fastEquals(plan)) &#123;</span><br><span class="line">              queryExecutionMetrics.incNumEffectiveExecution(rule.ruleName)</span><br><span class="line">              queryExecutionMetrics.incTimeEffectiveExecutionBy(rule.ruleName, runTime)</span><br><span class="line">              logTrace(</span><br><span class="line">                s<span class="string">""</span><span class="string">"</span></span><br><span class="line"><span class="string">                  |=== Applying Rule $&#123;rule.ruleName&#125; ===</span></span><br><span class="line"><span class="string">                  |$&#123;sideBySide(plan.treeString, result.treeString).mkString("</span>\n<span class="string">")&#125;</span></span><br><span class="line"><span class="string">                "</span><span class="string">""</span>.stripMargin)</span><br><span class="line">            &#125;</span><br></pre></td></tr></table></figure>
@@ -381,18 +374,18 @@
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">case</span> class <span class="title">HoodiePostAnalysisRule</span><span class="params">(sparkSession: SparkSession)</span> extends Rule[LogicalPlan] </span>&#123;</span><br><span class="line">  <span class="function">override def <span class="title">apply</span><span class="params">(plan: LogicalPlan)</span>: LogicalPlan </span>= &#123;</span><br><span class="line">    plan match &#123;</span><br><span class="line">      <span class="comment">// Rewrite the CreateDataSourceTableCommand to CreateHoodieTableCommand</span></span><br><span class="line">      <span class="function"><span class="keyword">case</span> <span class="title">CreateDataSourceTableCommand</span><span class="params">(table, ignoreIfExists)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">if</span> sparkAdapter.<span class="title">isHoodieTable</span><span class="params">(table)</span> </span>=&gt;</span><br><span class="line">        CreateHoodieTableCommand(table, ignoreIfExists)</span><br><span class="line">      <span class="comment">// Rewrite the DropTableCommand to DropHoodieTableCommand</span></span><br><span class="line">      <span class="function"><span class="keyword">case</span> <span class="title">DropTableCommand</span><span class="params">(tableName, ifExists, isView, purge)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">if</span> sparkAdapter.<span class="title">isHoodieTable</span><span class="params">(tableName, sparkSession)</span> </span>=&gt;</span><br><span class="line">        DropHoodieTableCommand(tableName, ifExists, isView, purge)</span><br><span class="line">      <span class="comment">// Rewrite the AlterTableDropPartitionCommand to AlterHoodieTableDropPartitionCommand</span></span><br><span class="line">      <span class="function"><span class="keyword">case</span> <span class="title">AlterTableDropPartitionCommand</span><span class="params">(tableName, specs, ifExists, purge, retainData)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">if</span> sparkAdapter.<span class="title">isHoodieTable</span><span class="params">(tableName, sparkSession)</span> </span>=&gt;</span><br><span class="line">          AlterHoodieTableDropPartitionCommand(tableName, specs, ifExists, purge, retainData)</span><br><span class="line">      <span class="comment">// Rewrite the AlterTableRenameCommand to AlterHoodieTableRenameCommand</span></span><br><span class="line">      <span class="comment">// Rewrite the AlterTableAddColumnsCommand to AlterHoodieTableAddColumnsCommand</span></span><br><span class="line">      <span class="function"><span class="keyword">case</span> <span class="title">AlterTableAddColumnsCommand</span><span class="params">(tableId, colsToAdd)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">if</span> sparkAdapter.<span class="title">isHoodieTable</span><span class="params">(tableId, sparkSession)</span> </span>=&gt;</span><br><span class="line">          AlterHoodieTableAddColumnsCommand(tableId, colsToAdd)</span><br><span class="line">      <span class="comment">// Rewrite the AlterTableRenameCommand to AlterHoodieTableRenameCommand</span></span><br><span class="line">      <span class="function"><span class="keyword">case</span> <span class="title">AlterTableRenameCommand</span><span class="params">(oldName, newName, isView)</span></span></span><br><span class="line"><span class="function">        ......</span></span><br><span class="line"><span class="function"></span></span><br><span class="line"><span class="function">  <span class="comment">// 判断是否是Hudi表，通过比较provider是否等于"hudi"</span></span></span><br><span class="line"><span class="function">  def <span class="title">isHoodieTable</span><span class="params">(table: CatalogTable)</span>: Boolean </span>= &#123;</span><br><span class="line">    table.provider.map(_.toLowerCase(Locale.ROOT)).orNull == <span class="string">"hudi"</span></span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
 <p>匹配到<code>CreateDataSourceTableCommand</code>，并判断是Hudi表，将其转变为<code>CreateHoodieTableCommand</code>,这个<code>CreateHoodieTableCommand</code>的run方法实现了创建Hudi表的逻辑</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">case</span> class <span class="title">CreateHoodieTableCommand</span><span class="params">(table: CatalogTable, ignoreIfExists: Boolean)</span></span></span><br><span class="line"><span class="function">  extends HoodieLeafRunnableCommand with SparkAdapterSupport </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="function">override def <span class="title">run</span><span class="params">(sparkSession: SparkSession)</span>: Seq[Row] </span>= &#123;</span><br><span class="line">    val tableIsExists = sparkSession.sessionState.catalog.tableExists(table.identifier)</span><br><span class="line">    <span class="keyword">if</span> (tableIsExists) &#123;</span><br><span class="line">      <span class="keyword">if</span> (ignoreIfExists) &#123;</span><br><span class="line">        <span class="comment">// scalastyle:off</span></span><br><span class="line">        <span class="keyword">return</span> Seq.empty[Row]</span><br><span class="line">        <span class="comment">// scalastyle:on</span></span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(s<span class="string">"Table $&#123;table.identifier.unquotedString&#125; already exists."</span>)</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    val hoodieCatalogTable = HoodieCatalogTable(sparkSession, table)</span><br><span class="line">    <span class="comment">// check if there are conflict between table configs defined in hoodie table and properties defined in catalog.</span></span><br><span class="line">    CreateHoodieTableCommand.validateTblProperties(hoodieCatalogTable)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// init hoodie table</span></span><br><span class="line">    hoodieCatalogTable.initHoodieTable()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="comment">// create catalog table for this hoodie table</span></span><br><span class="line">      CreateHoodieTableCommand.createTableInCatalog(sparkSession, hoodieCatalogTable, ignoreIfExists)</span><br><span class="line">    &#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">      <span class="function"><span class="keyword">case</span> <span class="title">NonFatal</span><span class="params">(e)</span> </span>=&gt;</span><br><span class="line">        logWarning(s<span class="string">"Failed to create catalog table in metastore: $&#123;e.getMessage&#125;"</span>)</span><br><span class="line">    &#125;</span><br><span class="line">    Seq.empty[Row]</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="optimization-和-planning"><a href="#optimization-和-planning" class="headerlink" title="optimization 和 planning"></a>optimization 和 planning</h2><p>那么又是在哪里执行了run方法呢，其实是在后面的<code>planning</code>阶段,根据前面的学习，我们知道<code>analysis</code>阶段后面还有<code>optimization</code>和<code>planning</code>阶段，但是学习的文章中提到</p>
+<h2 id="optimization-和-planning"><a href="#optimization-和-planning" class="headerlink" title="optimization 和 planning"></a>optimization 和 planning</h2><p>那么又是在哪里执行了run方法呢，其实是在后面的<code>planning</code>阶段,根据前面的学习，我们知道<code>analysis</code>阶段后面还有<code>optimization</code>和<code>planning</code>阶段，但是参考文章中提到</p>
 <blockquote>
 <p>对于 SELECT 从句，sql() 方法只会触发 parsing 和 analysis 阶段。<code>optimization</code>和<code>planning</code>阶段是在show() 方法触发的</p>
 </blockquote>
 <p>但是run方法又是在<code>planning</code>阶段，这就很费解，经过自己阅读源码发现，对于select语句确实是这样的，但是对于<code>Command</code>类型的，不用show方法也会有<code>optimization</code>和<code>planning</code>,入口为</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">new</span> Dataset[Row](sparkSession, qe, RowEncoder(qe.analyzed.schema))</span><br><span class="line"></span><br><span class="line">class Dataset[T] private[sql](</span><br><span class="line">    <span class="meta">@transient</span> val sparkSession: SparkSession,</span><br><span class="line">    <span class="meta">@DeveloperApi</span> <span class="meta">@InterfaceStability</span>.Unstable <span class="meta">@transient</span> val queryExecution: QueryExecution,</span><br><span class="line">    encoder: Encoder[T])</span><br><span class="line">  extends Serializable &#123;</span><br><span class="line"></span><br><span class="line">  queryExecution.assertAnalyzed()</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Note for Spark contributors: if adding or updating any action in `Dataset`, please make sure</span></span><br><span class="line">  <span class="comment">// you wrap it with `withNewExecutionId` if this actions doesn't call other action.</span></span><br><span class="line"></span><br><span class="line">  <span class="function">def <span class="title">this</span><span class="params">(sparkSession: SparkSession, logicalPlan: LogicalPlan, encoder: Encoder[T])</span> </span>= &#123;</span><br><span class="line">    <span class="keyword">this</span>(sparkSession, sparkSession.sessionState.executePlan(logicalPlan), encoder)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function">def <span class="title">this</span><span class="params">(sqlContext: SQLContext, logicalPlan: LogicalPlan, encoder: Encoder[T])</span> </span>= &#123;</span><br><span class="line">    <span class="keyword">this</span>(sqlContext.sparkSession, logicalPlan, encoder)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@transient</span> <span class="keyword">private</span>[sql] val logicalPlan: LogicalPlan = &#123;</span><br><span class="line">    <span class="comment">// For various commands (like DDL) and queries with side effects, we force query execution</span></span><br><span class="line">    <span class="comment">// to happen right away to let these side effects take place eagerly.</span></span><br><span class="line">    queryExecution.analyzed match &#123;</span><br><span class="line">      <span class="keyword">case</span> c: Command =&gt;</span><br><span class="line">        LocalRelation(c.output, withAction(<span class="string">"command"</span>, queryExecution)(_.executeCollect()))</span><br><span class="line">      <span class="keyword">case</span> u @ Union(children) <span class="keyword">if</span> children.forall(_.isInstanceOf[Command]) =&gt;</span><br><span class="line">        LocalRelation(u.output, withAction(<span class="string">"command"</span>, queryExecution)(_.executeCollect()))</span><br><span class="line">      <span class="keyword">case</span> _ =&gt;</span><br><span class="line">        queryExecution.analyzed</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
 <h3 id="LogicalPlan"><a href="#LogicalPlan" class="headerlink" title="LogicalPlan"></a>LogicalPlan</h3><p><code>Dataset</code>有一个变量<code>LogicalPlan</code>,它不是懒加载的，在<code>new</code>的时候就会触发，我们知道在<code>analysis</code>阶段返回的是<code>CreateHoodieTableCommand</code>,它是<code>Command</code>的子类，所以会匹配成功，调用<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">  LocalRelation(c.output, withAction(<span class="string">"command"</span>, queryExecution)(_.executeCollect()))</span><br><span class="line"></span><br><span class="line">  <span class="keyword">private</span> def withAction[U](name: String, qe: QueryExecution)(action: SparkPlan =&gt; U) = &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      qe.executedPlan.foreach &#123; plan =&gt;</span><br><span class="line">        plan.resetMetrics()</span><br><span class="line">      &#125;</span><br><span class="line">      val start = System.nanoTime()</span><br><span class="line">      val result = SQLExecution.withNewExecutionId(sparkSession, qe) &#123;</span><br><span class="line">        action(qe.executedPlan)</span><br><span class="line">      &#125;</span><br><span class="line">      val end = System.nanoTime()</span><br><span class="line">      sparkSession.listenerManager.onSuccess(name, qe, end - start)</span><br><span class="line">      result</span><br><span class="line">    &#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">      <span class="keyword">case</span> e: Exception =&gt;</span><br><span class="line">        sparkSession.listenerManager.onFailure(name, qe, e)</span><br><span class="line">        <span class="keyword">throw</span> e</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line">  lazy val executedPlan: SparkPlan = prepareForExecution(sparkPlan)</span><br><span class="line"></span><br><span class="line">  lazy val sparkPlan: SparkPlan = &#123;</span><br><span class="line">    SparkSession.setActiveSession(sparkSession)</span><br><span class="line">    <span class="comment">// <span class="doctag">TODO:</span> We use next(), i.e. take the first plan returned by the planner, here for now,</span></span><br><span class="line">    <span class="comment">//       but we will implement to choose the best plan.</span></span><br><span class="line">    planner.plan(ReturnAnswer(optimizedPlan)).next()</span><br><span class="line">  &#125;</span><br><span class="line">lazy val optimizedPlan: LogicalPlan = sparkSession.sessionState.optimizer.execute(withCachedData)   </span><br><span class="line"></span><br><span class="line"><span class="keyword">protected</span> def planner = sparkSession.sessionState.planner</span><br></pre></td></tr></table></figure></p>
-<p>其中的executedPlan就会先触发<code>optimization</code>接着触发<code>planning</code>，具体的逻辑也是应用各种规则/策略，前面的提到的文章已经讲的很详细了,因为这两个阶段我们没有自定义扩展规则，所以主要看一下run方法是在哪里执行的<br>在上面的代码中我们看到<code>executedPlan</code>会用到<code>sparkPlan</code>,继而触发<code>planner.plan</code>,对应<code>planning</code>阶段,那么需要看一下<code>planner</code>在哪定义的</p>
+<p>其中的executedPlan就会先触发<code>optimization</code>接着触发<code>planning</code>，具体的逻辑也是应用各种规则/策略，参考文章已经讲的很详细了,因为这两个阶段我们没有自定义扩展规则，所以主要看一下run方法是在哪里执行的<br>在上面的代码中我们看到<code>executedPlan</code>会用到<code>sparkPlan</code>,继而触发<code>planner.plan</code>,对应<code>planning</code>阶段,那么需要看一下<code>planner</code>在哪定义的</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> def planner: SparkPlanner = &#123;</span><br><span class="line">  <span class="keyword">new</span> SparkPlanner(session.sparkContext, conf, experimentalMethods) &#123;</span><br><span class="line">    override def extraPlanningStrategies: Seq[Strategy] =</span><br><span class="line">      <span class="keyword">super</span>.extraPlanningStrategies ++ customPlanningStrategies</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>同样这里的planner是在<code>BaseSessionStateBuilder</code>定义的，它重写了<code>extraPlanningStrategies</code>,接着看一下<code>planner.plan</code></p>
 <h3 id="planner-plan"><a href="#planner-plan" class="headerlink" title="planner.plan"></a>planner.plan</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/** A list of execution strategies that can be used by the planner */</span></span><br><span class="line">def strategies: Seq[GenericStrategy[PhysicalPlan]]</span><br><span class="line"></span><br><span class="line"><span class="function">def <span class="title">plan</span><span class="params">(plan: LogicalPlan)</span>: Iterator[PhysicalPlan] </span>= &#123;</span><br><span class="line">  <span class="comment">// Obviously a lot to do here still...</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// Collect physical plan candidates.</span></span><br><span class="line">  val candidates = strategies.iterator.flatMap(_(plan))</span><br><span class="line"></span><br><span class="line">  <span class="comment">// The candidates may contain placeholders marked as [[planLater]],</span></span><br><span class="line">  <span class="comment">// so try to replace them by their child plans.</span></span><br><span class="line">  val plans = candidates.flatMap &#123; candidate =&gt;</span><br><span class="line">    val placeholders = collectPlaceholders(candidate)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (placeholders.isEmpty) &#123;</span><br><span class="line">      <span class="comment">// Take the candidate as is because it does not contain placeholders.</span></span><br><span class="line">      Iterator(candidate)</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">// Plan the logical plan marked as [[planLater]] and replace the placeholders.</span></span><br><span class="line">      placeholders.iterator.foldLeft(Iterator(candidate)) &#123;</span><br><span class="line">        <span class="keyword">case</span> (candidatesWithPlaceholders, (placeholder, logicalPlan)) =&gt;</span><br><span class="line">          <span class="comment">// Plan the logical plan for the placeholder.</span></span><br><span class="line">          val childPlans = <span class="keyword">this</span>.plan(logicalPlan)</span><br><span class="line"></span><br><span class="line">          candidatesWithPlaceholders.flatMap &#123; candidateWithPlaceholders =&gt;</span><br><span class="line">            childPlans.map &#123; childPlan =&gt;</span><br><span class="line">              <span class="comment">// Replace the placeholder by the child plan</span></span><br><span class="line">              candidateWithPlaceholders.transformUp &#123;</span><br><span class="line">                <span class="keyword">case</span> p <span class="keyword">if</span> p.eq(placeholder) =&gt; childPlan</span><br><span class="line">              &#125;</span><br><span class="line">            &#125;</span><br><span class="line">          &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  val pruned = prunePlans(plans)</span><br><span class="line">  <span class="keyword">assert</span>(pruned.hasNext, s<span class="string">"No plan for $plan"</span>)</span><br><span class="line">  pruned</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这个方法是将逻辑计划<code>LogicalPlan</code>转为物理计划<code>PhysicalPlan</code>,根据前面的学习文章我们知道</p>
+<p>这个方法是将逻辑计划<code>LogicalPlan</code>转为物理计划<code>PhysicalPlan</code>,根据参考文章我们知道</p>
 <blockquote>
 <p>上面源码的核心在于这一行：<br>val candidates = strategies.iterator.flatMap(_(plan))<br>部分同学可能看不懂这里的语法，实际上问题的答案在GenericStrategy的源码中：<br>策略序列的迭代器扁平化后对其中每一次都调用它的apply方法，这个方法会将逻辑计划转换成物理计划的序列。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 给定一个 LogicalPlan，返回可用于执行的物理计划列表。</span></span><br><span class="line"><span class="comment"> * 如果此策略不适用于给定的逻辑操作，则应返回空列表</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">abstract class GenericStrategy[PhysicalPlan &lt;: TreeNode[PhysicalPlan]] extends Logging &#123;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * 返回执行计划的物理计划的占位符。</span></span><br><span class="line"><span class="comment">   * QueryPlanner将使用其他可用的执行策略自动填写此占位符。   </span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">protected</span> def <span class="title">planLater</span><span class="params">(plan: LogicalPlan)</span>: PhysicalPlan</span></span><br><span class="line"><span class="function"></span></span><br><span class="line"><span class="function">  def <span class="title">apply</span><span class="params">(plan: LogicalPlan)</span>: Seq[PhysicalPlan]</span></span><br><span class="line"><span class="function">&#125;</span></span><br></pre></td></tr></table></figure></p>
 </blockquote>
@@ -420,6 +413,13 @@
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">case</span> class <span class="title">CreateTableCommand</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    table: CatalogTable,</span></span></span><br><span class="line"><span class="function"><span class="params">    ignoreIfExists: Boolean)</span> extends RunnableCommand </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="function">override def <span class="title">run</span><span class="params">(sparkSession: SparkSession)</span>: Seq[Row] </span>= &#123;</span><br><span class="line">    sparkSession.sessionState.catalog.createTable(table, ignoreIfExists)</span><br><span class="line">    Seq.empty[Row]</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>可见扩展了Hudi规则并不会影响Hive普通表的创建</p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>本文通过结合Hudi源码和Spark源码，以<code>Create Table</code>为例，理清了从SQL解析到最后执行的整个流程，搞懂了其中的几个关键步骤，知道了如何从Spark SQL源码跳转到Hudi Spark SQL源码并执行Hudi的建表逻辑的,并且明白了创建Hudi表和普通Hive表的区别，这样对于其他的SQL语句比如<code>CTAS</code>、<code>INSERT</code>、<code>UPDATE</code>、<code>DELETE</code>、<code>MERGE</code>等，也就能很容易的知道是它们的逻辑了，后面的只要关注一些关键点，比如应该模式匹配到哪一类、版本之间的区别，最后再看Hudi本身的逻辑就好了</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a href="https://blog.csdn.net/Shockang/article/details/122181886" target="_blank" rel="noopener">Spark SQL 工作流程源码解析（一）总览（基于 Spark 3.3.0）</a></li>
+<li><a href="https://blog.csdn.net/Shockang/article/details/122522780" target="_blank" rel="noopener">Spark SQL 工作流程源码解析（二）parsing 阶段（基于 Spark 3.3.0）</a></li>
+<li><a href="https://blog.csdn.net/Shockang/article/details/123122650" target="_blank" rel="noopener">Spark SQL 工作流程源码解析（三）analysis 阶段（基于 Spark 3.3.0）</a></li>
+<li><a href="https://blog.csdn.net/Shockang/article/details/123930918" target="_blank" rel="noopener">Spark SQL 工作流程源码解析（四）optimization 阶段（基于 Spark 3.3.0）</a></li>
+<li><a href="https://blog.csdn.net/Shockang/article/details/124461650" target="_blank" rel="noopener">Spark SQL 工作流程源码解析（五）planning 阶段（基于 Spark 3.3.0）</a></li>
+</ul>
 
       
 
@@ -572,7 +572,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Spark-SQL源码"><span class="toc-number">2.</span> <span class="toc-text">Spark SQL源码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#版本"><span class="toc-number">3.</span> <span class="toc-text">版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#示例代码"><span class="toc-number">4.</span> <span class="toc-text">示例代码</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#打印计划"><span class="toc-number">4.1.</span> <span class="toc-text">打印计划</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#扩展-HoodieSparkSessionExtension"><span class="toc-number">5.</span> <span class="toc-text">扩展 HoodieSparkSessionExtension</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#ANTRLR"><span class="toc-number">6.</span> <span class="toc-text">ANTRLR</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#入口"><span class="toc-number">7.</span> <span class="toc-text">入口</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#spark-sql"><span class="toc-number">7.1.</span> <span class="toc-text">spark.sql</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#sessionState-sqlParser"><span class="toc-number">8.</span> <span class="toc-text">sessionState.sqlParser</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Hudi自定义sqlParser"><span class="toc-number">8.1.</span> <span class="toc-text">Hudi自定义sqlParser</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#parsing"><span class="toc-number">9.</span> <span class="toc-text">parsing</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#parsePlan"><span class="toc-number">9.1.</span> <span class="toc-text">parsePlan</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#sparkExtendedParser"><span class="toc-number">9.2.</span> <span class="toc-text">sparkExtendedParser</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#SparkSqlParser"><span class="toc-number">9.3.</span> <span class="toc-text">SparkSqlParser</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#analysis"><span class="toc-number">10.</span> <span class="toc-text">analysis</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#analyzer"><span class="toc-number">10.1.</span> <span class="toc-text">analyzer</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#injectResolutionRule"><span class="toc-number">10.2.</span> <span class="toc-text">injectResolutionRule</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#injectPostHocResolutionRule"><span class="toc-number">10.3.</span> <span class="toc-text">injectPostHocResolutionRule</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Hudi自定义analysis规则"><span class="toc-number">10.4.</span> <span class="toc-text">Hudi自定义analysis规则</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#executeAndCheck"><span class="toc-number">10.5.</span> <span class="toc-text">executeAndCheck</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#应用Hudi规则"><span class="toc-number">10.6.</span> <span class="toc-text">应用Hudi规则</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#optimization-和-planning"><span class="toc-number">11.</span> <span class="toc-text">optimization 和 planning</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#LogicalPlan"><span class="toc-number">11.1.</span> <span class="toc-text">LogicalPlan</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#planner-plan"><span class="toc-number">11.2.</span> <span class="toc-text">planner.plan</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#BasicOperators"><span class="toc-number">11.3.</span> <span class="toc-text">BasicOperators</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#executeCollect"><span class="toc-number">11.4.</span> <span class="toc-text">executeCollect</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#普通Hive表"><span class="toc-number">12.</span> <span class="toc-text">普通Hive表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">13.</span> <span class="toc-text">总结</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Spark-SQL源码"><span class="toc-number">2.</span> <span class="toc-text">Spark SQL源码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#版本"><span class="toc-number">3.</span> <span class="toc-text">版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#示例代码"><span class="toc-number">4.</span> <span class="toc-text">示例代码</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#打印计划"><span class="toc-number">4.1.</span> <span class="toc-text">打印计划</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#扩展-HoodieSparkSessionExtension"><span class="toc-number">5.</span> <span class="toc-text">扩展 HoodieSparkSessionExtension</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#ANTRLR"><span class="toc-number">6.</span> <span class="toc-text">ANTRLR</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#入口"><span class="toc-number">7.</span> <span class="toc-text">入口</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#spark-sql"><span class="toc-number">7.1.</span> <span class="toc-text">spark.sql</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#sessionState-sqlParser"><span class="toc-number">8.</span> <span class="toc-text">sessionState.sqlParser</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Hudi自定义sqlParser"><span class="toc-number">8.1.</span> <span class="toc-text">Hudi自定义sqlParser</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#parsing"><span class="toc-number">9.</span> <span class="toc-text">parsing</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#parsePlan"><span class="toc-number">9.1.</span> <span class="toc-text">parsePlan</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#sparkExtendedParser"><span class="toc-number">9.2.</span> <span class="toc-text">sparkExtendedParser</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#SparkSqlParser"><span class="toc-number">9.3.</span> <span class="toc-text">SparkSqlParser</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#analysis"><span class="toc-number">10.</span> <span class="toc-text">analysis</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#analyzer"><span class="toc-number">10.1.</span> <span class="toc-text">analyzer</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#injectResolutionRule"><span class="toc-number">10.2.</span> <span class="toc-text">injectResolutionRule</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#injectPostHocResolutionRule"><span class="toc-number">10.3.</span> <span class="toc-text">injectPostHocResolutionRule</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Hudi自定义analysis规则"><span class="toc-number">10.4.</span> <span class="toc-text">Hudi自定义analysis规则</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#executeAndCheck"><span class="toc-number">10.5.</span> <span class="toc-text">executeAndCheck</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#应用Hudi规则"><span class="toc-number">10.6.</span> <span class="toc-text">应用Hudi规则</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#optimization-和-planning"><span class="toc-number">11.</span> <span class="toc-text">optimization 和 planning</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#LogicalPlan"><span class="toc-number">11.1.</span> <span class="toc-text">LogicalPlan</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#planner-plan"><span class="toc-number">11.2.</span> <span class="toc-text">planner.plan</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#BasicOperators"><span class="toc-number">11.3.</span> <span class="toc-text">BasicOperators</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#executeCollect"><span class="toc-number">11.4.</span> <span class="toc-text">executeCollect</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#普通Hive表"><span class="toc-number">12.</span> <span class="toc-text">普通Hive表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">13.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考"><span class="toc-number">14.</span> <span class="toc-text">参考</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -762,27 +762,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -802,19 +790,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -826,7 +822,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -838,19 +834,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -862,15 +866,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -878,7 +874,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -894,14 +906,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">java</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
               </li>
              
@@ -910,15 +914,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -930,7 +930,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -938,23 +950,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -966,11 +966,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+                <a href="javascript:void(0)" class="js-tag color1">scala</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">scala</a>
+                <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -979,6 +987,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">原理</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -994,19 +1006,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">日期</a>
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1018,11 +1022,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1030,7 +1034,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1039,6 +1047,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1051,14 +1067,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1083,14 +1091,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
