@@ -17,7 +17,7 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言简要总结Hudi Spark Sql源码执行逻辑，从建表开始。其实从去年开始接触Hudi的时候就研究学习了Hudi Spark SQL的部分源码，并贡献了几个PR，但是完整的逻辑有些地方还没有完全梳理清楚，所以现在想要从头开始学习，搞懂一些知识难点，这样以后看相关源码的时候就不会导致因为一些关键点不懂影响进度。  由于本人能力和精力有限，本文只讲解自己觉得比较关键的点，主要目的是梳理整个流程。">
 <meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2022-07-21T04:34:31.533Z">
+<meta property="og:updated_time" content="2022-07-23T07:38:00.301Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Hudi Spark SQL源码学习总结-Create Table">
 <meta name="twitter:description" content="前言简要总结Hudi Spark Sql源码执行逻辑，从建表开始。其实从去年开始接触Hudi的时候就研究学习了Hudi Spark SQL的部分源码，并贡献了几个PR，但是完整的逻辑有些地方还没有完全梳理清楚，所以现在想要从头开始学习，搞懂一些知识难点，这样以后看相关源码的时候就不会导致因为一些关键点不懂影响进度。  由于本人能力和精力有限，本文只讲解自己觉得比较关键的点，主要目的是梳理整个流程。">
@@ -313,7 +313,7 @@
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">override def <span class="title">parsePlan</span><span class="params">(sqlText: String)</span>: LogicalPlan </span>= parse(sqlText) &#123; parser =&gt;</span><br><span class="line">  astBuilder.visitSingleStatement(parser.singleStatement()) match &#123;</span><br><span class="line">    <span class="keyword">case</span> plan: LogicalPlan =&gt; plan</span><br><span class="line">    <span class="keyword">case</span> _ =&gt;</span><br><span class="line">      val position = Origin(None, None)</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> ParseException(Option(sqlText), <span class="string">"Unsupported SQL statement"</span>, position, position)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>同样的先看<code>parse</code>方法</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line">  <span class="keyword">protected</span> def parse[T](command: String)(toResult: SqlBaseParser =&gt; T): T = &#123;</span><br><span class="line">    logDebug(s<span class="string">"Parsing command: $command"</span>)</span><br><span class="line"></span><br><span class="line">    val lexer = <span class="keyword">new</span> SqlBaseLexer(<span class="keyword">new</span> UpperCaseCharStream(CharStreams.fromString(command)))</span><br><span class="line">    lexer.removeErrorListeners()</span><br><span class="line">    lexer.addErrorListener(ParseErrorListener)</span><br><span class="line">    lexer.legacy_setops_precedence_enbled = SQLConf.get.setOpsPrecedenceEnforced</span><br><span class="line"></span><br><span class="line">    val tokenStream = <span class="keyword">new</span> CommonTokenStream(lexer)</span><br><span class="line">    val parser = <span class="keyword">new</span> SqlBaseParser(tokenStream)</span><br><span class="line">    parser.addParseListener(PostProcessor)</span><br><span class="line">    parser.removeErrorListeners()</span><br><span class="line">    parser.addErrorListener(ParseErrorListener)</span><br><span class="line">    parser.legacy_setops_precedence_enbled = SQLConf.get.setOpsPrecedenceEnforced</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// first, try parsing with potentially faster SLL mode</span></span><br><span class="line">        parser.getInterpreter.setPredictionMode(PredictionMode.SLL)</span><br><span class="line">        toResult(parser)</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">catch</span> &#123;</span><br><span class="line">        <span class="keyword">case</span> e: ParseCancellationException =&gt;</span><br><span class="line">          <span class="comment">// if we fail, parse with LL mode</span></span><br><span class="line">          tokenStream.seek(<span class="number">0</span>) <span class="comment">// rewind input stream</span></span><br><span class="line">          parser.reset()</span><br><span class="line"></span><br><span class="line">          <span class="comment">// Try Again.</span></span><br><span class="line">          parser.getInterpreter.setPredictionMode(PredictionMode.LL)</span><br><span class="line">          toResult(parser)</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">catch</span> &#123;</span><br><span class="line">      <span class="keyword">case</span> e: ParseException <span class="keyword">if</span> e.command.isDefined =&gt;</span><br><span class="line">        <span class="keyword">throw</span> e</span><br><span class="line">      <span class="keyword">case</span> e: ParseException =&gt;</span><br><span class="line">        <span class="keyword">throw</span> e.withCommand(command)</span><br><span class="line">      <span class="keyword">case</span> e: AnalysisException =&gt;</span><br><span class="line">        val position = Origin(e.line, e.startPosition)</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> ParseException(Option(command), e.message, position, position)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这里的<code>parser</code>为<code>SqlBaseParser</code>,他是Spark源码里的,同样的Spark源码里也有一个<code>SqlBase.g4</code>，其实Hudi的<code>SqlBase.g4</code>文件是拷贝自Spark源码里的，对比两个文件的内容和从Hudi的<code>SqlBase.g4</code>里的一行注释就可以知晓：</p>
+<p>这里的<code>parser</code>为<code>SqlBaseParser</code>,它是Spark源码里的,同样的Spark源码里也有一个<code>SqlBase.g4</code>，其实Hudi的<code>SqlBase.g4</code>文件是拷贝自Spark源码里的，对比两个文件的内容和从Hudi的<code>SqlBase.g4</code>里的一行注释就可以知晓：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// The parser file is forked from spark 2.4.5's SqlBase.g4.</span></span><br></pre></td></tr></table></figure>
 <p>我们在<code>SqlBase.g4</code>里查看<code>singleStatement</code>和<code>statement</code>的定义</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">singleStatement</span><br><span class="line">    : statement EOF</span><br><span class="line">    ;</span><br><span class="line"></span><br><span class="line">statement</span><br><span class="line">    : query                                                            #statementDefault</span><br><span class="line">    | <span class="keyword">USE</span> db=identifier                                                #<span class="keyword">use</span></span><br><span class="line">    | <span class="keyword">CREATE</span> <span class="keyword">DATABASE</span> (<span class="keyword">IF</span> <span class="keyword">NOT</span> <span class="keyword">EXISTS</span>)? identifier</span><br><span class="line">        (<span class="keyword">COMMENT</span> <span class="keyword">comment</span>=<span class="keyword">STRING</span>)? locationSpec?</span><br><span class="line">        (<span class="keyword">WITH</span> DBPROPERTIES tablePropertyList)?                         #createDatabase</span><br><span class="line">    | <span class="keyword">ALTER</span> <span class="keyword">DATABASE</span> identifier <span class="keyword">SET</span> DBPROPERTIES tablePropertyList     #setDatabaseProperties</span><br><span class="line">    | <span class="keyword">DROP</span> <span class="keyword">DATABASE</span> (<span class="keyword">IF</span> <span class="keyword">EXISTS</span>)? identifier (RESTRICT | <span class="keyword">CASCADE</span>)?      #dropDatabase</span><br><span class="line">    | createTableHeader (<span class="string">'('</span> colTypeList <span class="string">')'</span>)? tableProvider</span><br><span class="line">        ((OPTIONS options=tablePropertyList) |</span><br><span class="line">        (PARTITIONED <span class="keyword">BY</span> partitionColumnNames=identifierList) |</span><br><span class="line">        bucketSpec |</span><br><span class="line">        locationSpec |</span><br><span class="line">        (<span class="keyword">COMMENT</span> <span class="keyword">comment</span>=<span class="keyword">STRING</span>) |</span><br><span class="line">        (TBLPROPERTIES tableProps=tablePropertyList))*</span><br><span class="line">        (<span class="keyword">AS</span>? <span class="keyword">query</span>)?                                                   #createTable</span><br><span class="line">    | createTableHeader (<span class="string">'('</span> <span class="keyword">columns</span>=colTypeList <span class="string">')'</span>)?</span><br><span class="line">        ((<span class="keyword">COMMENT</span> <span class="keyword">comment</span>=<span class="keyword">STRING</span>) |</span><br><span class="line">        (PARTITIONED <span class="keyword">BY</span> <span class="string">'('</span> partitionColumns=colTypeList <span class="string">')'</span>) |</span><br><span class="line">        bucketSpec |</span><br><span class="line">        skewSpec |</span><br><span class="line">        rowFormat |</span><br><span class="line">        createFileFormat |</span><br><span class="line">        locationSpec |</span><br><span class="line">        (TBLPROPERTIES tableProps=tablePropertyList))*</span><br><span class="line">        (<span class="keyword">AS</span>? <span class="keyword">query</span>)?                                                   #createHiveTable</span><br><span class="line">        ......</span><br><span class="line"></span><br><span class="line">tableProvider</span><br><span class="line">    : <span class="keyword">USING</span> qualifiedName</span><br><span class="line">    ;</span><br></pre></td></tr></table></figure>
@@ -543,6 +543,15 @@
   
 <nav id="article-nav">
   
+    <a href="/2022/07/30/hudiSparkSqlSourceCodeLearning-ctas/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          Hudi Spark SQL源码学习总结-CTAS
+        
+      </div>
+    </a>
+  
   
     <a href="/2022/07/06/sparkKyuubiPackConf/" id="article-nav-older" class="article-nav-link-wrap">
       <div class="article-nav-title">Spark3.12+Kyuubi1.5.2+kyuubi-spark-authz源码编译打包+部署配置HA</div>
@@ -754,14 +763,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -782,7 +783,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -794,11 +807,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -810,23 +819,31 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -846,19 +863,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -871,6 +876,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -902,7 +915,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -914,14 +935,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">sql</a>
               </li>
              
@@ -930,11 +943,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -946,31 +963,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">scala</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">日期</a>
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -982,7 +975,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">scala</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">日期</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1018,10 +1031,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
               </li>
              
@@ -1030,19 +1039,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1054,7 +1059,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1062,15 +1071,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1078,11 +1079,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1098,7 +1107,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
               </li>
             
             <div class="clearfix"></div>

@@ -17,7 +17,7 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言本文为组内同事整理,这里稍作改动记录。本文主要修改Spark源码，实现Spark Spark Thrift Server 注册到到ZK，通过ZK连接实现负载均衡；另外可以通过使用Kyuubi实现HA，这里不做详细描述 背景  Spark ThriftServer 不支持Zookeeper连接，不能实现负载均衡。 解决方案:修改Spark ThriftServer源码，使其支持Zookeeper">
 <meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2022-02-14T02:15:31.151Z">
+<meta property="og:updated_time" content="2022-07-28T11:42:02.957Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Spark Thrift Server HA 解决方案">
 <meta name="twitter:description" content="前言本文为组内同事整理,这里稍作改动记录。本文主要修改Spark源码，实现Spark Spark Thrift Server 注册到到ZK，通过ZK连接实现负载均衡；另外可以通过使用Kyuubi实现HA，这里不做详细描述 背景  Spark ThriftServer 不支持Zookeeper连接，不能实现负载均衡。 解决方案:修改Spark ThriftServer源码，使其支持Zookeeper">
@@ -282,6 +282,7 @@
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[zk: indata-1192-168-44-128:2181(CONNECTED) 5] get  /hiveserver2_zk/serverUri=indata-1192-168-44-128:20004;version=2.3.7;sequence=0000000023</span><br><span class="line">hive.server2.authentication=KERBEROS;hive.server2.transport.mode=http;hive.server2.thrift.http.path=cliservice;hive.server2.thrift.http.port=20004;hive.server2.thrift.bind.host=;hive.server2.use.SSL=false;hive.server2.authentication.kerberos.principal=spark/_HOST@INDATA.COM</span><br></pre></td></tr></table></figure>
 <p>hive.server2.thrift.bind.host值同样为空，定位到ThriftServer注册到zookeeper时产生问题<br>zookeeper注册代码：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">addConfsToPublish</span><span class="params">(HiveConf hiveConf, Map&lt;String, String&gt; confsToPublish)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// Hostname</span></span><br><span class="line">    confsToPublish.put(ConfVars.HIVE_SERVER2_THRIFT_BIND_HOST.varname,</span><br><span class="line">    hiveConf.getVar(ConfVars.HIVE_SERVER2_THRIFT_BIND_HOST));</span><br><span class="line"></span><br><span class="line"><span class="comment">//hive-site没有 HIVE_SERVER2_THRIFT_BIND_HOST 配置项，因此为空。</span></span><br><span class="line"><span class="comment">//通过getServerHost方法动态获取该配置</span></span><br><span class="line">hiveConf.set(HiveConf.ConfVars.HIVE_SERVER2_THRIFT_BIND_HOST.varname, getServerHost)</span><br></pre></td></tr></table></figure>
+<h2 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h2><p>完整代码已提交到：<a href="https://gitee.com/dongkelun/spark/tree/3.1.2-STS-HA/" target="_blank" rel="noopener">https://gitee.com/dongkelun/spark/tree/3.1.2-STS-HA/</a></p>
 
       
 
@@ -443,7 +444,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#背景"><span class="toc-number">2.</span> <span class="toc-text">背景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Spark-ThriftServer-启动命令"><span class="toc-number">3.</span> <span class="toc-text">Spark ThriftServer 启动命令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Spark-源码debug"><span class="toc-number">4.</span> <span class="toc-text">Spark 源码debug</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Spark-连接"><span class="toc-number">5.</span> <span class="toc-text">Spark 连接</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#单节点"><span class="toc-number">5.1.</span> <span class="toc-text">单节点</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Zookeeper"><span class="toc-number">5.2.</span> <span class="toc-text">Zookeeper</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Zookeeper-使用"><span class="toc-number">5.3.</span> <span class="toc-text">Zookeeper 使用</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Spark-源码修改"><span class="toc-number">6.</span> <span class="toc-text">Spark 源码修改</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#pom"><span class="toc-number">6.1.</span> <span class="toc-text">pom</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#HiveThriftServer2"><span class="toc-number">6.2.</span> <span class="toc-text">HiveThriftServer2</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#HiveServer2"><span class="toc-number">6.3.</span> <span class="toc-text">HiveServer2</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Spark-编译"><span class="toc-number">7.</span> <span class="toc-text">Spark 编译</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#全部编译"><span class="toc-number">7.1.</span> <span class="toc-text">全部编译</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#指定模块编译"><span class="toc-number">7.2.</span> <span class="toc-text">指定模块编译</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#编译过程中遇到的问题"><span class="toc-number">8.</span> <span class="toc-text">编译过程中遇到的问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#验证"><span class="toc-number">9.</span> <span class="toc-text">验证</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#替换-spark-hive-thriftserver-2-12-3-1-2-jar"><span class="toc-number">9.1.</span> <span class="toc-text">替换 spark-hive-thriftserver_2.12-3.1.2.jar</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#修改-Spark-conf-下-hive-site-配置"><span class="toc-number">9.2.</span> <span class="toc-text">修改 Spark conf 下 hive-site 配置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#启动-Spark-ThriftServer"><span class="toc-number">9.3.</span> <span class="toc-text">启动 Spark ThriftServer</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#连接验证"><span class="toc-number">9.4.</span> <span class="toc-text">连接验证</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#验证过程中遇到的问题"><span class="toc-number">10.</span> <span class="toc-text">验证过程中遇到的问题</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#zookeeper解析不到IP"><span class="toc-number">10.1.</span> <span class="toc-text">zookeeper解析不到IP</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#解决方案"><span class="toc-number">10.2.</span> <span class="toc-text">解决方案</span></a></li></ol></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#背景"><span class="toc-number">2.</span> <span class="toc-text">背景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Spark-ThriftServer-启动命令"><span class="toc-number">3.</span> <span class="toc-text">Spark ThriftServer 启动命令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Spark-源码debug"><span class="toc-number">4.</span> <span class="toc-text">Spark 源码debug</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Spark-连接"><span class="toc-number">5.</span> <span class="toc-text">Spark 连接</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#单节点"><span class="toc-number">5.1.</span> <span class="toc-text">单节点</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Zookeeper"><span class="toc-number">5.2.</span> <span class="toc-text">Zookeeper</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Zookeeper-使用"><span class="toc-number">5.3.</span> <span class="toc-text">Zookeeper 使用</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Spark-源码修改"><span class="toc-number">6.</span> <span class="toc-text">Spark 源码修改</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#pom"><span class="toc-number">6.1.</span> <span class="toc-text">pom</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#HiveThriftServer2"><span class="toc-number">6.2.</span> <span class="toc-text">HiveThriftServer2</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#HiveServer2"><span class="toc-number">6.3.</span> <span class="toc-text">HiveServer2</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Spark-编译"><span class="toc-number">7.</span> <span class="toc-text">Spark 编译</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#全部编译"><span class="toc-number">7.1.</span> <span class="toc-text">全部编译</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#指定模块编译"><span class="toc-number">7.2.</span> <span class="toc-text">指定模块编译</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#编译过程中遇到的问题"><span class="toc-number">8.</span> <span class="toc-text">编译过程中遇到的问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#验证"><span class="toc-number">9.</span> <span class="toc-text">验证</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#替换-spark-hive-thriftserver-2-12-3-1-2-jar"><span class="toc-number">9.1.</span> <span class="toc-text">替换 spark-hive-thriftserver_2.12-3.1.2.jar</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#修改-Spark-conf-下-hive-site-配置"><span class="toc-number">9.2.</span> <span class="toc-text">修改 Spark conf 下 hive-site 配置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#启动-Spark-ThriftServer"><span class="toc-number">9.3.</span> <span class="toc-text">启动 Spark ThriftServer</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#连接验证"><span class="toc-number">9.4.</span> <span class="toc-text">连接验证</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#验证过程中遇到的问题"><span class="toc-number">10.</span> <span class="toc-text">验证过程中遇到的问题</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#zookeeper解析不到IP"><span class="toc-number">10.1.</span> <span class="toc-text">zookeeper解析不到IP</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#解决方案"><span class="toc-number">10.2.</span> <span class="toc-text">解决方案</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#代码"><span class="toc-number">11.</span> <span class="toc-text">代码</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -625,14 +626,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -653,7 +646,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -665,11 +670,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -681,23 +682,31 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -717,19 +726,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -742,6 +739,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -773,7 +778,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -785,14 +798,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">sql</a>
               </li>
              
@@ -801,11 +806,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -817,31 +826,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">scala</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">日期</a>
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -853,7 +838,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">scala</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">日期</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -889,10 +894,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
               </li>
              
@@ -901,19 +902,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -925,7 +922,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -933,15 +934,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -949,11 +942,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -969,7 +970,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
               </li>
             
             <div class="clearfix"></div>
