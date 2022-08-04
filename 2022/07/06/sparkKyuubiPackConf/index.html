@@ -26,7 +26,7 @@
 <meta property="og:image" content="https://tva3.sinaimg.cn/large/e44344dcly1h3zlbtqjjij21f10b2wia.jpg">
 <meta property="og:image" content="https://tva4.sinaimg.cn/large/e44344dcly1h3x5vzcs09j20ny0dnaew.jpg">
 <meta property="og:image" content="https://tva3.sinaimg.cn/large/e44344dcly1h3x5vrifzaj20k804adgq.jpg">
-<meta property="og:updated_time" content="2022-07-12T11:36:04.906Z">
+<meta property="og:updated_time" content="2022-08-04T02:57:28.792Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Spark3.12+Kyuubi1.5.2+kyuubi-spark-authz源码编译打包+部署配置HA">
 <meta name="twitter:description" content="前言记录Spark3.1.2+Kyuubi1.5.2从源码打包到部署配置过程，虽然之前总结过一篇Kyuubi配置的文章：Kyuubi 安装配置总结，但是这次和之前还是有不同的:  1、Kyuubi版本升级 当时最新版本1.4.0，现在要升级到最新版1.5.2，并且1.4.0打包的时候很快完成没有任何问题，1.5.2打包时比较慢，且遇到了比较棘手的问题，这里记录一下解决过程 2、当时没有配置Spar">
@@ -348,7 +348,18 @@
 <p>最终打出的包名也不一样为<code>apache-kyuubi-1.5.2-incubating-bin.tgz</code>,而开始打出来的包名为<code>apache-kyuubi-1.5.2-incubating-bin-spark-3.1.tgz</code>大小分别为<code>221M</code>和<code>763M</code>,官方提供的tgz包也不包含spark和flink的安装包</p>
 <p>默认打包spark和flink的路径为<code>kyuubi-1.5.2/externals/flink-1.14.3</code>和<code>kyuubi-1.5.2/externals/spark-3.1.2-bin-hadoop3.2</code>，如果不在<code>kyuubi-env.sh</code>里配置<code>SPARK_HOME</code>、<code>FLINK_HOME</code>的话，默认就是这个路径，具体的逻辑可以<code>kyuubi-1.5.2/bin/load-kyuubi-env.sh</code>查看，既然提到flink，顺便说一下，kyuubi是支持flink的，在我们连接kyuubi时默认连接Spark SQL 引擎，若要连接Flink SQL,可以在连接串最后加上参数<code>?kyuubi.engine.type=FLINK_SQL;</code>，就会连接Flink SQL了，当然这里用的默认的Flink路径，可以自己配一下<code>FLINK_HOME</code>，另外应该还可以在<code>kyuubi-defaults.conf</code> 添加<code>kyuubi.engine.type FLINK_SQL</code>修改默认的engine type</p>
 <h3 id="打包成功"><a href="#打包成功" class="headerlink" title="打包成功"></a>打包成功</h3><p><img src="https://tva4.sinaimg.cn/large/e44344dcly1h3x5vzcs09j20ny0dnaew.jpg" alt=""><br><img src="https://tva3.sinaimg.cn/large/e44344dcly1h3x5vrifzaj20k804adgq.jpg" alt=""></p>
-
+<h2 id="更新"><a href="#更新" class="headerlink" title="更新"></a>更新</h2><blockquote>
+<p>2022年8月4日更新：Spark3.1.2虽然支持用逗号分隔以同时支持多个sql扩展规则，但是要注意顺序问题</p>
+</blockquote>
+<p>我们开始是这样配置的<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spark.sql.extensions=org.apache.kyuubi.plugin.spark.authz.ranger.RangerSparkExtension,org.apache.spark.sql.hudi.HoodieSparkSessionExtension</span><br></pre></td></tr></table></figure></p>
+<p>这样可以同时支持<code>RangerSparkExtension</code>和<code>HoodieSparkSessionExtension</code>，在控制权限的同时，也可以成功创建Hudi表并可以成功插入Hudi数据，但是在用<code>update</code>和<code>delete</code>时会有问题</p>
+<p><code>update</code>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java.lang.UnsupportedOperationException: UPDATE TABLE is not supported temporarily</span><br></pre></td></tr></table></figure>
+<p>`delete:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Error in query: DELETE is only supported with v2 tables</span><br></pre></td></tr></table></figure>
+<p>应该还存在其他问题，就不一一列举了</p>
+<p>解决方案：改变规则顺序，先扩展Hudi，再扩展Ranger，这样就可以在正确控制权限的同时，不影响Hudi Spark SQL的使用</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spark.sql.extensions=org.apache.spark.sql.hudi.HoodieSparkSessionExtension,org.apache.kyuubi.plugin.spark.authz.ranger.RangerSparkExtension</span><br></pre></td></tr></table></figure>
       
 
       
@@ -509,7 +520,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#配置"><span class="toc-number">2.</span> <span class="toc-text">配置</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Spark3-1-2"><span class="toc-number">2.1.</span> <span class="toc-text">Spark3.1.2</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#验证"><span class="toc-number">2.1.1.</span> <span class="toc-text">验证</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#kyuubi-spark-authz"><span class="toc-number">2.2.</span> <span class="toc-text">kyuubi-spark-authz</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#配置ranger策略"><span class="toc-number">2.2.1.</span> <span class="toc-text">配置ranger策略</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#配置spark"><span class="toc-number">2.2.2.</span> <span class="toc-text">配置spark</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#验证-1"><span class="toc-number">2.2.3.</span> <span class="toc-text">验证</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#验证spark用户"><span class="toc-number">2.2.3.1.</span> <span class="toc-text">验证spark用户</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#验证hive用户"><span class="toc-number">2.2.3.2.</span> <span class="toc-text">验证hive用户</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#支持hudi"><span class="toc-number">2.2.4.</span> <span class="toc-text">支持hudi</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#kyuubi1-5-2"><span class="toc-number">2.3.</span> <span class="toc-text">kyuubi1.5.2</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#配置kyuubi"><span class="toc-number">2.3.1.</span> <span class="toc-text">配置kyuubi</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#kyuubi-env-sh"><span class="toc-number">2.3.1.1.</span> <span class="toc-text">kyuubi-env.sh</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#kyuubi-defaults-conf"><span class="toc-number">2.3.1.2.</span> <span class="toc-text">kyuubi-defaults.conf</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#验证-2"><span class="toc-number">2.3.2.</span> <span class="toc-text">验证</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#集成kyuubi-spark-authz"><span class="toc-number">2.3.3.</span> <span class="toc-text">集成kyuubi-spark-authz</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#同时支持hudi"><span class="toc-number">2.3.4.</span> <span class="toc-text">同时支持hudi</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#优化Spark启动时间"><span class="toc-number">2.3.5.</span> <span class="toc-text">优化Spark启动时间</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#创建archive（spark-yarn-archive）"><span class="toc-number">2.3.5.1.</span> <span class="toc-text">创建archive（spark.yarn.archive）</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#上传jar包到hdfs"><span class="toc-number">2.3.5.2.</span> <span class="toc-text">上传jar包到hdfs</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#配置-spark-defaults-conf"><span class="toc-number">2.3.5.3.</span> <span class="toc-text">配置 spark-defaults.conf</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#动态资源申请"><span class="toc-number">2.3.6.</span> <span class="toc-text">动态资源申请</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#HA"><span class="toc-number">2.3.7.</span> <span class="toc-text">HA</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#编译打包Spark3-1-2"><span class="toc-number">3.</span> <span class="toc-text">编译打包Spark3.1.2</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#编译打包-Kyuubi-1-5-2"><span class="toc-number">4.</span> <span class="toc-text">编译打包 Kyuubi 1.5.2</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#打分布式tgz安装包"><span class="toc-number">4.1.</span> <span class="toc-text">打分布式tgz安装包</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#异常解决过程"><span class="toc-number">4.1.1.</span> <span class="toc-text">异常解决过程</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#打包成功"><span class="toc-number">4.2.</span> <span class="toc-text">打包成功</span></a></li></ol></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#配置"><span class="toc-number">2.</span> <span class="toc-text">配置</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Spark3-1-2"><span class="toc-number">2.1.</span> <span class="toc-text">Spark3.1.2</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#验证"><span class="toc-number">2.1.1.</span> <span class="toc-text">验证</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#kyuubi-spark-authz"><span class="toc-number">2.2.</span> <span class="toc-text">kyuubi-spark-authz</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#配置ranger策略"><span class="toc-number">2.2.1.</span> <span class="toc-text">配置ranger策略</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#配置spark"><span class="toc-number">2.2.2.</span> <span class="toc-text">配置spark</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#验证-1"><span class="toc-number">2.2.3.</span> <span class="toc-text">验证</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#验证spark用户"><span class="toc-number">2.2.3.1.</span> <span class="toc-text">验证spark用户</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#验证hive用户"><span class="toc-number">2.2.3.2.</span> <span class="toc-text">验证hive用户</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#支持hudi"><span class="toc-number">2.2.4.</span> <span class="toc-text">支持hudi</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#kyuubi1-5-2"><span class="toc-number">2.3.</span> <span class="toc-text">kyuubi1.5.2</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#配置kyuubi"><span class="toc-number">2.3.1.</span> <span class="toc-text">配置kyuubi</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#kyuubi-env-sh"><span class="toc-number">2.3.1.1.</span> <span class="toc-text">kyuubi-env.sh</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#kyuubi-defaults-conf"><span class="toc-number">2.3.1.2.</span> <span class="toc-text">kyuubi-defaults.conf</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#验证-2"><span class="toc-number">2.3.2.</span> <span class="toc-text">验证</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#集成kyuubi-spark-authz"><span class="toc-number">2.3.3.</span> <span class="toc-text">集成kyuubi-spark-authz</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#同时支持hudi"><span class="toc-number">2.3.4.</span> <span class="toc-text">同时支持hudi</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#优化Spark启动时间"><span class="toc-number">2.3.5.</span> <span class="toc-text">优化Spark启动时间</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#创建archive（spark-yarn-archive）"><span class="toc-number">2.3.5.1.</span> <span class="toc-text">创建archive（spark.yarn.archive）</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#上传jar包到hdfs"><span class="toc-number">2.3.5.2.</span> <span class="toc-text">上传jar包到hdfs</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#配置-spark-defaults-conf"><span class="toc-number">2.3.5.3.</span> <span class="toc-text">配置 spark-defaults.conf</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#动态资源申请"><span class="toc-number">2.3.6.</span> <span class="toc-text">动态资源申请</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#HA"><span class="toc-number">2.3.7.</span> <span class="toc-text">HA</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#编译打包Spark3-1-2"><span class="toc-number">3.</span> <span class="toc-text">编译打包Spark3.1.2</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#编译打包-Kyuubi-1-5-2"><span class="toc-number">4.</span> <span class="toc-text">编译打包 Kyuubi 1.5.2</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#打分布式tgz安装包"><span class="toc-number">4.1.</span> <span class="toc-text">打分布式tgz安装包</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#异常解决过程"><span class="toc-number">4.1.1.</span> <span class="toc-text">异常解决过程</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#打包成功"><span class="toc-number">4.2.</span> <span class="toc-text">打包成功</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#更新"><span class="toc-number">5.</span> <span class="toc-text">更新</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -691,15 +702,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -711,11 +718,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -743,19 +754,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -767,7 +774,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -795,10 +806,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
@@ -807,19 +814,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -828,6 +835,18 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">IDEA</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Maven</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -843,19 +862,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">MySQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">MySQL</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -867,11 +886,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -891,15 +906,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -908,10 +931,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -935,6 +954,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
               </li>
              
@@ -947,7 +970,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -959,19 +990,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">yarn</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -983,19 +1010,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1011,6 +1034,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">vue</a>
               </li>
              
@@ -1020,22 +1047,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">IDEA</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Maven</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
             
             <div class="clearfix"></div>

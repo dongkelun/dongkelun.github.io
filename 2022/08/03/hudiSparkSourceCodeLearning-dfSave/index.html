@@ -9,18 +9,18 @@
   <link rel="dns-prefetch" href="https://dongkelun.com">
   <title>Hudi Spark源码学习总结-df.write.format(&#34;hudi&#34;).save | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="前言在开始学习Hudi的时候，我们知道通过df.write.format(&amp;quot;hudi&amp;quot;).save可以实现写hudi，并且写hudi的逻辑是在HoodieSparkSqlWriter.write实现的，但是始终有一个疑问：它怎么从df.write.format(&amp;quot;hudi&amp;quot;).save跳到HoodieSparkSqlWriter.write中的呢？本文就是主">
+  <meta name="description" content="前言在开始学习Hudi的时候，我们知道通过df.write.format(&amp;quot;hudi&amp;quot;).save可以实现写Hudi，并且写Hudi的逻辑是在HoodieSparkSqlWriter.write实现的，但是始终有一个疑问：它怎么从df.write.format(&amp;quot;hudi&amp;quot;).save跳到HoodieSparkSqlWriter.write中的呢？本文就是主">
 <meta name="keywords" content="Spark,源码,Hudi">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Hudi Spark源码学习总结-df.write.format(&quot;hudi&quot;).save">
 <meta property="og:url" content="https://dongkelun.com/2022/08/03/hudiSparkSourceCodeLearning-dfSave/index.html">
 <meta property="og:site_name" content="伦少的博客">
-<meta property="og:description" content="前言在开始学习Hudi的时候，我们知道通过df.write.format(&amp;quot;hudi&amp;quot;).save可以实现写hudi，并且写hudi的逻辑是在HoodieSparkSqlWriter.write实现的，但是始终有一个疑问：它怎么从df.write.format(&amp;quot;hudi&amp;quot;).save跳到HoodieSparkSqlWriter.write中的呢？本文就是主">
+<meta property="og:description" content="前言在开始学习Hudi的时候，我们知道通过df.write.format(&amp;quot;hudi&amp;quot;).save可以实现写Hudi，并且写Hudi的逻辑是在HoodieSparkSqlWriter.write实现的，但是始终有一个疑问：它怎么从df.write.format(&amp;quot;hudi&amp;quot;).save跳到HoodieSparkSqlWriter.write中的呢？本文就是主">
 <meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2022-08-03T07:36:51.279Z">
+<meta property="og:updated_time" content="2022-08-04T00:39:21.192Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Hudi Spark源码学习总结-df.write.format(&quot;hudi&quot;).save">
-<meta name="twitter:description" content="前言在开始学习Hudi的时候，我们知道通过df.write.format(&amp;quot;hudi&amp;quot;).save可以实现写hudi，并且写hudi的逻辑是在HoodieSparkSqlWriter.write实现的，但是始终有一个疑问：它怎么从df.write.format(&amp;quot;hudi&amp;quot;).save跳到HoodieSparkSqlWriter.write中的呢？本文就是主">
+<meta name="twitter:description" content="前言在开始学习Hudi的时候，我们知道通过df.write.format(&amp;quot;hudi&amp;quot;).save可以实现写Hudi，并且写Hudi的逻辑是在HoodieSparkSqlWriter.write实现的，但是始终有一个疑问：它怎么从df.write.format(&amp;quot;hudi&amp;quot;).save跳到HoodieSparkSqlWriter.write中的呢？本文就是主">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -250,7 +250,7 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在开始学习Hudi的时候，我们知道通过<code>df.write.format(&quot;hudi&quot;).save</code>可以实现写hudi，并且写hudi的逻辑是在<code>HoodieSparkSqlWriter.write</code>实现的，但是始终有一个疑问：它怎么从<code>df.write.format(&quot;hudi&quot;).save</code>跳到<code>HoodieSparkSqlWriter.write</code>中的呢？本文就是主要来回答这个问题的。</p>
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在开始学习Hudi的时候，我们知道通过<code>df.write.format(&quot;hudi&quot;).save</code>可以实现写Hudi，并且写Hudi的逻辑是在<code>HoodieSparkSqlWriter.write</code>实现的，但是始终有一个疑问：它怎么从<code>df.write.format(&quot;hudi&quot;).save</code>跳到<code>HoodieSparkSqlWriter.write</code>中的呢？本文就是主要来回答这个问题的。</p>
 <h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>Spark 2.4.4<br>Hudi 0.12.0-SNAPSHOT，和上篇文章<a href="https://dongkelun.com/2022/07/30/hudiSparkSqlSourceCodeLearning-ctas/">Hudi Spark SQL源码学习总结-CTAS</a>用的Hudi代码一样</p>
 <h2 id="示例代码"><a href="#示例代码" class="headerlink" title="示例代码"></a>示例代码</h2><p>还是拿源码里的<code>TestCreateTable</code>中的测试语句</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> spark.implicits._</span><br><span class="line">val df = Seq((<span class="number">1</span>, <span class="string">"a1"</span>, <span class="number">10</span>, <span class="number">1000</span>)).toDF(<span class="string">"id"</span>, <span class="string">"name"</span>, <span class="string">"value"</span>, <span class="string">"ts"</span>)</span><br><span class="line">df.write.format(<span class="string">"hudi"</span>)</span><br><span class="line">  .option(HoodieWriteConfig.TBL_NAME.key, tableName)</span><br><span class="line">  .option(TABLE_TYPE.key, COW_TABLE_TYPE_OPT_VAL)</span><br><span class="line">  .option(RECORDKEY_FIELD.key, <span class="string">"id"</span>)</span><br><span class="line">  .option(PRECOMBINE_FIELD.key, <span class="string">"ts"</span>)</span><br><span class="line">  .option(PARTITIONPATH_FIELD.key, <span class="string">""</span>)</span><br><span class="line">  .option(KEYGENERATOR_CLASS_NAME.key, classOf[NonpartitionedKeyGenerator].getName)</span><br><span class="line">  .option(HoodieWriteConfig.INSERT_PARALLELISM_VALUE.key, <span class="string">"1"</span>)</span><br><span class="line">  .option(HoodieWriteConfig.UPSERT_PARALLELISM_VALUE.key, <span class="string">"1"</span>)</span><br><span class="line">  .mode(SaveMode.Overwrite)</span><br><span class="line">  .save(tmp.getCanonicalPath)</span><br></pre></td></tr></table></figure>
@@ -279,7 +279,7 @@
 <h2 id="SaveIntoDataSourceCommand-run"><a href="#SaveIntoDataSourceCommand-run" class="headerlink" title="SaveIntoDataSourceCommand.run"></a>SaveIntoDataSourceCommand.run</h2><p>它的run方法会调用<code>dataSource.createRelation</code>,在上面构造<code>SaveIntoDataSourceCommand</code>时我们知道<code>dataSource</code>为<code>Spark2DefaultSource</code><br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">case</span> class <span class="title">SaveIntoDataSourceCommand</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    query: LogicalPlan,</span></span></span><br><span class="line"><span class="function"><span class="params">    dataSource: CreatableRelationProvider,</span></span></span><br><span class="line"><span class="function"><span class="params">    options: Map[String, String],</span></span></span><br><span class="line"><span class="function"><span class="params">    mode: SaveMode)</span> extends RunnableCommand </span>&#123;</span><br><span class="line"></span><br><span class="line">  override <span class="keyword">protected</span> def innerChildren: Seq[QueryPlan[_]] = Seq(query)</span><br><span class="line"></span><br><span class="line">  <span class="function">override def <span class="title">run</span><span class="params">(sparkSession: SparkSession)</span>: Seq[Row] </span>= &#123;</span><br><span class="line">    dataSource.createRelation(</span><br><span class="line">      sparkSession.sqlContext, mode, options, Dataset.ofRows(sparkSession, query))</span><br><span class="line"></span><br><span class="line">    Seq.empty[Row]</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  override def simpleString: String = &#123;</span><br><span class="line">    val redacted = SQLConf.get.redactOptions(options)</span><br><span class="line">    s<span class="string">"SaveIntoDataSourceCommand $&#123;dataSource&#125;, $&#123;redacted&#125;, $&#123;mode&#125;"</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <h2 id="Spark2DefaultSource-createRelation"><a href="#Spark2DefaultSource-createRelation" class="headerlink" title="Spark2DefaultSource.createRelation"></a>Spark2DefaultSource.createRelation</h2><p><code>Spark2DefaultSource</code>的<code>createRelation</code>方法是在其父类<code>DefaultSource</code>中实现的，可见在<code>createRelation</code>中调用了<code>HoodieSparkSqlWriter.write</code>，到此为止，我们终于搞清楚了从<code>df.write.format(&quot;hudi&quot;).save</code>到<code>HoodieSparkSqlWriter.write</code>的逻辑。</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Spark2DefaultSource</span> <span class="keyword">extends</span> <span class="title">DefaultSource</span> <span class="title">with</span> <span class="title">DataSourceRegister</span> </span>&#123;</span><br><span class="line">  <span class="function">override def <span class="title">shortName</span><span class="params">()</span>: String </span>= <span class="string">"hudi"</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  * Hoodie Spark Datasource, for reading and writing hoodie tables</span></span><br><span class="line"><span class="comment">  *</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">DefaultSource</span> <span class="keyword">extends</span> <span class="title">RelationProvider</span></span></span><br><span class="line"><span class="class">  <span class="title">with</span> <span class="title">SchemaRelationProvider</span></span></span><br><span class="line"><span class="class">  <span class="title">with</span> <span class="title">CreatableRelationProvider</span></span></span><br><span class="line"><span class="class">  <span class="title">with</span> <span class="title">DataSourceRegister</span></span></span><br><span class="line"><span class="class">  <span class="title">with</span> <span class="title">StreamSinkProvider</span></span></span><br><span class="line"><span class="class">  <span class="title">with</span> <span class="title">StreamSourceProvider</span></span></span><br><span class="line"><span class="class">  <span class="title">with</span> <span class="title">SparkAdapterSupport</span></span></span><br><span class="line"><span class="class">  <span class="title">with</span> <span class="title">Serializable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  SparkSession.getActiveSession.foreach &#123; spark =&gt;</span><br><span class="line">    val sparkVersion = spark.version</span><br><span class="line">    <span class="keyword">if</span> (sparkVersion.startsWith(<span class="string">"0."</span>) || sparkVersion.startsWith(<span class="string">"1."</span>) || sparkVersion.startsWith(<span class="string">"2."</span>)) &#123;</span><br><span class="line">      <span class="comment">// Enable "passPartitionByAsOptions" to support "write.partitionBy(...)"</span></span><br><span class="line">      spark.conf.set(<span class="string">"spark.sql.legacy.sources.write.passPartitionByAsOptions"</span>, <span class="string">"true"</span>)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">private</span> val log = LogManager.getLogger(classOf[DefaultSource])</span><br><span class="line"></span><br><span class="line">  <span class="function">override def <span class="title">createRelation</span><span class="params">(sqlContext: SQLContext,</span></span></span><br><span class="line"><span class="function"><span class="params">                              parameters: Map[String, String])</span>: BaseRelation </span>= &#123;</span><br><span class="line">    createRelation(sqlContext, parameters, <span class="keyword">null</span>)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function">override def <span class="title">createRelation</span><span class="params">(sqlContext: SQLContext,</span></span></span><br><span class="line"><span class="function"><span class="params">                              optParams: Map[String, String],</span></span></span><br><span class="line"><span class="function"><span class="params">                              schema: StructType)</span>: BaseRelation </span>= &#123;</span><br><span class="line">    <span class="comment">// Add default options for unspecified read options keys.</span></span><br><span class="line">    val parameters = DataSourceOptionsHelper.parametersWithReadDefaults(optParams)</span><br><span class="line"></span><br><span class="line">    ......</span><br><span class="line">  &#125;</span><br><span class="line">  ......</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">    * This DataSource API is used for writing the DataFrame at the destination. For now, we are returning a dummy</span></span><br><span class="line"><span class="comment">    * relation here because Spark does not really make use of the relation returned, and just returns an empty</span></span><br><span class="line"><span class="comment">    * dataset at [[org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand.run()]]. This saves us the cost</span></span><br><span class="line"><span class="comment">    * of creating and returning a parquet relation here.</span></span><br><span class="line"><span class="comment">    *</span></span><br><span class="line"><span class="comment">    * <span class="doctag">TODO:</span> Revisit to return a concrete relation here when we support CREATE TABLE AS for Hudi with DataSource API.</span></span><br><span class="line"><span class="comment">    *       That is the only case where Spark seems to actually need a relation to be returned here</span></span><br><span class="line"><span class="comment">    *       [[org.apache.spark.sql.execution.datasources.DataSource.writeAndRead()]]</span></span><br><span class="line"><span class="comment">    *</span></span><br><span class="line"><span class="comment">    * <span class="doctag">@param</span> sqlContext Spark SQL Context</span></span><br><span class="line"><span class="comment">    * <span class="doctag">@param</span> mode Mode for saving the DataFrame at the destination</span></span><br><span class="line"><span class="comment">    * <span class="doctag">@param</span> optParams Parameters passed as part of the DataFrame write operation</span></span><br><span class="line"><span class="comment">    * <span class="doctag">@param</span> df Spark DataFrame to be written</span></span><br><span class="line"><span class="comment">    * <span class="doctag">@return</span> Spark Relation</span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line">  <span class="function">override def <span class="title">createRelation</span><span class="params">(sqlContext: SQLContext,</span></span></span><br><span class="line"><span class="function"><span class="params">                              mode: SaveMode,</span></span></span><br><span class="line"><span class="function"><span class="params">                              optParams: Map[String, String],</span></span></span><br><span class="line"><span class="function"><span class="params">                              df: DataFrame)</span>: BaseRelation </span>= &#123;</span><br><span class="line">    val dfWithoutMetaCols = df.drop(HoodieRecord.HOODIE_META_COLUMNS.asScala:_*)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (optParams.get(OPERATION.key).contains(BOOTSTRAP_OPERATION_OPT_VAL)) &#123;</span><br><span class="line">      HoodieSparkSqlWriter.bootstrap(sqlContext, mode, optParams, dfWithoutMetaCols)</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      HoodieSparkSqlWriter.write(sqlContext, mode, optParams, dfWithoutMetaCols)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">new</span> HoodieEmptyRelation(sqlContext, dfWithoutMetaCols.schema)</span><br><span class="line">  &#125;</span><br><span class="line">  ......</span><br></pre></td></tr></table></figure>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>本来分析总结了从<code>df.write.format(&quot;hudi&quot;).save</code>到<code>HoodieSparkSqlWriter.write</code>的调用逻辑，解决了自己最开始学习Hudi时的一个疑惑😄,希望对大家也能有所帮助。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>本文分析总结了从<code>df.write.format(&quot;hudi&quot;).save</code>到<code>HoodieSparkSqlWriter.write</code>的调用逻辑，解决了自己最开始学习Hudi时的一个疑惑😄,希望对大家也能有所帮助。</p>
 
       
 
@@ -614,15 +614,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -634,11 +630,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -666,19 +666,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -690,7 +686,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -718,10 +718,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
@@ -730,19 +726,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -751,6 +747,18 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">IDEA</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Maven</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -766,19 +774,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">MySQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">MySQL</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -790,11 +798,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -814,15 +818,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -831,10 +843,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -858,6 +866,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
               </li>
              
@@ -870,7 +882,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -882,19 +902,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">yarn</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -906,19 +922,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -934,6 +946,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">vue</a>
               </li>
              
@@ -943,22 +959,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">IDEA</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Maven</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
             
             <div class="clearfix"></div>
