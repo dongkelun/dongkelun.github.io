@@ -17,7 +17,7 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言上一篇文章Hudi Spark SQL源码学习总结-Create Table总结了Create Table的源码执行逻辑，这一篇继续总结CTAS，之所以总结CTAS，是之前在我提交的一个PR中发现，Spark2和Spark3.2.1版本的CTAS的逻辑不一样，最终走的Hudi实现类也不一样，所以本文分Spark2和Spark3.2.1两个版本分析 不同点先总结一下Spark2和Spark3.2">
 <meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2022-08-01T01:49:28.884Z">
+<meta property="og:updated_time" content="2022-08-09T00:37:32.847Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Hudi Spark SQL源码学习总结-CTAS">
 <meta name="twitter:description" content="前言上一篇文章Hudi Spark SQL源码学习总结-Create Table总结了Create Table的源码执行逻辑，这一篇继续总结CTAS，之所以总结CTAS，是之前在我提交的一个PR中发现，Spark2和Spark3.2.1版本的CTAS的逻辑不一样，最终走的Hudi实现类也不一样，所以本文分Spark2和Spark3.2.1两个版本分析 不同点先总结一下Spark2和Spark3.2">
@@ -323,7 +323,7 @@
 <p>他们两个的apply方法分别为：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">class ResolveCatalogs(val catalogManager: CatalogManager)</span><br><span class="line">  extends Rule[LogicalPlan] with LookupCatalog &#123;</span><br><span class="line">  <span class="keyword">import</span> org.apache.spark.sql.connector.catalog.CatalogV2Implicits._</span><br><span class="line">  <span class="keyword">import</span> org.apache.spark.sql.connector.catalog.CatalogV2Util._</span><br><span class="line"></span><br><span class="line">  <span class="function">override def <span class="title">apply</span><span class="params">(plan: LogicalPlan)</span>: LogicalPlan </span>= plan resolveOperators &#123;</span><br><span class="line">    <span class="keyword">case</span> c @ CreateTableStatement(</span><br><span class="line">         NonSessionCatalogAndTable(catalog, tbl), _, _, _, _, _, _, _, _, _, _, _) =&gt;</span><br><span class="line">      CreateV2Table(</span><br><span class="line">        catalog.asTableCatalog,</span><br><span class="line">        tbl.asIdentifier,</span><br><span class="line">        c.tableSchema,</span><br><span class="line">        <span class="comment">// convert the bucket spec and add it as a transform</span></span><br><span class="line">        c.partitioning ++ c.bucketSpec.map(_.asTransform),</span><br><span class="line">        convertTableProperties(c),</span><br><span class="line">        ignoreIfExists = c.ifNotExists)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">case</span> c @ CreateTableAsSelectStatement(</span><br><span class="line">         NonSessionCatalogAndTable(catalog, tbl), _, _, _, _, _, _, _, _, _, _, _, _) =&gt;</span><br><span class="line">      CreateTableAsSelect(</span><br><span class="line">        catalog.asTableCatalog,</span><br><span class="line">        tbl.asIdentifier,</span><br><span class="line">        <span class="comment">// convert the bucket spec and add it as a transform</span></span><br><span class="line">        c.partitioning ++ c.bucketSpec.map(_.asTransform),</span><br><span class="line">        c.asSelect,</span><br><span class="line">        convertTableProperties(c),</span><br><span class="line">        writeOptions = c.writeOptions,</span><br><span class="line">        ignoreIfExists = c.ifNotExists)</span><br></pre></td></tr></table></figure>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">class ResolveSessionCatalog(val catalogManager: CatalogManager)</span><br><span class="line">  extends Rule[LogicalPlan] with LookupCatalog &#123;</span><br><span class="line">  <span class="keyword">import</span> org.apache.spark.sql.connector.catalog.CatalogV2Implicits._</span><br><span class="line">  <span class="keyword">import</span> org.apache.spark.sql.connector.catalog.CatalogV2Util._</span><br><span class="line">  <span class="keyword">import</span> org.apache.spark.sql.execution.datasources.v2.DataSourceV2Implicits._</span><br><span class="line"></span><br><span class="line">  <span class="function">override def <span class="title">apply</span><span class="params">(plan: LogicalPlan)</span>: LogicalPlan </span>= plan.resolveOperatorsUp &#123;</span><br><span class="line">    <span class="function"><span class="keyword">case</span> <span class="title">AddColumns</span><span class="params">(ResolvedV1TableIdentifier(ident)</span>, cols) </span>=&gt;</span><br><span class="line">      cols.foreach &#123; c =&gt;</span><br><span class="line">        assertTopLevelColumn(c.name, <span class="string">"AlterTableAddColumnsCommand"</span>)</span><br><span class="line">        <span class="keyword">if</span> (!c.nullable) &#123;</span><br><span class="line">          <span class="keyword">throw</span> QueryCompilationErrors.addColumnWithV1TableCannotSpecifyNotNullError</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      AlterTableAddColumnsCommand(ident.asTableIdentifier, cols.map(convertToStructField))</span><br><span class="line"></span><br><span class="line">    ......</span><br><span class="line"></span><br><span class="line">    <span class="keyword">case</span> c @ CreateTableAsSelectStatement(</span><br><span class="line">         SessionCatalogAndTable(catalog, tbl), _, _, _, _, _, _, _, _, _, _, _, _) =&gt;</span><br><span class="line">      val (storageFormat, provider) = getStorageFormatAndProvider(</span><br><span class="line">        c.provider, c.options, c.location, c.serde, ctas = <span class="keyword">true</span>)</span><br><span class="line">      <span class="keyword">if</span> (!isV2Provider(provider)) &#123;</span><br><span class="line">        val tableDesc = buildCatalogTable(tbl.asTableIdentifier, <span class="keyword">new</span> StructType,</span><br><span class="line">          c.partitioning, c.bucketSpec, c.properties, provider, c.location,</span><br><span class="line">          c.comment, storageFormat, c.external)</span><br><span class="line">        val mode = <span class="keyword">if</span> (c.ifNotExists) SaveMode.Ignore <span class="keyword">else</span> SaveMode.ErrorIfExists</span><br><span class="line">        CreateTable(tableDesc, mode, Some(c.asSelect))</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        CreateTableAsSelect(</span><br><span class="line">          catalog.asTableCatalog,</span><br><span class="line">          tbl.asIdentifier,</span><br><span class="line">          <span class="comment">// convert the bucket spec and add it as a transform</span></span><br><span class="line">          c.partitioning ++ c.bucketSpec.map(_.asTransform),</span><br><span class="line">          c.asSelect,</span><br><span class="line">          convertTableProperties(c),</span><br><span class="line">          writeOptions = c.writeOptions,</span><br><span class="line">          ignoreIfExists = c.ifNotExists)</span><br><span class="line">      &#125;</span><br><span class="line">    ......</span><br></pre></td></tr></table></figure>
-<p>可以看到这两个规则都试图去匹配<code>CreateTableAsSelectStatement</code>，区别是一个匹配<code>NonSessionCatalogAndTable</code>,另一个匹配<code>SessionCatalogAndTable</code>,根据名字判断，他们两个的判断是反过来的，总有一个会匹配上，那么这俩具体实现是啥呢，我看以<code>SessionCatalogAndTable</code>为例，我们知道scala在匹配样例类对象时回去调用它的<code>unapply</code>方法,这里的参数<code>nameParts</code>为<code>CreateTableAsSelectStatement</code>的第一个参数，在上面的<code>visitCreateTable</code>可知，它是由<code>visitCreateTableHeader(ctx.createTableHeader)</code>返回的<code>table</code></p>
+<p>可以看到这两个规则都试图去匹配<code>CreateTableAsSelectStatement</code>，区别是一个匹配<code>NonSessionCatalogAndTable</code>,另一个匹配<code>SessionCatalogAndTable</code>,根据名字判断，他们两个的判断是反过来的，总有一个会匹配上，那么这俩具体实现是啥呢，我们以<code>SessionCatalogAndTable</code>为例，我们知道scala在匹配样例类对象时回去调用它的<code>unapply</code>方法,这里的参数<code>nameParts</code>为<code>CreateTableAsSelectStatement</code>的第一个参数，在上面的<code>visitCreateTable</code>可知，它是由<code>visitCreateTableHeader(ctx.createTableHeader)</code>返回的<code>table</code></p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line">object SessionCatalogAndTable &#123;</span><br><span class="line">  <span class="function">def <span class="title">unapply</span><span class="params">(nameParts: Seq[String])</span>: Option[<span class="params">(CatalogPlugin, Seq[String])</span>] </span>= nameParts match &#123;</span><br><span class="line">    <span class="function"><span class="keyword">case</span> <span class="title">SessionCatalogAndIdentifier</span><span class="params">(catalog, ident)</span> </span>=&gt;</span><br><span class="line">      Some(catalog -&gt; ident.asMultipartIdentifier)</span><br><span class="line">    <span class="keyword">case</span> _ =&gt; None</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">object SessionCatalogAndIdentifier &#123;</span><br><span class="line"></span><br><span class="line">  <span class="function">def <span class="title">unapply</span><span class="params">(parts: Seq[String])</span>: Option[<span class="params">(CatalogPlugin, Identifier)</span>] </span>= parts match &#123;</span><br><span class="line">    <span class="function"><span class="keyword">case</span> <span class="title">CatalogAndIdentifier</span><span class="params">(catalog, ident)</span> <span class="keyword">if</span> CatalogV2Util.<span class="title">isSessionCatalog</span><span class="params">(catalog)</span> </span>=&gt;</span><br><span class="line">      Some(catalog, ident)</span><br><span class="line">    <span class="keyword">case</span> _ =&gt; None</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">  object CatalogAndIdentifier &#123;</span><br><span class="line">  <span class="keyword">import</span> org.apache.spark.sql.connector.catalog.CatalogV2Implicits.MultipartIdentifierHelper</span><br><span class="line"></span><br><span class="line">  <span class="keyword">private</span> val globalTempDB = SQLConf.get.getConf(StaticSQLConf.GLOBAL_TEMP_DATABASE)</span><br><span class="line"></span><br><span class="line">  <span class="function">def <span class="title">unapply</span><span class="params">(nameParts: Seq[String])</span>: Option[<span class="params">(CatalogPlugin, Identifier)</span>] </span>= &#123;</span><br><span class="line">    <span class="keyword">assert</span>(nameParts.nonEmpty)</span><br><span class="line">    <span class="keyword">if</span> (nameParts.length == <span class="number">1</span>) &#123; <span class="comment">// nameParts.length等于1，代表只有表名，没有库名</span></span><br><span class="line">      Some((currentCatalog, Identifier.of(catalogManager.currentNamespace, nameParts.head)))</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (nameParts.head.equalsIgnoreCase(globalTempDB)) &#123; <span class="comment">//nameParts.head为库名，判断库名是否等于globalTempDB</span></span><br><span class="line">      <span class="comment">// Conceptually global temp views are in a special reserved catalog. However, the v2 catalog</span></span><br><span class="line">      <span class="comment">// API does not support view yet, and we have to use v1 commands to deal with global temp</span></span><br><span class="line">      <span class="comment">// views. To simplify the implementation, we put global temp views in a special namespace</span></span><br><span class="line">      <span class="comment">// in the session catalog. The special namespace has higher priority during name resolution.</span></span><br><span class="line">      <span class="comment">// For example, if the name of a custom catalog is the same with `GLOBAL_TEMP_DATABASE`,</span></span><br><span class="line">      <span class="comment">// this custom catalog can't be accessed.</span></span><br><span class="line">      Some((catalogManager.v2SessionCatalog, nameParts.asIdentifier))</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 否则，通过catalogManager.catalog(nameParts.head)获取catalog</span></span><br><span class="line">        Some((catalogManager.catalog(nameParts.head), nameParts.tail.asIdentifier))</span><br><span class="line">      &#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">        <span class="keyword">case</span> _: CatalogNotFoundException =&gt;</span><br><span class="line">          Some((currentCatalog, nameParts.asIdentifier))</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125; </span><br><span class="line"></span><br><span class="line">  def currentCatalog: CatalogPlugin = catalogManager.currentCatalog</span><br></pre></td></tr></table></figure>
 <p>最终会调用到<code>CatalogAndIdentifier.unapply</code>,因为我们建表语句中没有加库名限定，所以这里的<code>nameParts</code>为<code>Seq(tableName)</code>,也就是length等于，所以返回<code>Some((currentCatalog, Identifier.of(catalogManager.currentNamespace, nameParts.head)))</code>,值为：Some((HoodieCatalog, Identifier.of(default., tableName)),具体为啥为<code>HoodieCatalog</code>,原因和我们在开头提到的一个配置有关</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"> <span class="function">def <span class="title">sparkConf</span><span class="params">()</span>: SparkConf </span>= &#123;</span><br><span class="line">  val sparkConf = <span class="keyword">new</span> SparkConf()</span><br><span class="line">  <span class="keyword">if</span> (HoodieSparkUtils.gteqSpark3_2) &#123;</span><br><span class="line">    sparkConf.set(<span class="string">"spark.sql.catalog.spark_catalog"</span>,</span><br><span class="line">      <span class="string">"org.apache.spark.sql.hudi.catalog.HoodieCatalog"</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  sparkConf</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -717,7 +717,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -729,18 +741,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">算法</a>
               </li>
              
@@ -749,15 +749,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">mysql</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">源码</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -789,15 +789,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -813,15 +813,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -833,11 +841,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
+                <a href="javascript:void(0)" class="js-tag color5">java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -853,19 +861,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">java</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -873,11 +869,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -889,15 +889,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -910,6 +902,22 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">异常</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -929,27 +937,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -965,15 +953,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+                <a href="javascript:void(0)" class="js-tag color5">压缩文件</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -989,11 +989,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1005,11 +1005,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1021,11 +1025,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1041,7 +1045,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1049,11 +1053,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">压缩文件</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
             
             <div class="clearfix"></div>
