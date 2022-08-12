@@ -9,18 +9,18 @@
   <link rel="dns-prefetch" href="https://dongkelun.com">
   <title>Hudi Spark源码学习总结-spark.read.format(&#34;hudi&#34;).load | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="前言由于工作原因，之前查询Hudi主要是用Hive来查询的，所以对Hive查询Hudi的逻辑比较了解，但是对于Spark查询Hudi的逻辑不太了解。所以现在想要学习一下Spark查询Hudi的大概逻辑，搞清楚它是如何从Spark的源码跳转到Hudi源码执行Hudi查询的逻辑， 这样既能搞清楚Spark查询表的逻辑，也能搞清楚Spark查询Hudi的逻辑，也便于再后面使用Kyuubi Spark S">
+  <meta name="description" content="前言由于工作原因，之前查询Hudi主要是用Hive来查询的，所以对Hive查询Hudi的逻辑比较了解，但是对于Spark查询Hudi的逻辑不太了解。所以现在想要学习一下Spark查询Hudi的大概逻辑，搞清楚它是如何从Spark的源码跳转到Hudi源码执行Hudi查询的逻辑， 这样既能搞清楚Spark查询表的逻辑，也能搞清楚Spark查询Hudi的逻辑，也便于在后面使用Kyuubi Spark S">
 <meta name="keywords" content="Spark,源码,Hudi">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Hudi Spark源码学习总结-spark.read.format(&quot;hudi&quot;).load">
 <meta property="og:url" content="https://dongkelun.com/2022/08/11/hudiSparkSourceCodeLearning-dfLoad/index.html">
 <meta property="og:site_name" content="伦少的博客">
-<meta property="og:description" content="前言由于工作原因，之前查询Hudi主要是用Hive来查询的，所以对Hive查询Hudi的逻辑比较了解，但是对于Spark查询Hudi的逻辑不太了解。所以现在想要学习一下Spark查询Hudi的大概逻辑，搞清楚它是如何从Spark的源码跳转到Hudi源码执行Hudi查询的逻辑， 这样既能搞清楚Spark查询表的逻辑，也能搞清楚Spark查询Hudi的逻辑，也便于再后面使用Kyuubi Spark S">
+<meta property="og:description" content="前言由于工作原因，之前查询Hudi主要是用Hive来查询的，所以对Hive查询Hudi的逻辑比较了解，但是对于Spark查询Hudi的逻辑不太了解。所以现在想要学习一下Spark查询Hudi的大概逻辑，搞清楚它是如何从Spark的源码跳转到Hudi源码执行Hudi查询的逻辑， 这样既能搞清楚Spark查询表的逻辑，也能搞清楚Spark查询Hudi的逻辑，也便于在后面使用Kyuubi Spark S">
 <meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2022-08-11T07:04:35.630Z">
+<meta property="og:updated_time" content="2022-08-12T01:29:50.015Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Hudi Spark源码学习总结-spark.read.format(&quot;hudi&quot;).load">
-<meta name="twitter:description" content="前言由于工作原因，之前查询Hudi主要是用Hive来查询的，所以对Hive查询Hudi的逻辑比较了解，但是对于Spark查询Hudi的逻辑不太了解。所以现在想要学习一下Spark查询Hudi的大概逻辑，搞清楚它是如何从Spark的源码跳转到Hudi源码执行Hudi查询的逻辑， 这样既能搞清楚Spark查询表的逻辑，也能搞清楚Spark查询Hudi的逻辑，也便于再后面使用Kyuubi Spark S">
+<meta name="twitter:description" content="前言由于工作原因，之前查询Hudi主要是用Hive来查询的，所以对Hive查询Hudi的逻辑比较了解，但是对于Spark查询Hudi的逻辑不太了解。所以现在想要学习一下Spark查询Hudi的大概逻辑，搞清楚它是如何从Spark的源码跳转到Hudi源码执行Hudi查询的逻辑， 这样既能搞清楚Spark查询表的逻辑，也能搞清楚Spark查询Hudi的逻辑，也便于在后面使用Kyuubi Spark S">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -257,7 +257,7 @@
         
         
       
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>由于工作原因，之前查询Hudi主要是用Hive来查询的，所以对Hive查询Hudi的逻辑比较了解，但是对于Spark查询Hudi的逻辑不太了解。所以现在想要学习一下Spark查询Hudi的大概逻辑，搞清楚它是如何从Spark的源码跳转到Hudi源码执行Hudi查询的逻辑， 这样既能搞清楚Spark查询表的逻辑，也能搞清楚Spark查询Hudi的逻辑，也便于再后面使用Kyuubi Spark SQL 时出现问题能更好的定位解决。</p>
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>由于工作原因，之前查询Hudi主要是用Hive来查询的，所以对Hive查询Hudi的逻辑比较了解，但是对于Spark查询Hudi的逻辑不太了解。所以现在想要学习一下Spark查询Hudi的大概逻辑，搞清楚它是如何从Spark的源码跳转到Hudi源码执行Hudi查询的逻辑， 这样既能搞清楚Spark查询表的逻辑，也能搞清楚Spark查询Hudi的逻辑，也便于在后面使用Kyuubi Spark SQL 时出现问题能更好的定位解决。</p>
 <h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>Spark 2.4.4<br>Hudi master 0.12.0-SNAPSHOT 最新代码<br>（可以借助Spark3 planChangeLog 打印日志信息查看哪些规则生效）</p>
 <h2 id="示例代码"><a href="#示例代码" class="headerlink" title="示例代码"></a>示例代码</h2><p>先用上篇文章写Hudi数据，再进行查询</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> spark.implicits._</span><br><span class="line">val df = Seq((<span class="number">1</span>, <span class="string">"a1"</span>, <span class="number">10</span>, <span class="number">1000</span>)).toDF(<span class="string">"id"</span>, <span class="string">"name"</span>, <span class="string">"value"</span>, <span class="string">"ts"</span>)</span><br><span class="line">df.write.format(<span class="string">"hudi"</span>)</span><br><span class="line">  .option(HoodieWriteConfig.TBL_NAME.key, tableName)</span><br><span class="line">  .option(TABLE_TYPE.key, COW_TABLE_TYPE_OPT_VAL)</span><br><span class="line">  .option(RECORDKEY_FIELD.key, <span class="string">"id"</span>)</span><br><span class="line">  .option(PRECOMBINE_FIELD.key, <span class="string">"ts"</span>)</span><br><span class="line">  .option(PARTITIONPATH_FIELD.key, <span class="string">""</span>)</span><br><span class="line">  .option(KEYGENERATOR_CLASS_NAME.key, classOf[NonpartitionedKeyGenerator].getName)</span><br><span class="line">  .option(HoodieWriteConfig.INSERT_PARALLELISM_VALUE.key, <span class="string">"1"</span>)</span><br><span class="line">  .option(HoodieWriteConfig.UPSERT_PARALLELISM_VALUE.key, <span class="string">"1"</span>)</span><br><span class="line">  .mode(SaveMode.Overwrite)</span><br><span class="line">  .save(tmp.getCanonicalPath)</span><br><span class="line"></span><br><span class="line">spark.read.format(<span class="string">"hudi"</span>).load(tmp.getCanonicalPath).show()</span><br></pre></td></tr></table></figure>
@@ -459,6 +459,15 @@
 
   
 <nav id="article-nav">
+  
+    <a href="/2022/08/12/hudiSparkSourceCodeLearning-dfLoad2/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          Hudi Spark源码学习总结-spark.read.format(&#34;hudi&#34;).load（2）
+        
+      </div>
+    </a>
   
   
     <a href="/2022/08/03/hudiSparkSourceCodeLearning-dfSave/" id="article-nav-older" class="article-nav-link-wrap">
@@ -669,19 +678,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -701,19 +698,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -722,6 +719,18 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -741,15 +750,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">front-end</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -765,6 +774,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
@@ -773,7 +786,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -781,15 +794,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -817,19 +826,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -841,11 +850,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -857,11 +870,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -873,15 +882,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">scala</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">日期</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -889,7 +894,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">scala</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -905,15 +926,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -937,15 +950,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -957,11 +974,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -973,6 +990,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
@@ -981,7 +1002,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -994,18 +1015,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
             
             <div class="clearfix"></div>
