@@ -21,7 +21,7 @@
 <meta property="og:image" content="https://tva4.sinaimg.cn/large/e44344dcly1h5k6bs0g1jj21yy0olmzw.jpg">
 <meta property="og:image" content="https://tva3.sinaimg.cn/large/e44344dcly1h5huhfuk4lj21hn0u0myw.jpg">
 <meta property="og:image" content="https://tva1.sinaimg.cn/large/e44344dcly1h5k6bx8mc6j21ym0lwtcx.jpg">
-<meta property="og:updated_time" content="2022-08-26T08:00:27.927Z">
+<meta property="og:updated_time" content="2022-08-27T08:16:32.454Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Flink SQL 客户端查询Hive配置及问题解决">
 <meta name="twitter:description" content="前言记录博主第一次使用Flink SQL查询Hive的配置以及问题解决过程  博主目前还没有用过Flink,没有写过Flink代码，完全是一个小白。之所以使用Flink，是因为博主目前需要测试使用dolphinscheduler的一些功能，其中包括Flink数据源，这里Flink数据源我们使用的是Kyuubi Flink Engine,且学会、了解了Flink之后对于学习Hudi、Kyuubi也是">
@@ -287,7 +287,6 @@
 <h2 id="切换-catalog"><a href="#切换-catalog" class="headerlink" title="切换 catalog"></a>切换 catalog</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> <span class="keyword">catalog</span> hive_catalog;</span><br></pre></td></tr></table></figure>
 <h2 id="查询Hive表"><a href="#查询Hive表" class="headerlink" title="查询Hive表"></a>查询Hive表</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">Flink SQL&gt; show tables;</span><br><span class="line">+<span class="comment">--------------------------+</span></span><br><span class="line">|               table name |</span><br><span class="line">+<span class="comment">--------------------------+</span></span><br><span class="line">|                      tba |</span><br><span class="line">|                      tbb |</span><br><span class="line">|                     test |</span><br><span class="line">|                    test1 |</span><br><span class="line">|                   test_2 |</span><br><span class="line">|          test_hive_table |</span><br><span class="line">|        test_hudi_table_1 |</span><br><span class="line">|        test_hudi_table_2 |</span><br><span class="line">|        test_hudi_table_3 |</span><br><span class="line">|        test_hudi_table_4 |</span><br><span class="line">| test_hudi_table_cow_ctas |</span><br><span class="line">|   test_hudi_table_kyuubi |</span><br><span class="line">|    test_hudi_table_merge |</span><br><span class="line">|             test_no_hudi |</span><br><span class="line">|           test_no_hudi_2 |</span><br><span class="line">+<span class="comment">--------------------------+</span></span><br><span class="line">15 rows in <span class="keyword">set</span></span><br></pre></td></tr></table></figure>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> test_hive_table;</span><br></pre></td></tr></table></figure>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">2022</span>-<span class="number">08</span>-<span class="number">26</span> <span class="number">14</span>:<span class="number">52</span>:<span class="number">15</span>,<span class="number">656</span> WARN  org.apache.hadoop.hdfs.shortcircuit.DomainSocketFactory      [] - The <span class="keyword">short</span>-circuit local reads feature cannot be used because libhadoop cannot be loaded.</span><br><span class="line"><span class="number">2022</span>-<span class="number">08</span>-<span class="number">26</span> <span class="number">14</span>:<span class="number">52</span>:<span class="number">16</span>,<span class="number">021</span> INFO  org.apache.hadoop.hdfs.DFSClient                             [] - Created token <span class="keyword">for</span> spark: HDFS_DELEGATION_TOKEN owner=spark/indata-<span class="number">10</span>-<span class="number">110</span>-<span class="number">105</span>-<span class="number">164</span>.indata.com<span class="meta">@INDATA</span>.COM, renewer=yarn, realUser=, issueDate=<span class="number">1661496735963</span>, maxDate=<span class="number">1662101535963</span>, sequenceNumber=<span class="number">8068</span>, masterKeyId=<span class="number">85</span> on ha-hdfs:cluster1</span><br><span class="line"><span class="number">2022</span>-<span class="number">08</span>-<span class="number">26</span> <span class="number">14</span>:<span class="number">52</span>:<span class="number">16</span>,<span class="number">558</span> INFO  org.apache.hadoop.crypto.key.kms.KMSClientProvider           [] - New token created: (Kind: kms-dt, Service: kms:<span class="comment">//http@indata-10-110-105-163.indata.com:9292/kms, Ident: (kms-dt owner=spark, renewer=yarn, realUser=, issueDate=1661496736233, maxDate=1662101536233, sequenceNumber=1275, masterKeyId=12))</span></span><br><span class="line"><span class="number">2022</span>-<span class="number">08</span>-<span class="number">26</span> <span class="number">14</span>:<span class="number">52</span>:<span class="number">16</span>,<span class="number">665</span> INFO  org.apache.hadoop.mapreduce.security.TokenCache              [] - Got dt <span class="keyword">for</span> hdfs:<span class="comment">//cluster1; Kind: HDFS_DELEGATION_TOKEN, Service: ha-hdfs:cluster1, Ident: (token for spark: HDFS_DELEGATION_TOKEN owner=spark/indata-10-110-105-164.indata.com@INDATA.COM, renewer=yarn, realUser=, issueDate=1661496735963, maxDate=1662101535963, sequenceNumber=8068, masterKeyId=85)</span></span><br><span class="line"><span class="number">2022</span>-<span class="number">08</span>-<span class="number">26</span> <span class="number">14</span>:<span class="number">52</span>:<span class="number">16</span>,<span class="number">666</span> INFO  org.apache.hadoop.mapreduce.security.TokenCache              [] - Got dt <span class="keyword">for</span> hdfs:<span class="comment">//cluster1; Kind: kms-dt, Service: kms://http@indata-10-110-105-162.indata.com;indata-10-110-105-163.indata.com:9292/kms, Ident: (kms-dt owner=spark, renewer=yarn, realUser=, issueDate=1661496736233, maxDate=1662101536233, sequenceNumber=1275, masterKeyId=12)</span></span><br><span class="line"><span class="number">2022</span>-<span class="number">08</span>-<span class="number">26</span> <span class="number">14</span>:<span class="number">52</span>:<span class="number">16</span>,<span class="number">704</span> INFO  org.apache.hadoop.mapred.FileInputFormat                     [] - Total input files to process : <span class="number">1</span></span><br><span class="line"><span class="number">2022</span>-<span class="number">08</span>-<span class="number">26</span> <span class="number">14</span>:<span class="number">52</span>:<span class="number">17</span>,<span class="number">593</span> WARN  org.apache.flink.yarn.configuration.YarnLogConfigUtil        [] - <span class="function">The configuration <span class="title">directory</span> <span class="params">(<span class="string">'/opt/hdp/kyuubi-1.5.2/externals/flink-1.14.3/conf'</span>)</span> already contains a LOG4J config file.If you want to use logback, then please delete or rename the log configuration file.</span></span><br><span class="line"><span class="function">2022-08-26 14:52:17,806 INFO  org.apache.flink.yarn.YarnClusterDescriptor                  [] - No path <span class="keyword">for</span> the flink jar passed. Using the location of class org.apache.flink.yarn.YarnClusterDescriptor to locate the jar</span></span><br><span class="line"><span class="function">2022-08-26 14:52:17,808 WARN  org.apache.flink.yarn.YarnClusterDescriptor                  [] - Neither the HADOOP_CONF_DIR nor the YARN_CONF_DIR environment variable is set.The Flink YARN Client needs one of these to be set to properly load the Hadoop configuration <span class="keyword">for</span> accessing YARN.</span></span><br><span class="line"><span class="function">2022-08-26 14:52:17,818 INFO  org.apache.hadoop.yarn.client.ConfiguredRMFailoverProxyProvider [] - Failing over to rm2</span></span><br><span class="line"><span class="function">2022-08-26 14:52:17,883 INFO  org.apache.flink.yarn.YarnClusterDescriptor                  [] - Found Web Interface indata-10-110-105-162.indata.com:41651 of application 'application_1661394335976_0016'.</span></span><br><span class="line"><span class="function">[INFO] Result retrieval cancelled.</span></span><br></pre></td></tr></table></figure>
 <p><img src="https://tva3.sinaimg.cn/large/e44344dcly1h5huhfuk4lj21hn0u0myw.jpg" alt=""></p>
 <p>如果是yarn-session模式，我们可以在flink的管理界面看到对应的job信息：<br><img src="https://tva1.sinaimg.cn/large/e44344dcly1h5k6bx8mc6j21ym0lwtcx.jpg" alt=""></p>
 <h3 id="创建Hive表"><a href="#创建Hive表" class="headerlink" title="创建Hive表"></a>创建Hive表</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">set table.sql-dialect = hive; #使用hive方言</span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> test_hive_table_flink(<span class="keyword">id</span> <span class="built_in">int</span>,<span class="keyword">name</span> <span class="keyword">string</span>);</span><br></pre></td></tr></table></figure>
@@ -642,19 +641,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -666,14 +653,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">SQL</a>
               </li>
              
@@ -682,7 +661,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -691,6 +686,22 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -706,23 +717,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -734,7 +729,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -758,11 +757,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -778,23 +777,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">IDEA</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Maven</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -802,11 +785,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -846,6 +833,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Python</a>
               </li>
              
@@ -854,15 +845,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">sbt</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -922,11 +909,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -946,11 +933,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -983,6 +970,18 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">IDEA</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Maven</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
             
             <div class="clearfix"></div>
