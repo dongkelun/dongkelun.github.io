@@ -17,7 +17,7 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言记录Ceph分布式集群安装配置过程及问题解决 1. 服务器环境说明   主机名 角色 IP地址     ceph1 ceph-deploy、mon、mgr、osd 192.168.44.128   ceph2 mon、mgr、osd 192.168.44.129   ceph3 mon、mgr、osd 192.168.44.130    要保证每台机器能连接外网 2. 服务器环境准备2.1 配">
 <meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2022-09-29T02:50:07.149Z">
+<meta property="og:updated_time" content="2022-09-29T06:06:19.906Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Ceph分布式集群安装配置">
 <meta name="twitter:description" content="前言记录Ceph分布式集群安装配置过程及问题解决 1. 服务器环境说明   主机名 角色 IP地址     ceph1 ceph-deploy、mon、mgr、osd 192.168.44.128   ceph2 mon、mgr、osd 192.168.44.129   ceph3 mon、mgr、osd 192.168.44.130    要保证每台机器能连接外网 2. 服务器环境准备2.1 配">
@@ -338,17 +338,17 @@
 <h3 id="5-2-RGW多节点代理"><a href="#5-2-RGW多节点代理" class="headerlink" title="5.2. RGW多节点代理"></a>5.2. RGW多节点代理</h3><p>配置RGW多节点代理：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">yum -y install nginx</span><br><span class="line"></span><br><span class="line">vi /etc/nginx/nginx.conf</span><br><span class="line">在</span><br><span class="line">http &#123;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br><span class="line">中添加如下配置：</span><br><span class="line">    upstream rgw &#123;</span><br><span class="line">        server 192.168.44.128:7480;</span><br><span class="line">        server 192.168.44.129:7480;</span><br><span class="line">        server 192.168.44.130:7480;</span><br><span class="line">    &#125;</span><br><span class="line">    server &#123;</span><br><span class="line">        listen      8080;</span><br><span class="line"></span><br><span class="line">        server_name  localhost;</span><br><span class="line"></span><br><span class="line">        client_max_body_size 0;</span><br><span class="line"></span><br><span class="line">        proxy_buffering off;</span><br><span class="line">        proxy_set_header Host <span class="variable">$host</span>;</span><br><span class="line">        proxy_set_header X-Forwarded-For <span class="variable">$remote_addr</span>;</span><br><span class="line"></span><br><span class="line">        location / &#123;</span><br><span class="line">            proxy_pass http://rgw;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">systemctl restart nginx <span class="comment"># 重启nginx服务使配置生效</span></span><br><span class="line">systemctl status nginx <span class="comment"># 查看nginx服务状态</span></span><br><span class="line">systemctl <span class="built_in">enable</span> nginx <span class="comment"># 设置nginx服务开机自启动</span></span><br></pre></td></tr></table></figure></p>
 <h3 id="5-3-创建访问S3的用户"><a href="#5-3-创建访问S3的用户" class="headerlink" title="5.3. 创建访问S3的用户"></a>5.3. 创建访问S3的用户</h3><p>创建的用户有两种，一种是兼容S3风格，还有一种是Swift风格。</p>
 <h4 id="5-3-1-创建访问S3的用户"><a href="#5-3-1-创建访问S3的用户" class="headerlink" title="5.3.1 创建访问S3的用户"></a>5.3.1 创建访问S3的用户</h4><p>使用如下命令创建一个用于访问S3的用户：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">radosgw-admin user create --uid emr-s3-user --display-name <span class="string">"EMR S3 User Demo"</span></span><br></pre></td></tr></table></figure></p>
-<p>命令执行后会输出如下结果：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">"user_id"</span>: <span class="string">"emr-s3-user"</span>,</span><br><span class="line">    <span class="string">"display_name"</span>: <span class="string">"EMR S3 User Demo"</span>,</span><br><span class="line">    <span class="string">"email"</span>: <span class="string">""</span>,</span><br><span class="line">    <span class="string">"suspended"</span>: 0,</span><br><span class="line">    <span class="string">"max_buckets"</span>: 1000,</span><br><span class="line">    <span class="string">"auid"</span>: 0,</span><br><span class="line">    <span class="string">"subusers"</span>: [],</span><br><span class="line">    <span class="string">"keys"</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="string">"user"</span>: <span class="string">"emr-s3-user"</span>,</span><br><span class="line">            <span class="string">"access_key"</span>: <span class="string">"XLSMNHY9Z4ML094IBGOY"</span>,</span><br><span class="line">            <span class="string">"secret_key"</span>: <span class="string">"iGn9bmqKAArUqiMIohYDmF3WSPi0YAyVO3J9WnxZ"</span></span><br><span class="line">        &#125;</span><br><span class="line">    ],</span><br><span class="line">    <span class="string">"swift_keys"</span>: [],</span><br><span class="line">    <span class="string">"caps"</span>: [],</span><br><span class="line">    <span class="string">"op_mask"</span>: <span class="string">"read, write, delete"</span>,</span><br><span class="line">    <span class="string">"default_placement"</span>: <span class="string">""</span>,</span><br><span class="line">    <span class="string">"placement_tags"</span>: [],</span><br><span class="line">    <span class="string">"bucket_quota"</span>: &#123;</span><br><span class="line">        <span class="string">"enabled"</span>: <span class="literal">false</span>,</span><br><span class="line">        <span class="string">"check_on_raw"</span>: <span class="literal">false</span>,</span><br><span class="line">        <span class="string">"max_size"</span>: -1,</span><br><span class="line">        <span class="string">"max_size_kb"</span>: 0,</span><br><span class="line">        <span class="string">"max_objects"</span>: -1</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">"user_quota"</span>: &#123;</span><br><span class="line">        <span class="string">"enabled"</span>: <span class="literal">false</span>,</span><br><span class="line">        <span class="string">"check_on_raw"</span>: <span class="literal">false</span>,</span><br><span class="line">        <span class="string">"max_size"</span>: -1,</span><br><span class="line">        <span class="string">"max_size_kb"</span>: 0,</span><br><span class="line">        <span class="string">"max_objects"</span>: -1</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">"temp_url_keys"</span>: [],</span><br><span class="line">    <span class="string">"type"</span>: <span class="string">"rgw"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>命令执行后会输出如下结果：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">"user_id"</span>: <span class="string">"emr-s3-user"</span>,</span><br><span class="line">    <span class="string">"display_name"</span>: <span class="string">"EMR S3 User Demo"</span>,</span><br><span class="line">    <span class="string">"email"</span>: <span class="string">""</span>,</span><br><span class="line">    <span class="string">"suspended"</span>: 0,</span><br><span class="line">    <span class="string">"max_buckets"</span>: 1000,</span><br><span class="line">    <span class="string">"auid"</span>: 0,</span><br><span class="line">    <span class="string">"subusers"</span>: [],</span><br><span class="line">    <span class="string">"keys"</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="string">"user"</span>: <span class="string">"emr-s3-user"</span>,</span><br><span class="line">            <span class="string">"access_key"</span>: <span class="string">"access_key"</span>,</span><br><span class="line">            <span class="string">"secret_key"</span>: <span class="string">"secret_key"</span></span><br><span class="line">        &#125;</span><br><span class="line">    ],</span><br><span class="line">    <span class="string">"swift_keys"</span>: [],</span><br><span class="line">    <span class="string">"caps"</span>: [],</span><br><span class="line">    <span class="string">"op_mask"</span>: <span class="string">"read, write, delete"</span>,</span><br><span class="line">    <span class="string">"default_placement"</span>: <span class="string">""</span>,</span><br><span class="line">    <span class="string">"placement_tags"</span>: [],</span><br><span class="line">    <span class="string">"bucket_quota"</span>: &#123;</span><br><span class="line">        <span class="string">"enabled"</span>: <span class="literal">false</span>,</span><br><span class="line">        <span class="string">"check_on_raw"</span>: <span class="literal">false</span>,</span><br><span class="line">        <span class="string">"max_size"</span>: -1,</span><br><span class="line">        <span class="string">"max_size_kb"</span>: 0,</span><br><span class="line">        <span class="string">"max_objects"</span>: -1</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">"user_quota"</span>: &#123;</span><br><span class="line">        <span class="string">"enabled"</span>: <span class="literal">false</span>,</span><br><span class="line">        <span class="string">"check_on_raw"</span>: <span class="literal">false</span>,</span><br><span class="line">        <span class="string">"max_size"</span>: -1,</span><br><span class="line">        <span class="string">"max_size_kb"</span>: 0,</span><br><span class="line">        <span class="string">"max_objects"</span>: -1</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">"temp_url_keys"</span>: [],</span><br><span class="line">    <span class="string">"type"</span>: <span class="string">"rgw"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <p>上面的内容中显示了用户的key信息以及一些用户的配额信息。以上的信息也可以通过如下命令再次输出：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">radosgw-admin user info --uid emr-s3-user</span><br></pre></td></tr></table></figure></p>
 <h4 id="5-3-2-测试s3接口访问"><a href="#5-3-2-测试s3接口访问" class="headerlink" title="5.3.2 测试s3接口访问"></a>5.3.2 测试s3接口访问</h4><p>使用python程序来测试s3接口的访问，首先安装名为名称为：python-boto的python包：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum -y install python-boto</span><br></pre></td></tr></table></figure></p>
-<p>创建名为s3test.py的文件，内容如下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">import boto.s3.connection</span><br><span class="line"></span><br><span class="line">access_key = <span class="string">'XLSMNHY9Z4ML094IBGOY'</span></span><br><span class="line">secret_key = <span class="string">'iGn9bmqKAArUqiMIohYDmF3WSPi0YAyVO3J9WnxZ'</span></span><br><span class="line">conn = boto.connect_s3(</span><br><span class="line">        aws_access_key_id=access_key,</span><br><span class="line">        aws_secret_access_key=secret_key,</span><br><span class="line">        host=<span class="string">'192.168.44.128'</span>, port=8080,</span><br><span class="line">        is_secure=False, calling_format=boto.s3.connection.OrdinaryCallingFormat(),</span><br><span class="line">       )</span><br><span class="line"></span><br><span class="line">bucket = conn.create_bucket(<span class="string">'emr-bucket'</span>)</span><br><span class="line"><span class="keyword">for</span> bucket <span class="keyword">in</span> conn.get_all_buckets():</span><br><span class="line">    <span class="built_in">print</span> <span class="string">"&#123;name&#125; &#123;created&#125;"</span>.format(</span><br><span class="line">        name=bucket.name,</span><br><span class="line">        created=bucket.creation_date,</span><br><span class="line">    )</span><br></pre></td></tr></table></figure></p>
+<p>创建名为s3test.py的文件，内容如下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">import boto.s3.connection</span><br><span class="line"></span><br><span class="line">access_key = <span class="string">'access_key'</span></span><br><span class="line">secret_key = <span class="string">'secret_key'</span></span><br><span class="line">conn = boto.connect_s3(</span><br><span class="line">        aws_access_key_id=access_key,</span><br><span class="line">        aws_secret_access_key=secret_key,</span><br><span class="line">        host=<span class="string">'192.168.44.128'</span>, port=8080,</span><br><span class="line">        is_secure=False, calling_format=boto.s3.connection.OrdinaryCallingFormat(),</span><br><span class="line">       )</span><br><span class="line"></span><br><span class="line">bucket = conn.create_bucket(<span class="string">'emr-bucket'</span>)</span><br><span class="line"><span class="keyword">for</span> bucket <span class="keyword">in</span> conn.get_all_buckets():</span><br><span class="line">    <span class="built_in">print</span> <span class="string">"&#123;name&#125; &#123;created&#125;"</span>.format(</span><br><span class="line">        name=bucket.name,</span><br><span class="line">        created=bucket.creation_date,</span><br><span class="line">    )</span><br></pre></td></tr></table></figure></p>
 <blockquote>
 <p>需要注意的是，要将程序中的access_key和secret_key修改为前面生成用户的相关信息。host 需要修改为Nginx服务的地址，port修改为相应代理端口。</p>
 </blockquote>
 <p>执行这个python程序，会输出如下信息：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@ceph1 ~]<span class="comment"># python s3test.py</span></span><br><span class="line">emr-bucket 2022-09-27T09:14:48.206Z</span><br></pre></td></tr></table></figure></p>
 <p>这代表成功创建一个bucket。</p>
 <h3 id="5-4-使用命令行工具访问s3接口"><a href="#5-4-使用命令行工具访问s3接口" class="headerlink" title="5.4 使用命令行工具访问s3接口"></a>5.4 使用命令行工具访问s3接口</h3><h4 id="5-4-1-使用命令行工具访问s3接口配置s3cmd"><a href="#5-4-1-使用命令行工具访问s3接口配置s3cmd" class="headerlink" title="5.4.1 使用命令行工具访问s3接口配置s3cmd"></a>5.4.1 使用命令行工具访问s3接口配置s3cmd</h4><p>在命令行中调用s3接口来管理对象存储，首先需要安装s3cmd软件包：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum -y install s3cmd</span><br></pre></td></tr></table></figure></p>
-<p>安装完成后需要对s3cmd进行配置，配置过程如下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line">s3cmd --configure</span><br><span class="line"></span><br><span class="line">Enter new values or accept defaults <span class="keyword">in</span> brackets with Enter.</span><br><span class="line">Refer to user manual <span class="keyword">for</span> detailed description of all options.</span><br><span class="line"></span><br><span class="line">Access key and Secret key are your identifiers <span class="keyword">for</span> Amazon S3. Leave them empty <span class="keyword">for</span> using the env variables.</span><br><span class="line">Access Key: XLSMNHY9Z4ML094IBGOY <span class="comment"># 设置访问用户的Access Key</span></span><br><span class="line">Secret Key: iGn9bmqKAArUqiMIohYDmF3WSPi0YAyVO3J9WnxZ <span class="comment"># 设置访问用户的Secret Key</span></span><br><span class="line">Default Region [US]: CN</span><br><span class="line"></span><br><span class="line">Use <span class="string">"s3.amazonaws.com"</span> <span class="keyword">for</span> S3 Endpoint and not modify it to the target Amazon S3.</span><br><span class="line">S3 Endpoint [s3.amazonaws.com]: 192.168.44.128:8080 <span class="comment"># 设置RWG的代理地址和端口</span></span><br><span class="line"></span><br><span class="line">Use <span class="string">"%(bucket)s.s3.amazonaws.com"</span> to the target Amazon S3. <span class="string">"%(bucket)s"</span> and <span class="string">"%(location)s"</span> vars can be used</span><br><span class="line"><span class="keyword">if</span> the target S3 system supports dns based buckets.</span><br><span class="line">DNS-style bucket+hostname:port template <span class="keyword">for</span> accessing a bucket [%(bucket)s.s3.amazonaws.com]: 192.168.44.128:8080/%(bucket)s <span class="comment"># 设置bucket的名称（可以将IP地址更换为域名）</span></span><br><span class="line"></span><br><span class="line">Encryption password is used to protect your files from reading</span><br><span class="line">by unauthorized persons <span class="keyword">while</span> <span class="keyword">in</span> transfer to S3</span><br><span class="line">Encryption password:  <span class="comment"># 不设置密码</span></span><br><span class="line">Path to GPG program [/usr/bin/gpg]:  <span class="comment"># 使用gpg加密</span></span><br><span class="line"></span><br><span class="line">When using secure HTTPS protocol all communication with Amazon S3</span><br><span class="line">servers is protected from 3rd party eavesdropping. This method is</span><br><span class="line">slower than plain HTTP, and can only be proxied with Python 2.7 or newer</span><br><span class="line">Use HTTPS protocol [Yes]: no <span class="comment"># 不使用 HTTPS</span></span><br><span class="line"></span><br><span class="line">On some networks all internet access must go through a HTTP proxy.</span><br><span class="line">Try setting it here <span class="keyword">if</span> you can<span class="string">'t connect to S3 directly</span></span><br><span class="line"><span class="string">HTTP Proxy server name:  # 不设置代理访问</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">New settings:</span></span><br><span class="line"><span class="string">  Access Key: 3347B8YK03UDM8OCUVYV</span></span><br><span class="line"><span class="string">  Secret Key: jpWtK9Ra09cKqQudBVyGbgPPEfncy24IjjxBrFyM</span></span><br><span class="line"><span class="string">  Default Region: CN</span></span><br><span class="line"><span class="string">  S3 Endpoint: 192.168.44.128:8080</span></span><br><span class="line"><span class="string">  DNS-style bucket+hostname:port template for accessing a bucket: 192.168.44.128:8080/%(bucket)s</span></span><br><span class="line"><span class="string">  Encryption password: </span></span><br><span class="line"><span class="string">  Path to GPG program: /usr/bin/gpg</span></span><br><span class="line"><span class="string">  Use HTTPS protocol: False</span></span><br><span class="line"><span class="string">  HTTP Proxy server name: </span></span><br><span class="line"><span class="string">  HTTP Proxy server port: 0</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">Test access with supplied credentials? [Y/n] y # 验证访问</span></span><br><span class="line"><span class="string">Please wait, attempting to list all buckets...</span></span><br><span class="line"><span class="string">ERROR: Test failed: 403 (SignatureDoesNotMatch)</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">Retry configuration? [Y/n] n</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">Save settings? [y/N] y # 保存配置</span></span><br><span class="line"><span class="string">Configuration saved to '</span>/root/.s3cfg<span class="string">'</span></span><br></pre></td></tr></table></figure></p>
+<p>安装完成后需要对s3cmd进行配置，配置过程如下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line">s3cmd --configure</span><br><span class="line"></span><br><span class="line">Enter new values or accept defaults <span class="keyword">in</span> brackets with Enter.</span><br><span class="line">Refer to user manual <span class="keyword">for</span> detailed description of all options.</span><br><span class="line"></span><br><span class="line">Access key and Secret key are your identifiers <span class="keyword">for</span> Amazon S3. Leave them empty <span class="keyword">for</span> using the env variables.</span><br><span class="line">Access Key: access_key <span class="comment"># 设置访问用户的Access Key</span></span><br><span class="line">Secret Key: secret_key <span class="comment"># 设置访问用户的Secret Key</span></span><br><span class="line">Default Region [US]: CN</span><br><span class="line"></span><br><span class="line">Use <span class="string">"s3.amazonaws.com"</span> <span class="keyword">for</span> S3 Endpoint and not modify it to the target Amazon S3.</span><br><span class="line">S3 Endpoint [s3.amazonaws.com]: 192.168.44.128:8080 <span class="comment"># 设置RWG的代理地址和端口</span></span><br><span class="line"></span><br><span class="line">Use <span class="string">"%(bucket)s.s3.amazonaws.com"</span> to the target Amazon S3. <span class="string">"%(bucket)s"</span> and <span class="string">"%(location)s"</span> vars can be used</span><br><span class="line"><span class="keyword">if</span> the target S3 system supports dns based buckets.</span><br><span class="line">DNS-style bucket+hostname:port template <span class="keyword">for</span> accessing a bucket [%(bucket)s.s3.amazonaws.com]: 192.168.44.128:8080/%(bucket)s <span class="comment"># 设置bucket的名称（可以将IP地址更换为域名）</span></span><br><span class="line"></span><br><span class="line">Encryption password is used to protect your files from reading</span><br><span class="line">by unauthorized persons <span class="keyword">while</span> <span class="keyword">in</span> transfer to S3</span><br><span class="line">Encryption password:  <span class="comment"># 不设置密码</span></span><br><span class="line">Path to GPG program [/usr/bin/gpg]:  <span class="comment"># 使用gpg加密</span></span><br><span class="line"></span><br><span class="line">When using secure HTTPS protocol all communication with Amazon S3</span><br><span class="line">servers is protected from 3rd party eavesdropping. This method is</span><br><span class="line">slower than plain HTTP, and can only be proxied with Python 2.7 or newer</span><br><span class="line">Use HTTPS protocol [Yes]: no <span class="comment"># 不使用 HTTPS</span></span><br><span class="line"></span><br><span class="line">On some networks all internet access must go through a HTTP proxy.</span><br><span class="line">Try setting it here <span class="keyword">if</span> you can<span class="string">'t connect to S3 directly</span></span><br><span class="line"><span class="string">HTTP Proxy server name:  # 不设置代理访问</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">New settings:</span></span><br><span class="line"><span class="string">  Access Key: 3347B8YK03UDM8OCUVYV</span></span><br><span class="line"><span class="string">  Secret Key: jpWtK9Ra09cKqQudBVyGbgPPEfncy24IjjxBrFyM</span></span><br><span class="line"><span class="string">  Default Region: CN</span></span><br><span class="line"><span class="string">  S3 Endpoint: 192.168.44.128:8080</span></span><br><span class="line"><span class="string">  DNS-style bucket+hostname:port template for accessing a bucket: 192.168.44.128:8080/%(bucket)s</span></span><br><span class="line"><span class="string">  Encryption password: </span></span><br><span class="line"><span class="string">  Path to GPG program: /usr/bin/gpg</span></span><br><span class="line"><span class="string">  Use HTTPS protocol: False</span></span><br><span class="line"><span class="string">  HTTP Proxy server name: </span></span><br><span class="line"><span class="string">  HTTP Proxy server port: 0</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">Test access with supplied credentials? [Y/n] y # 验证访问</span></span><br><span class="line"><span class="string">Please wait, attempting to list all buckets...</span></span><br><span class="line"><span class="string">ERROR: Test failed: 403 (SignatureDoesNotMatch)</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">Retry configuration? [Y/n] n</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">Save settings? [y/N] y # 保存配置</span></span><br><span class="line"><span class="string">Configuration saved to '</span>/root/.s3cfg<span class="string">'</span></span><br></pre></td></tr></table></figure></p>
 <p>配置完成后，配置文件存储在/root/.s3cfg文件中，需要将该文件中的signature_v2 配置项改为True，否则在后续执行命令的时候会触发 ERROR: S3 error: 403 (SignatureDoesNotMatch) 报错：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">signature_v2 = True</span><br></pre></td></tr></table></figure></p>
 <p>保存退出后，就可以使 s3cmd命令来管理对象存储，首先使用如下命令查看当前的bucket：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@ceph1 ~]<span class="comment"># s3cmd ls</span></span><br><span class="line">2022-09-27 09:14  s3://emr-bucket</span><br></pre></td></tr></table></figure></p>
 <p>创建一个新的bucket：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[root@ceph1 ~]<span class="comment"># s3cmd mb s3://emr-s3-demo</span></span><br><span class="line">ERROR: S3 error: 400 (InvalidLocationConstraint): The specified location-constraint is not valid</span><br><span class="line"></span><br><span class="line">vi /root/.s3cfg</span><br><span class="line">将</span><br><span class="line">bucket_location = CN</span><br><span class="line">修改为</span><br><span class="line">bucket_location = US</span><br><span class="line"></span><br><span class="line">[root@ceph1 ~]<span class="comment"># s3cmd mb s3://emr-s3-demo</span></span><br><span class="line">Bucket <span class="string">'s3://emr-s3-demo/'</span> created</span><br></pre></td></tr></table></figure></p>
@@ -704,14 +704,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
@@ -736,19 +728,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -756,7 +740,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -768,11 +756,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -792,6 +784,18 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
               </li>
              
@@ -800,23 +804,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Flink</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -825,6 +817,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -848,11 +848,31 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">java</a>
+                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -868,26 +888,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">sql</a>
               </li>
              
@@ -896,15 +896,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -916,6 +908,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Python</a>
               </li>
              
@@ -924,15 +920,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -940,7 +932,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -984,11 +976,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+                <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+                <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -996,11 +988,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1024,15 +1016,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1048,10 +1040,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">vue</a>
               </li>
              
@@ -1061,6 +1049,18 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
             
             <div class="clearfix"></div>
