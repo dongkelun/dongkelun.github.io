@@ -17,7 +17,7 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言如题，记录在Spark ML LR中如何解决数据不平衡。参考：Dealing with unbalanced datasets in Spark MLlib 1、数据不平衡指label == 1和label == 0 的数据比例的很多，如80%和20%，这样导致模型的结果的准确率也不平衡，不准确。 2、setWeightCol 主要代码">
 <meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2019-06-04T06:40:55.159Z">
+<meta property="og:updated_time" content="2022-10-11T01:35:19.808Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Spark ML LR 用 setWeightCol 解决数据不平衡">
 <meta name="twitter:description" content="前言如题，记录在Spark ML LR中如何解决数据不平衡。参考：Dealing with unbalanced datasets in Spark MLlib 1、数据不平衡指label == 1和label == 0 的数据比例的很多，如80%和20%，这样导致模型的结果的准确率也不平衡，不准确。 2、setWeightCol 主要代码">
@@ -263,8 +263,8 @@
 <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> labelCol = <span class="string">"label"</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">balanceDataset</span></span>(dataset: <span class="type">DataFrame</span>): <span class="type">DataFrame</span> = &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Re-balancing (weighting) of records to be used in the logistic loss objective function</span></span><br><span class="line">    <span class="keyword">val</span> numNegatives = dataset.filter(dataset(labelCol) === <span class="number">0</span>).count</span><br><span class="line">    <span class="keyword">val</span> datasetSize = dataset.count</span><br><span class="line">    <span class="keyword">val</span> balancingRatio = (datasetSize - numNegatives).toDouble / datasetSize</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> calculateWeights = udf &#123; d: <span class="type">Double</span> =&gt;</span><br><span class="line">      <span class="keyword">if</span> (d == <span class="number">0.0</span>) &#123;</span><br><span class="line">        <span class="number">1</span> * balancingRatio</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        (<span class="number">1</span> * (<span class="number">1.0</span> - balancingRatio))</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> weightedDataset = dataset.withColumn(<span class="string">"classWeightCol"</span>, calculateWeights(dataset(labelCol)))</span><br><span class="line">    weightedDataset</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">val</span> df_weighted = balanceDataset(df)</span><br><span class="line"></span><br><span class="line">  <span class="keyword">val</span> lr = <span class="keyword">new</span> <span class="type">LogisticRegression</span>().setLabelCol(labelCol).setWeightCol(<span class="string">"classWeightCol"</span>)</span><br></pre></td></tr></table></figure>
 <p>  这样就很方便解决了数据不平衡的问题</p>
 <h2 id="3、其他方法"><a href="#3、其他方法" class="headerlink" title="3、其他方法"></a>3、其他方法</h2><p>  最开始不知道有setWeightCol这个方法，我是按下面的方法解决的，记录一下</p>
-<p>  下面假设label=0的数据大于label=1的数据<br>  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 将label = 0的随机抽样，使label=1数量和label=0的数量大致相同</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">sample</span></span>(df: <span class="type">DataFrame</span>): <span class="type">DataFrame</span> = &#123;</span><br><span class="line">  <span class="keyword">val</span> df0 = df.where(<span class="string">s"<span class="subst">$&#123;labelCol&#125;</span>=0"</span>)</span><br><span class="line">  <span class="keyword">val</span> df1 = df.where(<span class="string">s"<span class="subst">$&#123;labelCol&#125;</span>=1"</span>)</span><br><span class="line">  <span class="keyword">val</span> y0 = df0.count()</span><br><span class="line">  <span class="keyword">val</span> y1 = df1.count()</span><br><span class="line">  <span class="keyword">val</span> num = <span class="number">1.0</span> * y1 / y0</span><br><span class="line">  <span class="keyword">val</span> df00 = df0.sample(<span class="literal">false</span>, num) <span class="comment">//解决类别数据平衡性问题，对没有违约样本进行随机抽样</span></span><br><span class="line"></span><br><span class="line">  df00.union(df1)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>  或<br>  <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 是将label=1 的复制多份，使label=1数量和label=0的数量大致相同</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">copy</span></span>(df: <span class="type">DataFrame</span>): <span class="type">DataFrame</span> = &#123;</span><br><span class="line">  <span class="keyword">var</span> df_res = df</span><br><span class="line">  <span class="keyword">val</span> df1 = df.where(<span class="string">s"<span class="subst">$&#123;labelCol&#125;</span>=1"</span>)</span><br><span class="line">  <span class="keyword">val</span> y0 = df.where(<span class="string">s"<span class="subst">$&#123;labelCol&#125;</span>=0"</span>).count()</span><br><span class="line">  <span class="keyword">val</span> y1 = df1.count()</span><br><span class="line">  <span class="keyword">val</span> num = (y0 / y1).toInt - <span class="number">1</span></span><br><span class="line">  <span class="keyword">for</span> (a &lt;- <span class="number">1</span> to num) &#123;</span><br><span class="line">    df_res = df_res.union(df1)</span><br><span class="line">  &#125;</span><br><span class="line">  df_res</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>  下面假设label=0的数据大于label=1的数据<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 将label = 0的随机抽样，使label=1数量和label=0的数量大致相同</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">sample</span></span>(df: <span class="type">DataFrame</span>): <span class="type">DataFrame</span> = &#123;</span><br><span class="line">  <span class="keyword">val</span> df0 = df.where(<span class="string">s"<span class="subst">$&#123;labelCol&#125;</span>=0"</span>)</span><br><span class="line">  <span class="keyword">val</span> df1 = df.where(<span class="string">s"<span class="subst">$&#123;labelCol&#125;</span>=1"</span>)</span><br><span class="line">  <span class="keyword">val</span> y0 = df0.count()</span><br><span class="line">  <span class="keyword">val</span> y1 = df1.count()</span><br><span class="line">  <span class="keyword">val</span> num = <span class="number">1.0</span> * y1 / y0</span><br><span class="line">  <span class="keyword">val</span> df00 = df0.sample(<span class="literal">false</span>, num) <span class="comment">//解决类别数据平衡性问题，对没有违约样本进行随机抽样</span></span><br><span class="line"></span><br><span class="line">  df00.union(df1)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>  或<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 是将label=1 的复制多份，使label=1数量和label=0的数量大致相同</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">copy</span></span>(df: <span class="type">DataFrame</span>): <span class="type">DataFrame</span> = &#123;</span><br><span class="line">  <span class="keyword">var</span> df_res = df</span><br><span class="line">  <span class="keyword">val</span> df1 = df.where(<span class="string">s"<span class="subst">$&#123;labelCol&#125;</span>=1"</span>)</span><br><span class="line">  <span class="keyword">val</span> y0 = df.where(<span class="string">s"<span class="subst">$&#123;labelCol&#125;</span>=0"</span>).count()</span><br><span class="line">  <span class="keyword">val</span> y1 = df1.count()</span><br><span class="line">  <span class="keyword">val</span> num = (y0 / y1).toInt - <span class="number">1</span></span><br><span class="line">  <span class="keyword">for</span> (a &lt;- <span class="number">1</span> to num) &#123;</span><br><span class="line">    df_res = df_res.union(df1)</span><br><span class="line">  &#125;</span><br><span class="line">  df_res</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <h2 id="每日英语"><a href="#每日英语" class="headerlink" title="每日英语"></a>每日英语</h2><ul>
 <li>1、<a href="http://dict.youdao.com/w/laptop/#keyfrom=dict2.top" target="_blank" rel="noopener">laptop</a> n. 膝上型轻便电脑，笔记本电脑</li>
 <li>2、<a href="http://dict.youdao.com/w/general-purpose/#keyfrom=dict2.top" target="_blank" rel="noopener">general-purpose</a> adj. 多用途的；一般用途的 general purpose adj. 通用的</li>
@@ -615,27 +615,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -647,11 +627,31 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -664,6 +664,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -680,18 +688,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -719,15 +715,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -775,18 +775,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">sql</a>
               </li>
              
@@ -795,15 +783,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -819,11 +811,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -835,11 +831,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -851,7 +843,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -867,11 +867,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -883,15 +879,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -903,6 +891,18 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
@@ -911,15 +911,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
+                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -931,11 +927,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -947,7 +943,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -960,6 +956,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
               </li>
             
             <div class="clearfix"></div>
