@@ -17,7 +17,7 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言在最开始学习Hudi源码时，就发现了Hudi有一个Bootstrap功能，但是一直没用过，通过官网文档https://hudi.apache.org/cn/docs/migration_guide/可知,它可以将现有的表件转化为Hudi表，而且有两种类型METADATA_ONLY和FULL_RECORD，但是文档并不详细，比如这两种类型的区别具体是啥，支持哪些文件类型的源表。于是带着这些疑问来">
 <meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2022-10-12T08:36:06.889Z">
+<meta property="og:updated_time" content="2022-10-12T13:55:39.551Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="利用Hudi Bootstrap转化现有Hive表的parquet&#x2F;orc文件为Hudi表">
 <meta name="twitter:description" content="前言在最开始学习Hudi源码时，就发现了Hudi有一个Bootstrap功能，但是一直没用过，通过官网文档https://hudi.apache.org/cn/docs/migration_guide/可知,它可以将现有的表件转化为Hudi表，而且有两种类型METADATA_ONLY和FULL_RECORD，但是文档并不详细，比如这两种类型的区别具体是啥，支持哪些文件类型的源表。于是带着这些疑问来">
@@ -295,6 +295,9 @@
 <h3 id="官网博客上的问题"><a href="#官网博客上的问题" class="headerlink" title="官网博客上的问题"></a>官网博客上的问题</h3><p>地址：<a href="https://hudi.apache.org/cn/blog/2020/08/20/efficient-migration-of-large-parquet-tables/#known-caveats" target="_blank" rel="noopener">https://hudi.apache.org/cn/blog/2020/08/20/efficient-migration-of-large-parquet-tables/#known-caveats</a></p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Here is an example for running METADATA_ONLY bootstrap using Delta Streamer.</span><br><span class="line">--hoodie-conf hoodie.bootstrap.full.input.provider=org.apache.hudi.bootstrap.SparkParquetBootstrapDataProvider \</span><br><span class="line">--hoodie-conf hoodie.bootstrap.mode.selector=org.apache.hudi.client.bootstrap.selector.BootstrapRegexModeSelector \</span><br><span class="line">--hoodie-conf hoodie.bootstrap.mode.selector.regex=&quot;2020/08/2[0-9]&quot; \</span><br><span class="line">--hoodie-conf hoodie.bootstrap.mode.selector.regex.mode=METADATA_ONLY</span><br></pre></td></tr></table></figure>
 <p>这里说的是<code>METADATA_ONLY</code>的例子，经验证实际为<code>FULL_RECORD</code>,虽然配置了regex.mode=METADATA_ONLY，其实默认值就是METADATA_ONLY，但是不生效，原因是因为配置了hoodie.bootstrap.mode.selector=org.apache.hudi.client.bootstrap.selector.BootstrapRegexModeSelector，这个类里的defaultMode的逻辑应该有问题，我已经提交了PR：<a href="https://github.com/apache/hudi/pull/6928" target="_blank" rel="noopener">https://github.com/apache/hudi/pull/6928</a></p>
+<p>更新：对于<code>BootstrapRegexModeSelector</code>我理解有误，它的逻辑应该是这样的：<br>首先有配置：hoodie.bootstrap.mode.selector.regex.mode 默认值METADATA_ONLY、hoodie.bootstrap.mode.selector.regex默认值<code>.*</code><br>但是如果不是默认值的话，比如上面的<code>2020/08/2[0-9]</code>,假设我们有分区”2020/08/10,2020/08/10/11,2020/08/20,2020/08/21”,那么匹配成功的<code>2020/08/20</code>和<code>2020/08/21</code>对应的类型为<code>METADATA_ONLY</code>，匹配不成功的<code>2020/08/10</code>和<code>2020/08/10/11</code>则为<code>FULL_RECORD</code>。而至于我的为啥都是<code>FULL_RECORD</code>，原因是regex设置错误，我设置的是<code>2022/10/0[0-9]</code>,但实际的分区值为<code>2022-10-08</code>和<code>2022-10-09</code>(分隔符不一样)，而如果用默认的<code>.*</code>的话，则全部能匹配上，也就都是<code>METADATA_ONLY</code>，但是博客上的示例多少还是会误导读者的~</p>
+<p>具体看源码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">BootstrapRegexModeSelector</span><span class="params">(HoodieWriteConfig writeConfig)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">super</span>(writeConfig);</span><br><span class="line">  <span class="keyword">this</span>.pattern = Pattern.compile(writeConfig.getBootstrapModeSelectorRegex());</span><br><span class="line">  <span class="keyword">this</span>.bootstrapModeOnMatch = writeConfig.getBootstrapModeForRegexMatch();</span><br><span class="line">  <span class="keyword">this</span>.defaultMode = BootstrapMode.FULL_RECORD.equals(bootstrapModeOnMatch)</span><br><span class="line">      ? BootstrapMode.METADATA_ONLY : BootstrapMode.FULL_RECORD;</span><br><span class="line">  LOG.info(<span class="string">"Default Mode :"</span> + defaultMode + <span class="string">", on Match Mode :"</span> + bootstrapModeOnMatch);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> Map&lt;BootstrapMode, List&lt;String&gt;&gt; select(List&lt;Pair&lt;String, List&lt;HoodieFileStatus&gt;&gt;&gt; partitions) &#123;</span><br><span class="line">  <span class="keyword">return</span> partitions.stream()</span><br><span class="line">      <span class="comment">// 匹配上的话，值为bootstrapModeOnMatch，默认为METADATA_ONLY，否则为defaultMode，也就是另外一种类型`FULL_RECORD`</span></span><br><span class="line">      <span class="comment">// bootstrapModeOnMatch 和 defaultMode是对立的</span></span><br><span class="line">      .map(p -&gt; Pair.of(pattern.matcher(p.getKey()).matches() ? bootstrapModeOnMatch : defaultMode, p.getKey()))</span><br><span class="line">      .collect(Collectors.groupingBy(Pair::getKey, Collectors.mapping(Pair::getValue, Collectors.toList())));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h2 id="其他转化现有表为Hudi表的方法"><a href="#其他转化现有表为Hudi表的方法" class="headerlink" title="其他转化现有表为Hudi表的方法"></a>其他转化现有表为Hudi表的方法</h2><p>可以自己写代码</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">val sourceDf = spark.table(<span class="string">"tableName"</span>)</span><br><span class="line">sourceDf.write.format(<span class="string">"hudi"</span>).option()....saveAsTable(<span class="string">"tableName"</span>)</span><br><span class="line"><span class="comment">// 或</span></span><br><span class="line"><span class="keyword">for</span> partition in [list of partitions in source table] &#123;</span><br><span class="line">    val inputDF = spark.read.format(<span class="string">"any_input_format"</span>).load(<span class="string">"partition_path"</span>)</span><br><span class="line">    inputDF.write.format(<span class="string">"org.apache.hudi"</span>).option()....save(<span class="string">"basePath"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>也可以使用<code>HoodieDeltaStreamer</code>的其他功能，可以参考我之前写的文章：<a href="https://dongkelun.com/2022/06/12/hudiDeltaStreamer/">Hudi DeltaStreamer使用总结</a></p>
@@ -629,19 +632,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -661,11 +652,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -677,7 +672,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -685,23 +684,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -713,11 +696,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -729,11 +716,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -745,15 +740,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -785,6 +780,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
               </li>
              
@@ -797,11 +796,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -813,14 +812,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
@@ -829,15 +820,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -857,6 +844,18 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">scala</a>
               </li>
              
@@ -865,11 +864,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -901,6 +900,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
               </li>
              
@@ -909,7 +912,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -918,10 +921,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -937,11 +936,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -953,19 +952,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Vue</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -978,6 +969,18 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
             
             <div class="clearfix"></div>
