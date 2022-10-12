@@ -17,7 +17,7 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言在最开始学习Hudi源码时，就发现了Hudi有一个Bootstrap功能，但是一直没用过，通过官网文档https://hudi.apache.org/cn/docs/migration_guide/可知,它可以将现有的表件转化为Hudi表，而且有两种类型METADATA_ONLY和FULL_RECORD，但是文档并不详细，比如这两种类型的区别具体是啥，支持哪些文件类型的源表。估计是因为用这个功">
 <meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2022-10-11T11:27:07.580Z">
+<meta property="og:updated_time" content="2022-10-12T06:46:36.639Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="利用Hudi Bootstrap转化现有Hive表的parquet&#x2F;orc文件为Hudi表">
 <meta name="twitter:description" content="前言在最开始学习Hudi源码时，就发现了Hudi有一个Bootstrap功能，但是一直没用过，通过官网文档https://hudi.apache.org/cn/docs/migration_guide/可知,它可以将现有的表件转化为Hudi表，而且有两种类型METADATA_ONLY和FULL_RECORD，但是文档并不详细，比如这两种类型的区别具体是啥，支持哪些文件类型的源表。估计是因为用这个功">
@@ -255,15 +255,41 @@
       
         <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在最开始学习Hudi源码时，就发现了Hudi有一个Bootstrap功能，但是一直没用过，通过官网文档<a href="https://hudi.apache.org/cn/docs/migration_guide/" target="_blank" rel="noopener">https://hudi.apache.org/cn/docs/migration_guide/</a>可知,它可以将现有的表件转化为Hudi表，而且有两种类型<code>METADATA_ONLY</code>和<code>FULL_RECORD</code>，但是文档并不详细，比如这两种类型的区别具体是啥，支持哪些文件类型的源表。估计是因为用这个功能的人不多（不是很好用），但我还是想了解一下它如何使用以及源码原理的实现，这样可以更全面的了解Hudi。</p>
 <h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>Hudi 0.12.0<br>Spark 2.4.4/3.1.2</p>
-<h2 id="支持的文件类型"><a href="#支持的文件类型" class="headerlink" title="支持的文件类型"></a>支持的文件类型</h2><p>如题，目前只支持两种文件类型：parquet和orc,对于其他格式的Hive表，比如text就不能用Bootstrap进行转化了<br>其实官方文档并没有说明支持哪些类型，我们可以在源码里找到答案：</p>
+<h2 id="支持的文件类型"><a href="#支持的文件类型" class="headerlink" title="支持的文件类型"></a>支持的文件类型</h2><p>如题，目前只支持两种文件类型：parquet和orc,对于其他格式的Hive表，比如text就不能用Bootstrap进行转化了<br>其实官方文档并没有说明支持哪些类型，我们可以在源码里找到答案：<br><a id="more"></a></p>
 <h3 id="METADATA-ONLY"><a href="#METADATA-ONLY" class="headerlink" title="METADATA_ONLY"></a>METADATA_ONLY</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> BootstrapMetadataHandler <span class="title">getMetadataHandler</span><span class="params">(HoodieWriteConfig config, HoodieTable table, HoodieFileStatus srcFileStatus)</span> </span>&#123;</span><br><span class="line">  Path sourceFilePath = FileStatusUtils.toPath(srcFileStatus.getPath());</span><br><span class="line"></span><br><span class="line">  String extension = FSUtils.getFileExtension(sourceFilePath.toString());</span><br><span class="line">  BootstrapMetadataHandler bootstrapMetadataHandler;</span><br><span class="line">  <span class="keyword">if</span> (ORC.getFileExtension().equals(extension)) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> OrcBootstrapMetadataHandler(config, table, srcFileStatus);</span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (PARQUET.getFileExtension().equals(extension)) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> ParquetBootstrapMetadataHandler(config, table, srcFileStatus);</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> HoodieIOException(<span class="string">"Bootstrap Metadata Handler not implemented for base file format "</span> + extension);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h3 id="FULL-RECORD"><a href="#FULL-RECORD" class="headerlink" title="FULL_RECORD"></a>FULL_RECORD</h3><p><code>FullRecordBootstrapDataProvider</code>只有两个实现类</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">FullRecordBootstrapDataProvider</span>&lt;<span class="title">I</span>&gt; <span class="keyword">implements</span> <span class="title">Serializable</span> </span>&#123;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">SparkFullBootstrapDataProviderBase</span> <span class="keyword">extends</span> <span class="title">FullRecordBootstrapDataProvider</span>&lt;<span class="title">JavaRDD</span>&lt;<span class="title">HoodieRecord</span>&gt;&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 对应paruqet文件类型</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SparkParquetBootstrapDataProvider</span> <span class="keyword">extends</span> <span class="title">SparkFullBootstrapDataProviderBase</span> </span>&#123;</span><br><span class="line"><span class="comment">// 对应orc文件类型    </span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SparkOrcBootstrapDataProvider</span> <span class="keyword">extends</span> <span class="title">SparkFullBootstrapDataProviderBase</span> </span>&#123;</span><br></pre></td></tr></table></figure>
 <h2 id="Bootstrap-类型"><a href="#Bootstrap-类型" class="headerlink" title="Bootstrap 类型"></a>Bootstrap 类型</h2><ul>
-<li><code>METADATA_ONLY</code>：只会生成主键、页脚的基本框架文件，不会重写全部数据，这样可以节省时间，提升效率，而查询时，会根据元数据信息去查源表的文件，也就是原来的表数据文件不能删除，这算是它的一个弊端。</li>
-<li><code>FULL_RECORD</code>：首先读取源表文件生成RDD，然后将RDD以bulkInsert的形式写到新的Hudi表，也就是以Hudi表的形式执行数据的完整复制/重写。</li>
+<li><code>METADATA_ONLY</code>：只会生成主键、页脚的基本框架文件，不会重写全部数据，这样可以节省时间，提升效率，而查询时，会根据元数据信息去查源表的文件，也就是原来的表数据文件不能删除，这算是它的一个弊端。<code>_hoodie_commit_time</code>为<code>00000000000001</code>,对应源码HoodieTimeline.METADATA_BOOTSTRAP_INSTANT_TS</li>
+<li><code>FULL_RECORD</code>：首先读取源表文件生成RDD，然后将RDD以bulkInsert的形式写到新的Hudi表，也就是以Hudi表的形式执行数据的完整复制/重写。<code>_hoodie_commit_time</code>为<code>00000000000002</code>,对应源码HoodieTimeline.FULL_BOOTSTRAP_INSTANT_TS</li>
 </ul>
 <p>不管用哪种类型，我们后续都可以在这个转化的Hudi表上执行upsert等各种写操作和查询，需要注意的是要求源表不能有重复数据，因为利用Hudi Bootstrap转化Hudi表时不会去重，否则我们在后续的upsert时，也会有重复数据。</p>
+<h2 id="使用方式一：Spark代码"><a href="#使用方式一：Spark代码" class="headerlink" title="使用方式一：Spark代码"></a>使用方式一：Spark代码</h2><p>完整代码已提交到github：<a href="https://github.com/dongkelun/hudi-demo" target="_blank" rel="noopener">https://github.com/dongkelun/hudi-demo</a></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">def <span class="title">runMetadataBootstrap</span><span class="params">(srcPath: String, basePath: String, partitionField: String = <span class="string">""</span>, extraOpts: Map[String, String] = Map.empty)</span>: Unit </span>= &#123;</span><br><span class="line">  val bootstrapDF = spark.emptyDataFrame</span><br><span class="line">  bootstrapDF.write.</span><br><span class="line">    format(<span class="string">"hudi"</span>).</span><br><span class="line">    options(extraOpts).</span><br><span class="line">    option(DataSourceWriteOptions.OPERATION.key, DataSourceWriteOptions.BOOTSTRAP_OPERATION_OPT_VAL).</span><br><span class="line">    option(HoodieWriteConfig.TBL_NAME.key, tableName).</span><br><span class="line">    option(DataSourceWriteOptions.RECORDKEY_FIELD.key, <span class="string">"id"</span>).</span><br><span class="line">    option(DataSourceWriteOptions.PARTITIONPATH_FIELD.key, partitionField).</span><br><span class="line">    option(HoodieBootstrapConfig.BASE_PATH.key, srcPath).</span><br><span class="line">    option(HoodieBootstrapConfig.KEYGEN_CLASS_NAME.key, classOf[ComplexKeyGenerator].getName).</span><br><span class="line">    option(KEYGENERATOR_CLASS_NAME.key(), classOf[ComplexKeyGenerator].getName).</span><br><span class="line">    <span class="comment">// 同步Hive相关的配置</span></span><br><span class="line">    option(HoodieSyncConfig.META_SYNC_ENABLED.key(), <span class="keyword">true</span>).</span><br><span class="line">    option(HiveSyncConfigHolder.HIVE_SYNC_ENABLED.key, <span class="keyword">true</span>).</span><br><span class="line">    option(HiveSyncConfigHolder.HIVE_SYNC_MODE.key, HiveSyncMode.HMS.name()).</span><br><span class="line">    option(HoodieSyncConfig.META_SYNC_DATABASE_NAME.key, <span class="string">"test"</span>).</span><br><span class="line">    option(HiveSyncConfigHolder.HIVE_AUTO_CREATE_DATABASE.key(), <span class="keyword">true</span>).</span><br><span class="line">    option(HiveSyncConfigHolder.HIVE_CREATE_MANAGED_TABLE.key, <span class="keyword">true</span>).</span><br><span class="line">    option(HoodieSyncConfig.META_SYNC_TABLE_NAME.key, tableName).</span><br><span class="line">    option(HIVE_STYLE_PARTITIONING.key, <span class="keyword">true</span>).</span><br><span class="line">    option(HoodieSyncConfig.META_SYNC_PARTITION_FIELDS.key, partitionField).</span><br><span class="line">    option(HoodieSyncConfig.META_SYNC_PARTITION_EXTRACTOR_CLASS.key, classOf[MultiPartKeysValueExtractor].getName).</span><br><span class="line">    mode(SaveMode.Overwrite).</span><br><span class="line">    save(basePath)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">def <span class="title">runFullBootstrap</span><span class="params">(srcPath: String, basePath: String, partitionField: String = <span class="string">""</span>, extraOpts: Map[String, String] = Map.empty)</span>: Unit </span>= &#123;</span><br><span class="line">  val bootstrapDF = spark.emptyDataFrame</span><br><span class="line">  bootstrapDF.write.format(<span class="string">"hudi"</span>).</span><br><span class="line">    options(extraOpts).</span><br><span class="line">    option(DataSourceWriteOptions.OPERATION.key, DataSourceWriteOptions.BOOTSTRAP_OPERATION_OPT_VAL).</span><br><span class="line">    option(HoodieWriteConfig.TBL_NAME.key, tableName).</span><br><span class="line">    option(DataSourceWriteOptions.RECORDKEY_FIELD.key, <span class="string">"id"</span>).</span><br><span class="line">    option(DataSourceWriteOptions.PARTITIONPATH_FIELD.key, partitionField).</span><br><span class="line">    option(HoodieBootstrapConfig.BASE_PATH.key, srcPath).</span><br><span class="line">    option(HoodieBootstrapConfig.KEYGEN_CLASS_NAME.key, classOf[ComplexKeyGenerator].getName).</span><br><span class="line">    option(HoodieBootstrapConfig.MODE_SELECTOR_CLASS_NAME.key, classOf[FullRecordBootstrapModeSelector].getName).</span><br><span class="line">    option(KEYGENERATOR_CLASS_NAME.key(), classOf[ComplexKeyGenerator].getName).</span><br><span class="line">    <span class="comment">// 同步Hive相关的配置</span></span><br><span class="line">    option(HoodieSyncConfig.META_SYNC_ENABLED.key(), <span class="keyword">true</span>).</span><br><span class="line">    option(HiveSyncConfigHolder.HIVE_SYNC_ENABLED.key, <span class="keyword">true</span>).</span><br><span class="line">    option(HiveSyncConfigHolder.HIVE_SYNC_MODE.key, HiveSyncMode.HMS.name()).</span><br><span class="line">    option(HoodieSyncConfig.META_SYNC_DATABASE_NAME.key, <span class="string">"test"</span>).</span><br><span class="line">    option(HiveSyncConfigHolder.HIVE_AUTO_CREATE_DATABASE.key(), <span class="keyword">true</span>).</span><br><span class="line">    option(HiveSyncConfigHolder.HIVE_CREATE_MANAGED_TABLE.key, <span class="keyword">true</span>).</span><br><span class="line">    option(HoodieSyncConfig.META_SYNC_TABLE_NAME.key, tableName).</span><br><span class="line">    option(HIVE_STYLE_PARTITIONING.key, <span class="keyword">true</span>).</span><br><span class="line">    option(HoodieSyncConfig.META_SYNC_PARTITION_FIELDS.key, partitionField).</span><br><span class="line">    option(HoodieSyncConfig.META_SYNC_PARTITION_EXTRACTOR_CLASS.key, classOf[MultiPartKeysValueExtractor].getName).</span><br><span class="line">    mode(SaveMode.Overwrite)</span><br><span class="line">    .save(basePath)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="METADATA-ONLY-1"><a href="#METADATA-ONLY-1" class="headerlink" title="METADATA_ONLY"></a>METADATA_ONLY</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">def <span class="title">testMetadataBootstrapCOWHiveStylePartitioned2</span><span class="params">()</span>: Unit </span>= &#123;</span><br><span class="line">  <span class="keyword">import</span> spark.implicits._</span><br><span class="line">  val srcPath = <span class="string">"/tmp/bootstrap/metadata/src_hiveStylePartition2"</span></span><br><span class="line">  val basePath = <span class="string">"/tmp/bootstrap/metadata/base_hiveStylePartition2"</span></span><br><span class="line">  val sourceDF = Seq((<span class="number">1</span>, <span class="string">"a1"</span>, <span class="number">10</span>, <span class="number">1000</span>, <span class="string">"2022-10-08"</span>), (<span class="number">2</span>, <span class="string">"a2"</span>, <span class="number">20</span>, <span class="number">2000</span>, <span class="string">"2022-10-09"</span>)).toDF(<span class="string">"id"</span>, <span class="string">"name"</span>, <span class="string">"value"</span>, <span class="string">"ts"</span>, <span class="string">"dt"</span>)</span><br><span class="line">  val partitions = Seq(<span class="string">"2022-10-08"</span>, <span class="string">"2022-10-09"</span>)</span><br><span class="line">  partitions.foreach(partition =&gt; &#123;</span><br><span class="line">    sourceDF</span><br><span class="line">      .filter(sourceDF(<span class="string">"dt"</span>).equalTo(lit(partition)))</span><br><span class="line">      .write</span><br><span class="line">      .format(<span class="string">"parquet"</span>)</span><br><span class="line">      .mode(SaveMode.Overwrite)</span><br><span class="line">      .save(srcPath + <span class="string">"/dt="</span> + partition)</span><br><span class="line">  &#125;)</span><br><span class="line">  val extraOpts = Map(</span><br><span class="line">    DataSourceWriteOptions.HIVE_STYLE_PARTITIONING.key -&gt; <span class="string">"true"</span></span><br><span class="line">  )</span><br><span class="line">  runMetadataBootstrap(srcPath, basePath, <span class="string">"dt"</span>, extraOpts)</span><br><span class="line"></span><br><span class="line">  spark.read.format(<span class="string">"hudi"</span>).load(basePath).show(<span class="keyword">false</span>)</span><br><span class="line">  val dfAppend = Seq((<span class="number">2</span>, <span class="string">"a2"</span>, <span class="number">22</span>, <span class="number">2200</span>, <span class="string">"2022-10-09"</span>), (<span class="number">4</span>, <span class="string">"a4"</span>, <span class="number">40</span>, <span class="number">4000</span>, <span class="string">"2022-10-08"</span>)).toDF(<span class="string">"id"</span>, <span class="string">"name"</span>, <span class="string">"value"</span>, <span class="string">"ts"</span>, <span class="string">"dt"</span>)</span><br><span class="line">  append2Hudi(dfAppend, basePath, <span class="string">"dt"</span>, extraOpts)</span><br><span class="line">  spark.read.format(<span class="string">"hudi"</span>).load(basePath).show(<span class="keyword">false</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">+-------------------+---------------------+------------------+----------------------+------------------------------------------------------------------------+---+----+-----+----+----------+</span><br><span class="line">|_hoodie_commit_time|_hoodie_commit_seqno |_hoodie_record_key|_hoodie_partition_path|_hoodie_file_name                                                       |id |name|value|ts  |dt        |</span><br><span class="line">+-------------------+---------------------+------------------+----------------------+------------------------------------------------------------------------+---+----+-----+----+----------+</span><br><span class="line">|<span class="number">00000000000001</span>     |<span class="number">00000000000001_749_0</span> |id:<span class="number">1</span>              |dt=<span class="number">2022</span>-<span class="number">10</span>-<span class="number">08</span>         |<span class="number">722</span>dae6a-<span class="number">9</span>c27-<span class="number">4976</span>-b9a4-b1eef3800c45_1-<span class="number">48</span>-<span class="number">2744_20221012103644857</span>.parquet|<span class="number">1</span>  |a1  |<span class="number">10</span>   |<span class="number">1000</span>|<span class="number">2022</span>-<span class="number">10</span>-<span class="number">08</span>|</span><br><span class="line">|<span class="number">20221012103644857</span>  |<span class="number">20221012103644857_1_1</span>|id:<span class="number">4</span>              |dt=<span class="number">2022</span>-<span class="number">10</span>-<span class="number">08</span>         |<span class="number">722</span>dae6a-<span class="number">9</span>c27-<span class="number">4976</span>-b9a4-b1eef3800c45_1-<span class="number">48</span>-<span class="number">2744_20221012103644857</span>.parquet|<span class="number">4</span>  |a4  |<span class="number">40</span>   |<span class="number">4000</span>|<span class="number">2022</span>-<span class="number">10</span>-<span class="number">08</span>|</span><br><span class="line">|<span class="number">20221012103644857</span>  |<span class="number">20221012103644857_0_0</span>|id:<span class="number">2</span>              |dt=<span class="number">2022</span>-<span class="number">10</span>-<span class="number">09</span>         |be5a9c32-<span class="number">705</span>b-<span class="number">43</span>c6-b9fd-<span class="number">6882532</span>af47e_0-<span class="number">48</span>-<span class="number">2743_20221012103644857</span>.parquet|<span class="number">2</span>  |a2  |<span class="number">22</span>   |<span class="number">2200</span>|<span class="number">2022</span>-<span class="number">10</span>-<span class="number">09</span>|</span><br><span class="line">+-------------------+---------------------+------------------+----------------------+------------------------------------------------------------------------+---+----+-----+----+----------+</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>问题：hive分区表对应的parquet文件中没有分区字段，对于这种情况，Spark读取转化后的Hudi表时不能读取分区字段值，不过同步到Hive表，用Hive SQL 查询是可以正常查到hive分区字段的，解决方式：修改源码使Spark Hudi Bootstartp读写支持配置项<code>hoodie.datasource.write.drop.partition.columns</code>,参考PR<a href="https://github.com/apache/hudi/pull/5201" target="_blank" rel="noopener">https://github.com/apache/hudi/pull/5201</a></p>
+</blockquote>
+<h3 id="FULL-RECORD-1"><a href="#FULL-RECORD-1" class="headerlink" title="FULL_RECORD"></a>FULL_RECORD</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">def <span class="title">testFullBootstrapCOWHiveStylePartitioned2</span><span class="params">()</span>: Unit </span>= &#123;</span><br><span class="line">  <span class="keyword">import</span> spark.implicits._</span><br><span class="line">  val srcPath = <span class="string">"/tmp/bootstrap/full/src_hiveStylePartition2"</span></span><br><span class="line">  val basePath = <span class="string">"/tmp/bootstrap/full/base_hiveStylePartition2"</span></span><br><span class="line">  val sourceDF = makeDfColNullable(Seq((<span class="number">1</span>, <span class="string">"a1"</span>, <span class="number">10</span>, <span class="number">1000</span>, <span class="string">"2022-10-08"</span>),</span><br><span class="line">    (<span class="number">2</span>, <span class="string">"a2"</span>, <span class="number">20</span>, <span class="number">2000</span>, <span class="string">"2022-10-09"</span>)).toDF(<span class="string">"id"</span>, <span class="string">"name"</span>, <span class="string">"value"</span>, <span class="string">"ts"</span>, <span class="string">"dt"</span>))</span><br><span class="line">  val partitions = Seq(<span class="string">"2022-10-08"</span>, <span class="string">"2022-10-09"</span>)</span><br><span class="line">  partitions.foreach(partition =&gt; &#123;</span><br><span class="line">    sourceDF</span><br><span class="line">      .filter(sourceDF(<span class="string">"dt"</span>).equalTo(lit(partition)))</span><br><span class="line">      .write</span><br><span class="line">      .format(<span class="string">"parquet"</span>)</span><br><span class="line">      .mode(SaveMode.Overwrite)</span><br><span class="line">      .save(srcPath + <span class="string">"/dt="</span> + partition)</span><br><span class="line">  &#125;)</span><br><span class="line">  val extraOpts = Map(</span><br><span class="line">    DataSourceWriteOptions.HIVE_STYLE_PARTITIONING.key -&gt; <span class="string">"true"</span></span><br><span class="line">  )</span><br><span class="line">  runFullBootstrap(srcPath, basePath, <span class="string">"dt"</span>, extraOpts)</span><br><span class="line"></span><br><span class="line">  spark.read.format(<span class="string">"hudi"</span>).load(basePath).show(<span class="keyword">false</span>)</span><br><span class="line">  val dfAppend = Seq((<span class="number">2</span>, <span class="string">"a2"</span>, <span class="number">22</span>, <span class="number">2200</span>, <span class="string">"2022-10-09"</span>), (<span class="number">4</span>, <span class="string">"a4"</span>, <span class="number">40</span>, <span class="number">4000</span>, <span class="string">"2022-10-08"</span>)).toDF(<span class="string">"id"</span>, <span class="string">"name"</span>, <span class="string">"value"</span>, <span class="string">"ts"</span>, <span class="string">"dt"</span>)</span><br><span class="line">  append2Hudi(dfAppend, basePath, <span class="string">"dt"</span>, extraOpts)</span><br><span class="line">  spark.read.format(<span class="string">"hudi"</span>).load(basePath).show(<span class="keyword">false</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">+-------------------+---------------------+------------------+----------------------+--------------------------------------------------------------------------+---+----+-----+----+----------+</span><br><span class="line">|_hoodie_commit_time|_hoodie_commit_seqno |_hoodie_record_key|_hoodie_partition_path|_hoodie_file_name                                                         |id |name|value|ts  |dt        |</span><br><span class="line">+-------------------+---------------------+------------------+----------------------+--------------------------------------------------------------------------+---+----+-----+----+----------+</span><br><span class="line">|<span class="number">00000000000002</span>     |<span class="number">00000000000002_0_0</span>   |id:<span class="number">1</span>              |dt=<span class="number">2022</span>-<span class="number">10</span>-<span class="number">08</span>         |f367185f-<span class="number">072f</span>-<span class="number">4</span>c27-ab02-affe728421ed-<span class="number">0_1</span>-<span class="number">49</span>-<span class="number">1250_20221012110352241</span>.parquet|<span class="number">1</span>  |a1  |<span class="number">10</span>   |<span class="number">1000</span>|<span class="number">2022</span>-<span class="number">10</span>-<span class="number">08</span>|</span><br><span class="line">|<span class="number">20221012110352241</span>  |<span class="number">20221012110352241_1_1</span>|id:<span class="number">4</span>              |dt=<span class="number">2022</span>-<span class="number">10</span>-<span class="number">08</span>         |f367185f-<span class="number">072f</span>-<span class="number">4</span>c27-ab02-affe728421ed-<span class="number">0_1</span>-<span class="number">49</span>-<span class="number">1250_20221012110352241</span>.parquet|<span class="number">4</span>  |a4  |<span class="number">40</span>   |<span class="number">4000</span>|<span class="number">2022</span>-<span class="number">10</span>-<span class="number">08</span>|</span><br><span class="line">|<span class="number">20221012110352241</span>  |<span class="number">20221012110352241_0_0</span>|id:<span class="number">2</span>              |dt=<span class="number">2022</span>-<span class="number">10</span>-<span class="number">09</span>         |e5266643-a24f-<span class="number">46e8</span>-aaee-e820334de9b9-<span class="number">0_0</span>-<span class="number">49</span>-<span class="number">1249_20221012110352241</span>.parquet|<span class="number">2</span>  |a2  |<span class="number">22</span>   |<span class="number">2200</span>|<span class="number">2022</span>-<span class="number">10</span>-<span class="number">09</span>|</span><br><span class="line">+-------------------+---------------------+------------------+----------------------+--------------------------------------------------------------------------+---+----+-----+----+----------+</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>问题：1、hive分区表对应的parquet文件中没有分区字段，对于这种情况FULL_RECORD目前还不支持，解决方式：修改源码使Spark Hudi Bootstartp读写支持配置项<code>hoodie.datasource.write.drop.partition.columns</code>,参考PR<a href="https://github.com/apache/hudi/pull/5201" target="_blank" rel="noopener">https://github.com/apache/hudi/pull/5201</a><br>      2、对于parquet文件内容有要求，当sourceDF存在不是String类型的字段，且nullable=false时，转化的Hudi表会乱码，所以示例代码里先将sourceDF的所有字段的nullable设置成了true，原因应该是因为源码里读取源表parquet文件时对某些schema不兼容，修改读取parquet文件相关的源码应该就可以解决</p>
+</blockquote>
+<h2 id="使用方式2：HoodieDeltaStreamer"><a href="#使用方式2：HoodieDeltaStreamer" class="headerlink" title="使用方式2：HoodieDeltaStreamer"></a>使用方式2：HoodieDeltaStreamer</h2><h3 id="METADATA-ONLY-2"><a href="#METADATA-ONLY-2" class="headerlink" title="METADATA_ONLY"></a>METADATA_ONLY</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">bin/spark-submit \</span><br><span class="line">--conf <span class="string">'spark.serializer=org.apache.spark.serializer.KryoSerializer'</span> \</span><br><span class="line">--class org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer jars/hudi-utilities-bundle_2.12-0.12.0.jar \</span><br><span class="line">--run-bootstrap \</span><br><span class="line">--target-base-path /tmp/test_hudi_bootstrap_metadata \</span><br><span class="line">--target-table test_hudi_bootstrap_metadata \</span><br><span class="line">--table-type COPY_ON_WRITE \</span><br><span class="line">--hoodie-conf hoodie.bootstrap.base.path=/tmp/bootstrap/metadata/src_partition \</span><br><span class="line">--hoodie-conf hoodie.datasource.write.recordkey.field=id \</span><br><span class="line">--hoodie-conf hoodie.datasource.write.partitionpath.field=dt \</span><br><span class="line">--hoodie-conf hoodie.datasource.write.hive_style_partitioning=<span class="literal">true</span> \</span><br><span class="line">--hoodie-conf hoodie.bootstrap.keygen.class=org.apache.hudi.keygen.ComplexKeyGenerator \</span><br><span class="line">--<span class="built_in">enable</span>-sync  \</span><br><span class="line">--hoodie-conf hoodie.datasource.hive_sync.mode=HMS \</span><br><span class="line">--hoodie-conf hoodie.datasource.hive_sync.database=<span class="built_in">test</span> \</span><br><span class="line">--hoodie-conf hoodie.datasource.hive_sync.auto_create_database=<span class="literal">true</span> \</span><br><span class="line">--hoodie-conf hoodie.datasource.hive_sync.create_managed_table=<span class="literal">true</span> \</span><br><span class="line">--hoodie-conf hoodie.datasource.hive_sync.table=test_hudi_bootstrap_metadata \</span><br><span class="line">--hoodie-conf hoodie.datasource.hive_sync.partition_fields=dt \</span><br><span class="line">--hoodie-conf hoodie.datasource.hive_sync.partition_extractor_class=org.apache.hudi.hive.MultiPartKeysValueExtractor</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">select * from test_hudi_bootstrap_metadata;</span><br><span class="line">+----------------------+------------------------+---------------------+-------------------------+----------------------------------------------------+-----+-------+--------+-------+-------------+</span><br><span class="line">| _hoodie_commit_time  |  _hoodie_commit_seqno  | _hoodie_record_key  | _hoodie_partition_path  |                 _hoodie_file_name                  | id  | name  | value  |  ts   |     dt      |</span><br><span class="line">+----------------------+------------------------+---------------------+-------------------------+----------------------------------------------------+-----+-------+--------+-------+-------------+</span><br><span class="line">| <span class="number">00000000000001</span>       | <span class="number">00000000000001_749_0</span>   | <span class="number">1</span>                   | <span class="number">2022</span>-<span class="number">10</span>-<span class="number">08</span>              | ffccead0-<span class="number">2f</span>32-<span class="number">4959</span>-<span class="number">9687</span>-edb7b1b8cbf3_749-<span class="number">14</span>-<span class="number">762_00000000000001</span>.parquet | <span class="number">1</span>   | a1    | <span class="number">10</span>     | <span class="number">1000</span>  | <span class="number">2022</span>-<span class="number">10</span>-<span class="number">08</span>  |</span><br><span class="line">| <span class="number">00000000000001</span>       | <span class="number">00000000000001_1499_0</span>  | <span class="number">2</span>                   | <span class="number">2022</span>-<span class="number">10</span>-<span class="number">09</span>              | bc7f9b9f-<span class="number">3</span>df0-<span class="number">48</span>d5-beac-<span class="number">05e7</span>d1a32fc2_1499-<span class="number">14</span>-<span class="number">1512_00000000000001</span>.parquet | <span class="number">2</span>   | a2    | <span class="number">20</span>     | <span class="number">2000</span>  | <span class="number">2022</span>-<span class="number">10</span>-<span class="number">09</span>  |</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>问题：这里设置的hive_style_partitioning=true没有生效</p>
+</blockquote>
+<h3 id="FULL-RECORD-2"><a href="#FULL-RECORD-2" class="headerlink" title="FULL_RECORD"></a>FULL_RECORD</h3><p>只需要配置hoodie.bootstrap.mode.selector=org.apache.hudi.client.bootstrap.selector.FullRecordBootstrapModeSelector类型就会变成<code>FULL_RECORD</code>,还有其他配置项可以修改类型，可以自己验证</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">bin/spark-submit \</span><br><span class="line">--conf <span class="string">'spark.serializer=org.apache.spark.serializer.KryoSerializer'</span> \</span><br><span class="line">--class org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer jars/hudi-utilities-bundle_2.12-0.12.0.jar \</span><br><span class="line">--run-bootstrap \</span><br><span class="line">--target-base-path /tmp/test_hudi_bootstrap_full \</span><br><span class="line">--target-table test_hudi_bootstrap_full \</span><br><span class="line">--table-type COPY_ON_WRITE \</span><br><span class="line">--hoodie-conf hoodie.bootstrap.mode.selector=org.apache.hudi.client.bootstrap.selector.FullRecordBootstrapModeSelector \</span><br><span class="line">--hoodie-conf hoodie.bootstrap.base.path=/tmp/bootstrap/full/src_hiveStylePartition2 \</span><br><span class="line">--hoodie-conf hoodie.datasource.write.recordkey.field=id \</span><br><span class="line">--hoodie-conf hoodie.datasource.write.partitionpath.field=dt \</span><br><span class="line">--hoodie-conf hoodie.datasource.write.hive_style_partitioning=<span class="literal">true</span> \</span><br><span class="line">--hoodie-conf hoodie.bootstrap.keygen.class=org.apache.hudi.keygen.ComplexKeyGenerator \</span><br><span class="line">--<span class="built_in">enable</span>-sync  \</span><br><span class="line">--hoodie-conf hoodie.datasource.hive_sync.mode=HMS \</span><br><span class="line">--hoodie-conf hoodie.datasource.hive_sync.database=<span class="built_in">test</span> \</span><br><span class="line">--hoodie-conf hoodie.datasource.hive_sync.auto_create_database=<span class="literal">true</span> \</span><br><span class="line">--hoodie-conf hoodie.datasource.hive_sync.create_managed_table=<span class="literal">true</span> \</span><br><span class="line">--hoodie-conf hoodie.datasource.hive_sync.table=test_hudi_bootstrap_full \</span><br><span class="line">--hoodie-conf hoodie.datasource.hive_sync.partition_fields=dt \</span><br><span class="line">--hoodie-conf hoodie.datasource.hive_sync.partition_extractor_class=org.apache.hudi.hive.MultiPartKeysValueExtractor</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">select * from test_hudi_bootstrap_full;</span><br><span class="line">+----------------------+-----------------------+---------------------+-------------------------+----------------------------------------------------+-----+-------+--------+-------+-------------+</span><br><span class="line">| _hoodie_commit_time  | _hoodie_commit_seqno  | _hoodie_record_key  | _hoodie_partition_path  |                 _hoodie_file_name                  | id  | name  | value  |  ts   |     dt      |</span><br><span class="line">+----------------------+-----------------------+---------------------+-------------------------+----------------------------------------------------+-----+-------+--------+-------+-------------+</span><br><span class="line">| <span class="number">00000000000002</span>       | <span class="number">00000000000002_0_0</span>    | <span class="number">1</span>                   | dt=<span class="number">2022</span>-<span class="number">10</span>-<span class="number">08</span>           | <span class="number">6</span>df53d90-c04c-<span class="number">455</span>e-b57d-<span class="number">32312344f</span>701-<span class="number">0_0</span>-<span class="number">15</span>-<span class="number">14_00000000000002</span>.parquet | <span class="number">1</span>   | a1    | <span class="number">10</span>     | <span class="number">1000</span>  | <span class="number">2022</span>-<span class="number">10</span>-<span class="number">08</span>  |</span><br><span class="line">| <span class="number">00000000000002</span>       | <span class="number">00000000000002_1_0</span>    | <span class="number">2</span>                   | dt=<span class="number">2022</span>-<span class="number">10</span>-<span class="number">09</span>           | fe02f500-<span class="number">3291</span>-<span class="number">446</span>c-bd5c-<span class="number">957</span>dd60db86d-<span class="number">0_1</span>-<span class="number">15</span>-<span class="number">15_00000000000002</span>.parquet | <span class="number">2</span>   | a2    | <span class="number">20</span>     | <span class="number">2000</span>  | <span class="number">2022</span>-<span class="number">10</span>-<span class="number">09</span>  |</span><br><span class="line">+----------------------+-----------------------+---------------------+-------------------------+----------------------------------------------------+-----+-------+--------+-------+-------------+</span><br></pre></td></tr></table></figure>
+<h3 id="官网博客上的问题"><a href="#官网博客上的问题" class="headerlink" title="官网博客上的问题"></a>官网博客上的问题</h3><p>地址：<a href="https://hudi.apache.org/cn/blog/2020/08/20/efficient-migration-of-large-parquet-tables/#known-caveats" target="_blank" rel="noopener">https://hudi.apache.org/cn/blog/2020/08/20/efficient-migration-of-large-parquet-tables/#known-caveats</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Here is an example for running METADATA_ONLY bootstrap using Delta Streamer.</span><br><span class="line">--hoodie-conf hoodie.bootstrap.full.input.provider=org.apache.hudi.bootstrap.SparkParquetBootstrapDataProvider \</span><br><span class="line">--hoodie-conf hoodie.bootstrap.mode.selector=org.apache.hudi.client.bootstrap.selector.BootstrapRegexModeSelector \</span><br><span class="line">--hoodie-conf hoodie.bootstrap.mode.selector.regex=&quot;2020/08/2[0-9]&quot; \</span><br><span class="line">--hoodie-conf hoodie.bootstrap.mode.selector.regex.mode=METADATA_ONLY</span><br></pre></td></tr></table></figure>
+<p>这里说的是<code>METADATA_ONLY</code>的例子，经验证实际为<code>FULL_RECORD</code>,虽然配置了regex.mode=METADATA_ONLY，其实默认值就是METADATA_ONLY，但是不生效，原因是因为配置了hoodie.bootstrap.mode.selector=org.apache.hudi.client.bootstrap.selector.BootstrapRegexModeSelector，这个类里的defaultMode的逻辑应该有问题，我已经提交了PR：<a href="https://github.com/apache/hudi/pull/6928" target="_blank" rel="noopener">https://github.com/apache/hudi/pull/6928</a></p>
+<h2 id="其他转化现有表为Hudi表的方法"><a href="#其他转化现有表为Hudi表的方法" class="headerlink" title="其他转化现有表为Hudi表的方法"></a>其他转化现有表为Hudi表的方法</h2><p>可以自己写代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">val sourceDf = spark.table(<span class="string">"tableName"</span>)</span><br><span class="line">sourceDf.write.format(<span class="string">"hudi"</span>).saveAsTable(<span class="string">"tableName"</span>)</span><br><span class="line"><span class="comment">// 或</span></span><br><span class="line"><span class="keyword">for</span> partition in [list of partitions in source table] &#123;</span><br><span class="line">    val inputDF = spark.read.format(<span class="string">"any_input_format"</span>).load(<span class="string">"partition_path"</span>)</span><br><span class="line">    inputDF.write.format(<span class="string">"org.apache.hudi"</span>).option()....save(<span class="string">"basePath"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>也可以使用<code>HoodieDeltaStreamer</code>的其他功能，可以参考我之前写的文章：<a href="https://dongkelun.com/2022/06/12/hudiDeltaStreamer/">Hudi DeltaStreamer使用总结</a></p>
 
       
 
@@ -414,7 +440,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#版本"><span class="toc-number">2.</span> <span class="toc-text">版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#支持的文件类型"><span class="toc-number">3.</span> <span class="toc-text">支持的文件类型</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#METADATA-ONLY"><span class="toc-number">3.1.</span> <span class="toc-text">METADATA_ONLY</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#FULL-RECORD"><span class="toc-number">3.2.</span> <span class="toc-text">FULL_RECORD</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Bootstrap-类型"><span class="toc-number">4.</span> <span class="toc-text">Bootstrap 类型</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#版本"><span class="toc-number">2.</span> <span class="toc-text">版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#支持的文件类型"><span class="toc-number">3.</span> <span class="toc-text">支持的文件类型</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#METADATA-ONLY"><span class="toc-number">3.1.</span> <span class="toc-text">METADATA_ONLY</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#FULL-RECORD"><span class="toc-number">3.2.</span> <span class="toc-text">FULL_RECORD</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Bootstrap-类型"><span class="toc-number">4.</span> <span class="toc-text">Bootstrap 类型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#使用方式一：Spark代码"><span class="toc-number">5.</span> <span class="toc-text">使用方式一：Spark代码</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#METADATA-ONLY-1"><span class="toc-number">5.1.</span> <span class="toc-text">METADATA_ONLY</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#FULL-RECORD-1"><span class="toc-number">5.2.</span> <span class="toc-text">FULL_RECORD</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#使用方式2：HoodieDeltaStreamer"><span class="toc-number">6.</span> <span class="toc-text">使用方式2：HoodieDeltaStreamer</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#METADATA-ONLY-2"><span class="toc-number">6.1.</span> <span class="toc-text">METADATA_ONLY</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#FULL-RECORD-2"><span class="toc-number">6.2.</span> <span class="toc-text">FULL_RECORD</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#官网博客上的问题"><span class="toc-number">6.3.</span> <span class="toc-text">官网博客上的问题</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#其他转化现有表为Hudi表的方法"><span class="toc-number">7.</span> <span class="toc-text">其他转化现有表为Hudi表的方法</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -602,18 +628,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">SQL</a>
               </li>
              
@@ -622,19 +636,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -646,15 +652,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -666,7 +676,35 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -675,10 +713,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">front-end</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -694,6 +728,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
@@ -702,11 +740,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -714,19 +752,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -750,14 +776,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Linux</a>
               </li>
              
@@ -766,15 +784,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -786,11 +804,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -806,23 +840,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -850,6 +876,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
               </li>
              
@@ -862,11 +892,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -878,10 +908,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
@@ -890,7 +916,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -922,11 +948,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
