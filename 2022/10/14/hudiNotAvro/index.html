@@ -17,7 +17,7 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言记录写Hudi时的一个异常的解决方法，其实这个异常从去年就发现并找到解决方法了，而且已经提交到社区merge了，PR：[HUDI-2675] Fix the exception ‘Not an Avro data file’ when archive and clean。之所以现在又要总结这个异常的处理方法是因为:我们生产环境用的 Hudi0.9.0版本，且没有升级，因为升级Hudi版本可能会">
 <meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2022-10-14T09:22:26.941Z">
+<meta property="og:updated_time" content="2022-10-14T09:41:35.908Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="写Hudi异常：&#39;Not an Avro data file&#39; 解决方法">
 <meta name="twitter:description" content="前言记录写Hudi时的一个异常的解决方法，其实这个异常从去年就发现并找到解决方法了，而且已经提交到社区merge了，PR：[HUDI-2675] Fix the exception ‘Not an Avro data file’ when archive and clean。之所以现在又要总结这个异常的处理方法是因为:我们生产环境用的 Hudi0.9.0版本，且没有升级，因为升级Hudi版本可能会">
@@ -257,7 +257,7 @@
 <h2 id="异常信息"><a href="#异常信息" class="headerlink" title="异常信息"></a>异常信息</h2><p><code>archive</code>和<code>clean</code>时都会有这个异常，主要异常信息：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Caused by: java.io.IOException: Not an Avro data file</span><br></pre></td></tr></table></figure>
 <a id="more"></a>
-<h2 id="异常产生原因"><a href="#异常产生原因" class="headerlink" title="异常产生原因"></a>异常产生原因</h2><p>各种原因导致<code>.rollback</code>、<code>.clean</code>、<code>.clean.requested</code>和<code>.clean.inflight</code>文件大小为0，也就是空文件，而在<code>archive</code>和<code>clean</code>无法处理空文件，就报错上面的异常。有一个已知原因，就是HDFS配了满了之后会产生空文件，更多的是PMC也不清楚的未知原因，上面的PR中有体现。</p>
+<h2 id="异常产生原因"><a href="#异常产生原因" class="headerlink" title="异常产生原因"></a>异常产生原因</h2><p>各种原因导致<code>.rollback</code>、<code>.clean</code>、<code>.clean.requested</code>和<code>.clean.inflight</code>文件大小为0，也就是空文件，而在<code>archive</code>和<code>clean</code>时无法处理空文件，就报错上面的异常。有一个已知原因，就是HDFS配了满了之后会产生空文件，更多的是PMC也不清楚的未知原因，上面的PR中有体现。</p>
 <h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>这是在不升级Hudi版本的前提下，如果可以升级Hudi版本，直接升级到Hudi最新版即可。</p>
 <h3 id="解决方案1"><a href="#解决方案1" class="headerlink" title="解决方案1"></a>解决方案1</h3><p>当发生该异常时，由运维人员删除对应的空文件即可，当然这适用于表不多且异常偶发的情况，具体命令放在最后。但是当表比较多时，运维人员处理起来比较麻烦，这就需要第二种解决方案了。</p>
 <h3 id="解决方案2"><a href="#解决方案2" class="headerlink" title="解决方案2"></a>解决方案2</h3><p>基于Hudi0.9.0源码将文章开头提到的PR合进去，然后install本地仓库或者公司自己的内部仓库中，然后Maven pom依赖中引用自己的仓库地址就可以了。基于0.9.0的代码我已经提交，有需要的可以自行下载，其他版本就需要大家自己合了。</p>
@@ -621,14 +621,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -638,6 +630,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -665,11 +665,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -677,11 +677,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
+                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -697,10 +697,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
               </li>
              
@@ -709,7 +705,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -718,6 +722,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -733,6 +741,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
               </li>
              
@@ -741,15 +753,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">异常</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -758,6 +762,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -777,15 +785,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Linux</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -809,23 +817,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -837,11 +833,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -857,10 +865,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">持久化</a>
               </li>
              
@@ -870,6 +874,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">persist</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -889,7 +897,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -901,11 +909,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -937,11 +945,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -962,14 +970,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
               </li>
             
             <div class="clearfix"></div>
