@@ -9,18 +9,18 @@
   <link rel="dns-prefetch" href="https://dongkelun.com">
   <title>Hudi Java Cient总结|读取Hive写Hudi代码示例 | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="前言Hudi除了支持Spark、Fink写Hudi外，还支持Java客户端。本文总结Hudi Java Client如何使用，主要为代码示例，可以实现读取Hive表写Hudi表。当然也支持读取其他数据源，比如mysql，实现读取mysql的历史数据和增量数据写Hudi。 版本Hudi 0.12.0 功能支持支持insert/upsert/delete，暂不支持bulkInsert（考虑提PR支持）">
+  <meta name="description" content="前言Hudi除了支持Spark、Fink写Hudi外，还支持Java客户端。本文总结Hudi Java Client如何使用，主要为代码示例，可以实现读取Hive表写Hudi表。当然也支持读取其他数据源，比如mysql，实现读取mysql的历史数据和增量数据写Hudi。 版本Hudi 0.12.0 功能支持支持insert/upsert/delete，暂不支持bulkInsert目前仅支持COW表">
 <meta name="keywords" content="Hudi,Java">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Hudi Java Cient总结|读取Hive写Hudi代码示例">
 <meta property="og:url" content="https://dongkelun.com/2022/10/26/hudiJavaClient/index.html">
 <meta property="og:site_name" content="伦少的博客">
-<meta property="og:description" content="前言Hudi除了支持Spark、Fink写Hudi外，还支持Java客户端。本文总结Hudi Java Client如何使用，主要为代码示例，可以实现读取Hive表写Hudi表。当然也支持读取其他数据源，比如mysql，实现读取mysql的历史数据和增量数据写Hudi。 版本Hudi 0.12.0 功能支持支持insert/upsert/delete，暂不支持bulkInsert（考虑提PR支持）">
+<meta property="og:description" content="前言Hudi除了支持Spark、Fink写Hudi外，还支持Java客户端。本文总结Hudi Java Client如何使用，主要为代码示例，可以实现读取Hive表写Hudi表。当然也支持读取其他数据源，比如mysql，实现读取mysql的历史数据和增量数据写Hudi。 版本Hudi 0.12.0 功能支持支持insert/upsert/delete，暂不支持bulkInsert目前仅支持COW表">
 <meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2022-10-27T02:03:29.997Z">
+<meta property="og:updated_time" content="2022-10-27T08:28:43.800Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Hudi Java Cient总结|读取Hive写Hudi代码示例">
-<meta name="twitter:description" content="前言Hudi除了支持Spark、Fink写Hudi外，还支持Java客户端。本文总结Hudi Java Client如何使用，主要为代码示例，可以实现读取Hive表写Hudi表。当然也支持读取其他数据源，比如mysql，实现读取mysql的历史数据和增量数据写Hudi。 版本Hudi 0.12.0 功能支持支持insert/upsert/delete，暂不支持bulkInsert（考虑提PR支持）">
+<meta name="twitter:description" content="前言Hudi除了支持Spark、Fink写Hudi外，还支持Java客户端。本文总结Hudi Java Client如何使用，主要为代码示例，可以实现读取Hive表写Hudi表。当然也支持读取其他数据源，比如mysql，实现读取mysql的历史数据和增量数据写Hudi。 版本Hudi 0.12.0 功能支持支持insert/upsert/delete，暂不支持bulkInsert目前仅支持COW表">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -255,7 +255,7 @@
       
         <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>Hudi除了支持Spark、Fink写Hudi外，还支持Java客户端。本文总结Hudi Java Client如何使用，主要为代码示例，可以实现读取Hive表写Hudi表。当然也支持读取其他数据源，比如mysql，实现读取mysql的历史数据和增量数据写Hudi。</p>
 <h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>Hudi 0.12.0</p>
-<h2 id="功能支持"><a href="#功能支持" class="headerlink" title="功能支持"></a>功能支持</h2><p>支持insert/upsert/delete，暂不支持bulkInsert（考虑提PR支持）<br>目前仅支持COW表<br>支持完整的写Hudi操作，包括rollback、clean、archive等</p>
+<h2 id="功能支持"><a href="#功能支持" class="headerlink" title="功能支持"></a>功能支持</h2><p>支持insert/upsert/delete，暂不支持bulkInsert<br>目前仅支持COW表<br>支持完整的写Hudi操作，包括rollback、clean、archive等</p>
 <a id="more"></a>
 <h2 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h2><p>完整代码已上传GitHub：<a href="https://github.com/dongkelun/hudi-demo/tree/master/java-client" target="_blank" rel="noopener">https://github.com/dongkelun/hudi-demo/tree/master/java-client</a></p>
 <p>其中<code>HoodieJavaWriteClientExample</code>是从Hudi源码里拷贝的，包含了insert/upsert/delte/的代码示例，<code>JavaClientHive2Hudi</code>是我自己的写的代码示例总结，实现了kerberos认证、读取Hive表Schema作为写hudi的Schema、读取Hive表数据写hudi表，并同步hudi元数据至hive元数据，实现自动创建Hive元数据，当然也支持读取其他数据源，比如mysql，实现历史和增量写。</p>
@@ -272,13 +272,18 @@
 <h3 id="startCommit"><a href="#startCommit" class="headerlink" title="startCommit"></a>startCommit</h3><p>返回commitTime，首先会执行rollback,然后创建一个.commit.request,再将commitTime返回<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">String newCommitTime = writeClient.startCommit();</span><br></pre></td></tr></table></figure></p>
 <h3 id="generateRecord"><a href="#generateRecord" class="headerlink" title="generateRecord"></a>generateRecord</h3><p>这里主要是构造写hudi需要的数据结构，包含HoodieKey和payLoad,其中delete操作只需要HoodieKey</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> List&lt;HoodieRecord&lt;HoodieRecordPayload&gt;&gt; generateRecord(ResultSet rs,</span><br><span class="line">                                                                     Schema writeSchema,</span><br><span class="line">                                                                     String payloadClassName,</span><br><span class="line">                                                                     <span class="keyword">boolean</span> shouldCombine) <span class="keyword">throws</span> IOException, SQLException &#123;</span><br><span class="line">    List&lt;HoodieRecord&lt;HoodieRecordPayload&gt;&gt; list = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (rs.next()) &#123;</span><br><span class="line">        GenericRecord rec = <span class="keyword">new</span> GenericData.Record(writeSchema);</span><br><span class="line"></span><br><span class="line">        writeSchema.getFields().forEach(field -&gt; &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                rec.put(field.name(), convertValueType(rs, field.name(), field.schema().getType()));</span><br><span class="line">            &#125; <span class="keyword">catch</span> (SQLException e) &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(e);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line">        String partitionPath = partitionFields == <span class="keyword">null</span> ? <span class="string">""</span> : getRecordPartitionPath(rs, writeSchema);</span><br><span class="line">        System.out.println(partitionPath);</span><br><span class="line">        String rowKey = recordKeyFields == <span class="keyword">null</span> &amp;&amp; writeOperationType.equals(INSERT_OPERATION) ? UUID.randomUUID().toString() : getRecordKey(rs, writeSchema);</span><br><span class="line">        HoodieKey key = <span class="keyword">new</span> HoodieKey(rowKey, partitionPath);</span><br><span class="line">        <span class="keyword">if</span> (shouldCombine) &#123;</span><br><span class="line">            Object orderingVal = HoodieAvroUtils.getNestedFieldVal(rec, preCombineField, <span class="keyword">false</span>, <span class="keyword">false</span>);</span><br><span class="line">            list.add(<span class="keyword">new</span> HoodieAvroRecord&lt;&gt;(key, createPayload(payloadClassName, rec, (Comparable) orderingVal)));</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            list.add(<span class="keyword">new</span> HoodieAvroRecord&lt;&gt;(key, createPayload(payloadClassName, rec)));</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> list;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="写Hudi"><a href="#写Hudi" class="headerlink" title="写Hudi"></a>写Hudi</h3><p>最后执行写Hudi的操作，常用upsert/insert/delete,Java Client也是默认开启clean等操作的，具体的实现是在HoodieJavaCopyOnWriteTable中。目前还不支持bulkInsert等操作,</p>
+<h3 id="写Hudi"><a href="#写Hudi" class="headerlink" title="写Hudi"></a>写Hudi</h3><p>最后执行写Hudi的操作，常用upsert/insert/delete,Java Client也是默认开启clean等操作的，具体的实现是在HoodieJavaCopyOnWriteTable中。目前还不支持bulkInsert等操作,后面如果我有能力的话，会尝试提交PR支持。</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">writeClient.upsert(records, newCommitTime);</span><br><span class="line">writeClient.insert(records, newCommitTime);</span><br><span class="line">writeClient.delete(records, newCommitTime);</span><br></pre></td></tr></table></figure>
 <h3 id="同步Hive"><a href="#同步Hive" class="headerlink" title="同步Hive"></a>同步Hive</h3><p>最后是同步元数据至Hive，实现在hive中建表,这一步是可选的。这样可以利用Hive SQL和Spark SQL查询Hudi表</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 利用HiveSyncTool同步Hive元数据</span></span><br><span class="line"><span class="comment"> * Spark写Hudi同步hive元数据的源码就是这样同步的</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> properties</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> hiveConf</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">syncHive</span><span class="params">(TypedProperties properties, HiveConf hiveConf)</span> </span>&#123;</span><br><span class="line">    HiveSyncTool hiveSyncTool = <span class="keyword">new</span> HiveSyncTool(properties, hiveConf);</span><br><span class="line">    hiveSyncTool.syncHoodieTable();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> HiveConf <span class="title">getHiveConf</span><span class="params">(String hiveSitePath, String coreSitePath, String hdfsSitePath)</span> </span>&#123;</span><br><span class="line">    HiveConf configuration = <span class="keyword">new</span> HiveConf();</span><br><span class="line">    configuration.addResource(<span class="keyword">new</span> Path(hiveSitePath));</span><br><span class="line">    configuration.addResource(<span class="keyword">new</span> Path(coreSitePath));</span><br><span class="line">    configuration.addResource(<span class="keyword">new</span> Path(hdfsSitePath));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> configuration;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 同步Hive元数据的一些属性配置</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> basePath</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> TypedProperties <span class="title">getHiveSyncProperties</span><span class="params">(String basePath)</span> </span>&#123;</span><br><span class="line">    TypedProperties properties = <span class="keyword">new</span> TypedProperties();</span><br><span class="line">    properties.put(HiveSyncConfigHolder.HIVE_SYNC_MODE.key(), HiveSyncMode.HMS.name());</span><br><span class="line">    properties.put(HiveSyncConfigHolder.HIVE_CREATE_MANAGED_TABLE.key(), <span class="keyword">true</span>);</span><br><span class="line">    properties.put(HoodieSyncConfig.META_SYNC_DATABASE_NAME.key(), dbName);</span><br><span class="line">    properties.put(HoodieSyncConfig.META_SYNC_TABLE_NAME.key(), targetTable);</span><br><span class="line">    properties.put(HoodieSyncConfig.META_SYNC_BASE_PATH.key(), basePath);</span><br><span class="line">    properties.put(HoodieSyncConfig.META_SYNC_PARTITION_EXTRACTOR_CLASS.key(), MultiPartKeysValueExtractor.class.getName());</span><br><span class="line">    properties.put(HoodieSyncConfig.META_SYNC_PARTITION_FIELDS.key(), partitionFields);</span><br><span class="line">    <span class="keyword">if</span> (partitionFields != <span class="keyword">null</span> &amp;&amp; !partitionFields.isEmpty()) &#123;</span><br><span class="line">        properties.put(HoodieSyncConfig.META_SYNC_PARTITION_FIELDS.key(), partitionFields);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> properties;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h3 id="与0-9-0版本差异"><a href="#与0-9-0版本差异" class="headerlink" title="与0.9.0版本差异"></a>与0.9.0版本差异</h3><p>之前是基于0.9.0版本开发的，本文代码示例基于0.12.0，核心代码是一样的，差异的地方有两处</p>
 <p>1、0.9.0 clean、archive的参数都是在withCompactionConfig中，现在单独拎出来<br>2、0.9.0 HiveSyncTool的参数为HiveSyncConfig，现在为TypedProperties</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Hudi Java Client和Spark、Flink一样都可以实现完整的写Hudi的逻辑，但是目前功能支持还不完善，比如不支持MOR表，而且性能上也不如Spark、Flink，毕竟Spark、FLink都是集群，但是Hudi Java Client可以集成到其他框架中，比如NIFI，比较方便。也可以自己实现多线程，提升性能，我们目前测试的性能是Insert可以达到10000条/s，而upsert因为需要读取索引，还有历史数据的更新，可能需要重写整个表，所以当历史数据比较大且更新占比比较高时，单线程的性能会非常差，但是我们基于源码改造，将布隆索引和写数据的部分改为多线程后，性能就会提升很多，当然这也取决于机器的性能，和CPU、内存有关。对于数据量不是很大的ZF数据，一般大表几十亿，性能还是可以满足要求的。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Hudi Java Client和Spark、Flink一样都可以实现完整的写Hudi的逻辑，但是目前功能支持还不完善，比如不支持MOR表，而且性能上也不如Spark、Flink，毕竟Spark、FLink都是集群，但是Hudi Java Client可以集成到其他框架中，比如NIFI，集成起来比较方便，集成到NIFI的好处是，可以通过拖来拽配置参数的形式完成历史数据和增量数据写入Hudi。也可以自己实现多线程，提升性能，我们目前测试的性能是Insert可以达到10000条/s，而upsert因为需要读取索引，还有历史数据的更新，可能需要重写整个表，所以当历史数据比较大且更新占比比较高时，单线程的性能会非常差，但是我们基于源码改造，将布隆索引和写数据的部分改为多线程后，性能就会提升很多，当然这也取决于机器的性能，和CPU、内存有关。对于数据量不是很大的ZF数据，一般大表几十亿，性能还是可以满足要求的。</p>
+<h2 id="相关阅读"><a href="#相关阅读" class="headerlink" title="相关阅读"></a>相关阅读</h2><ul>
+<li><a href="https://dongkelun.com/2021/07/10/hudiPreCombinedField/">Hudi preCombinedField 总结</a></li>
+<li><a href="https://dongkelun.com/2021/11/30/hudiPreCombineField2/">HUDI preCombinedField 总结(二)-源码分析</a></li>
+<li><a href="https://mp.weixin.qq.com/s/kxKsej2onjz9dJmtJIDcfg" target="_blank" rel="noopener">https://mp.weixin.qq.com/s/kxKsej2onjz9dJmtJIDcfg</a></li>
+</ul>
 
       
 
@@ -429,7 +434,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#版本"><span class="toc-number">2.</span> <span class="toc-text">版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#功能支持"><span class="toc-number">3.</span> <span class="toc-text">功能支持</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#代码"><span class="toc-number">4.</span> <span class="toc-text">代码</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#初始化Hudi表"><span class="toc-number">4.1.</span> <span class="toc-text">初始化Hudi表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#创建HoodieJavaWriteClient"><span class="toc-number">4.2.</span> <span class="toc-text">创建HoodieJavaWriteClient</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#startCommit"><span class="toc-number">4.3.</span> <span class="toc-text">startCommit</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#generateRecord"><span class="toc-number">4.4.</span> <span class="toc-text">generateRecord</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#写Hudi"><span class="toc-number">4.5.</span> <span class="toc-text">写Hudi</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#同步Hive"><span class="toc-number">4.6.</span> <span class="toc-text">同步Hive</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#与0-9-0版本差异"><span class="toc-number">4.7.</span> <span class="toc-text">与0.9.0版本差异</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">5.</span> <span class="toc-text">总结</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#版本"><span class="toc-number">2.</span> <span class="toc-text">版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#功能支持"><span class="toc-number">3.</span> <span class="toc-text">功能支持</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#代码"><span class="toc-number">4.</span> <span class="toc-text">代码</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#初始化Hudi表"><span class="toc-number">4.1.</span> <span class="toc-text">初始化Hudi表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#创建HoodieJavaWriteClient"><span class="toc-number">4.2.</span> <span class="toc-text">创建HoodieJavaWriteClient</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#startCommit"><span class="toc-number">4.3.</span> <span class="toc-text">startCommit</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#generateRecord"><span class="toc-number">4.4.</span> <span class="toc-text">generateRecord</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#写Hudi"><span class="toc-number">4.5.</span> <span class="toc-text">写Hudi</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#同步Hive"><span class="toc-number">4.6.</span> <span class="toc-text">同步Hive</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#与0-9-0版本差异"><span class="toc-number">4.7.</span> <span class="toc-text">与0.9.0版本差异</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">5.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#相关阅读"><span class="toc-number">6.</span> <span class="toc-text">相关阅读</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -601,15 +606,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -621,7 +630,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -633,47 +654,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">算法</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -685,14 +678,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
               </li>
              
@@ -701,11 +686,31 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -717,6 +722,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
@@ -725,11 +734,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -737,11 +742,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -749,11 +754,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -777,11 +782,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -801,31 +810,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -834,6 +827,22 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -849,11 +858,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -873,10 +882,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">压缩文件</a>
               </li>
              
@@ -889,19 +894,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -913,11 +906,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -925,7 +926,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -933,11 +934,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">vmware</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -953,15 +962,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
             
             <div class="clearfix"></div>
