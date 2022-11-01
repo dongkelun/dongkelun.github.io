@@ -20,7 +20,7 @@
 <meta property="og:image" content="https://img-blog.csdnimg.cn/02207b2cc95c409aad60587b4f68731c.png#pic_center">
 <meta property="og:image" content="https://img-blog.csdnimg.cn/dbf21576d3ba423694fbabd1d29509eb.png">
 <meta property="og:image" content="https://img-blog.csdnimg.cn/b07a80e15ad04d66b7cf1bf893037647.png#pic_center">
-<meta property="og:updated_time" content="2022-10-31T11:57:13.010Z">
+<meta property="og:updated_time" content="2022-10-31T12:06:12.846Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Flink SQL操作Hudi并同步Hive使用总结">
 <meta name="twitter:description" content="前言记录总结自己第一次如何使用Flink SQL读写Hudi并同步Hive，以及遇到的问题及解决过程。 关于Flink SQL客户端如何使用可以参考：Flink SQL 客户端查询Hive配置及问题解决 版本Flink 1.14.3Hudi 0.12.0/0.12.1 本文采用Flink yarn-session模式，不会的可以参考之前的文章。 Hudi包下载地址：https://repo1.ma">
@@ -273,14 +273,14 @@
 <p>至于upadte和delete可以参考官网：<a href="https://hudi.apache.org/cn/docs/flink-quick-start-guide" target="_blank" rel="noopener">https://hudi.apache.org/cn/docs/flink-quick-start-guide</a></p>
 <h3 id="查询"><a href="#查询" class="headerlink" title="查询"></a>查询</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> test_hudi_flink1;</span><br></pre></td></tr></table></figure>
 <p>通过Flink查询出来的结果是没有Hudi的元数据字段的<br><img src="https://img-blog.csdnimg.cn/02207b2cc95c409aad60587b4f68731c.png#pic_center" alt=""></p>
-<h2 id="方式2、建在Hive-Catalog中、不同步Hive表"><a href="#方式2、建在Hive-Catalog中、不同步Hive表" class="headerlink" title="方式2、建在Hive Catalog中、不同步Hive表"></a>方式2、建在Hive Catalog中、不同步Hive表</h2><p>这种建表方式，会在对应的Hive中创建表，好处时，当我们退出SQL客户端后，再重新启动一个新的SQL客户端，我们可以直接使用Hive Catalog中的表，进行读写数据。</p>
+<h2 id="方式2、建在Hive-Catalog中、不同步Hive表"><a href="#方式2、建在Hive-Catalog中、不同步Hive表" class="headerlink" title="方式2、建在Hive Catalog中、不同步Hive表"></a>方式2、建在Hive Catalog中、不同步Hive表</h2><p>这种建表方式，会在对应的Hive中创建表，好处是，当我们退出SQL客户端后，再重新启动一个新的SQL客户端，我们可以直接使用Hive Catalog中的表，进行读写数据。</p>
 <h3 id="建表-1"><a href="#建表-1" class="headerlink" title="建表"></a>建表</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">CATALOG</span> hive_catalog <span class="keyword">WITH</span> (</span><br><span class="line">    <span class="string">'type'</span> = <span class="string">'hive'</span>,</span><br><span class="line">    <span class="string">'default-database'</span> = <span class="string">'default'</span>,</span><br><span class="line">    <span class="string">'hive-conf-dir'</span> = <span class="string">'/usr/hdp/3.1.0.0-78/hive/conf'</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">use</span> <span class="keyword">catalog</span> hive_catalog;</span><br><span class="line"><span class="keyword">use</span> hudi;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> test_hudi_flink2 (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span> PRIMARY <span class="keyword">KEY</span> <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span>,</span><br><span class="line">  <span class="keyword">name</span> <span class="built_in">VARCHAR</span>(<span class="number">10</span>),</span><br><span class="line">  price <span class="built_in">int</span>,</span><br><span class="line">  ts <span class="built_in">int</span>,</span><br><span class="line">  dt <span class="built_in">VARCHAR</span>(<span class="number">10</span>)</span><br><span class="line">)</span><br><span class="line">PARTITIONED <span class="keyword">BY</span> (dt)</span><br><span class="line"><span class="keyword">WITH</span> (</span><br><span class="line">  <span class="string">'connector'</span> = <span class="string">'hudi'</span>,</span><br><span class="line">  <span class="string">'path'</span> = <span class="string">'/tmp/hudi/test_hudi_flink2'</span>,</span><br><span class="line">  <span class="string">'hoodie.datasource.write.keygenerator.class'</span> = <span class="string">'org.apache.hudi.keygen.ComplexAvroKeyGenerator'</span>,</span><br><span class="line">  <span class="string">'hoodie.datasource.write.recordkey.field'</span> = <span class="string">'id'</span>,</span><br><span class="line">  <span class="string">'hoodie.datasource.write.hive_style_partitioning'</span> = <span class="string">'true'</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
 <h3 id="Insert-1"><a href="#Insert-1" class="headerlink" title="Insert"></a>Insert</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test_hudi_flink2 <span class="keyword">values</span> (<span class="number">1</span>,<span class="string">'hudi'</span>,<span class="number">10</span>,<span class="number">100</span>,<span class="string">'2022-10-31'</span>),(<span class="number">2</span>,<span class="string">'hudi'</span>,<span class="number">10</span>,<span class="number">100</span>,<span class="string">'2022-10-31'</span>);</span><br></pre></td></tr></table></figure>
 <h3 id="查询-1"><a href="#查询-1" class="headerlink" title="查询"></a>查询</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> test_hudi_flink2;</span><br></pre></td></tr></table></figure>
 <p>但是同样地也无法查询Hudi的元数据字段，而且在Hive表中查询此表是会有异常的，因为表结构是这样的：</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">show</span> <span class="keyword">create</span> <span class="keyword">table</span> test_hudi_flink2;</span><br><span class="line">+<span class="comment">----------------------------------------------------+</span></span><br><span class="line">|                   createtab_stmt                   |</span><br><span class="line">+<span class="comment">----------------------------------------------------+</span></span><br><span class="line">| <span class="keyword">CREATE</span> <span class="keyword">TABLE</span> <span class="string">`test_hudi_flink2`</span>(                   |</span><br><span class="line">| )                                                  |</span><br><span class="line">| <span class="keyword">ROW</span> <span class="keyword">FORMAT</span> SERDE                                   |</span><br><span class="line">|   <span class="string">'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe'</span>  |</span><br><span class="line">| <span class="keyword">STORED</span> <span class="keyword">AS</span> INPUTFORMAT                              |</span><br><span class="line">|   <span class="string">'org.apache.hadoop.mapred.TextInputFormat'</span>       |</span><br><span class="line">| OUTPUTFORMAT                                       |</span><br><span class="line">|   <span class="string">'org.apache.hadoop.hive.ql.io.IgnoreKeyTextOutputFormat'</span> |</span><br><span class="line">| LOCATION                                           |</span><br><span class="line">|   <span class="string">'hdfs://cluster1/warehouse/tablespace/managed/hive/hudi.db/test_hudi_flink2'</span> |</span><br><span class="line">| TBLPROPERTIES (                                    |</span><br><span class="line">|   <span class="string">'flink.connector'</span>=<span class="string">'hudi'</span>,                        |</span><br><span class="line">|   <span class="string">'flink.hoodie.datasource.write.hive_style_partitioning'</span>=<span class="string">'true'</span>,  |</span><br><span class="line">|   <span class="string">'flink.hoodie.datasource.write.recordkey.field'</span>=<span class="string">'id'</span>,  |</span><br><span class="line">|   <span class="string">'flink.partition.keys.0.name'</span>=<span class="string">'dt'</span>,              |</span><br><span class="line">|   <span class="string">'flink.path'</span>=<span class="string">'/tmp/hudi/test_hudi_flink2'</span>,       |</span><br><span class="line">|   <span class="string">'flink.schema.0.data-type'</span>=<span class="string">'INT NOT NULL'</span>,       |</span><br><span class="line">|   <span class="string">'flink.schema.0.name'</span>=<span class="string">'id'</span>,                      |</span><br><span class="line">|   <span class="string">'flink.schema.1.data-type'</span>=<span class="string">'VARCHAR(10)'</span>,        |</span><br><span class="line">|   <span class="string">'flink.schema.1.name'</span>=<span class="string">'name'</span>,                    |</span><br><span class="line">|   <span class="string">'flink.schema.2.data-type'</span>=<span class="string">'INT'</span>,                |</span><br><span class="line">|   <span class="string">'flink.schema.2.name'</span>=<span class="string">'price'</span>,                   |</span><br><span class="line">|   <span class="string">'flink.schema.3.data-type'</span>=<span class="string">'INT'</span>,                |</span><br><span class="line">|   <span class="string">'flink.schema.3.name'</span>=<span class="string">'ts'</span>,                      |</span><br><span class="line">|   <span class="string">'flink.schema.4.data-type'</span>=<span class="string">'VARCHAR(10)'</span>,        |</span><br><span class="line">|   <span class="string">'flink.schema.4.name'</span>=<span class="string">'dt'</span>,                      |</span><br><span class="line">|   <span class="string">'flink.schema.primary-key.columns'</span>=<span class="string">'id'</span>,         |</span><br><span class="line">|   <span class="string">'flink.schema.primary-key.name'</span>=<span class="string">'PK_3386'</span>,       |</span><br><span class="line">|   <span class="string">'transient_lastDdlTime'</span>=<span class="string">'1667129407'</span>)            |</span><br><span class="line">+<span class="comment">----------------------------------------------------+</span></span><br></pre></td></tr></table></figure>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> test_hudi_flink2;</span><br><span class="line">Error: Error while compiling statement: FAILED: SemanticException Line 0:-1 Invalid column reference 'TOK_ALLCOLREF' (state=42000,code=40000)</span><br></pre></td></tr></table></figure>
-<h2 id="方式3、建在内存中、同步Hive表"><a href="#方式3、建在内存中、同步Hive表" class="headerlink" title="方式3、建在内存中、同步Hive表"></a>方式3、建在内存中、同步Hive表</h2><p>这样建表的好处时，可以利用同步到Hive中的表,通过Hive SQL和Spark SQL查询，也可以利用Spark进行insert、update等，但是Flink SQL客户端退出后，不能利用Hive中的表进行写数据，需要再重新建表</p>
+<h2 id="方式3、建在内存中、同步Hive表"><a href="#方式3、建在内存中、同步Hive表" class="headerlink" title="方式3、建在内存中、同步Hive表"></a>方式3、建在内存中、同步Hive表</h2><p>这样建表的好处是，可以利用同步到Hive中的表,通过Hive SQL和Spark SQL查询，也可以利用Spark进行insert、update等，但是Flink SQL客户端退出后，不能利用Hive中的表进行写数据，需要再重新建表</p>
 <h3 id="MOR表"><a href="#MOR表" class="headerlink" title="MOR表"></a>MOR表</h3><h4 id="建表-2"><a href="#建表-2" class="headerlink" title="建表"></a>建表</h4><p>配置环境变量HIVE_CONF_DIR<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> HIVE_CONF_DIR=/usr/hdp/3.1.0.0-78/hive/conf</span><br></pre></td></tr></table></figure></p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> test_hudi_flink3 (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span> PRIMARY <span class="keyword">KEY</span> <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span>,</span><br><span class="line">  <span class="keyword">name</span> <span class="built_in">VARCHAR</span>(<span class="number">10</span>),</span><br><span class="line">  price <span class="built_in">int</span>,</span><br><span class="line">  ts <span class="built_in">int</span>,</span><br><span class="line">  dt <span class="built_in">VARCHAR</span>(<span class="number">10</span>)</span><br><span class="line">)</span><br><span class="line">PARTITIONED <span class="keyword">BY</span> (dt)</span><br><span class="line"><span class="keyword">WITH</span> (</span><br><span class="line">  <span class="string">'connector'</span> = <span class="string">'hudi'</span>,</span><br><span class="line">  <span class="string">'path'</span> = <span class="string">'/tmp/hudi/test_hudi_flink3'</span>,</span><br><span class="line">  <span class="string">'table.type'</span> = <span class="string">'MERGE_ON_READ'</span>,</span><br><span class="line">  <span class="string">'hoodie.datasource.write.keygenerator.class'</span> = <span class="string">'org.apache.hudi.keygen.ComplexAvroKeyGenerator'</span>,</span><br><span class="line">  <span class="string">'hoodie.datasource.write.recordkey.field'</span> = <span class="string">'id'</span>,</span><br><span class="line">  <span class="string">'hoodie.datasource.write.hive_style_partitioning'</span> = <span class="string">'true'</span>,</span><br><span class="line">  <span class="string">'hive_sync.enable'</span> = <span class="string">'true'</span>,</span><br><span class="line">  <span class="string">'hive_sync.mode'</span> = <span class="string">'hms'</span>,</span><br><span class="line">  <span class="string">'hive_sync.metastore.uris'</span> = <span class="string">'thrift://indata-192-168-44-128.indata.com:9083'</span>,</span><br><span class="line">  <span class="string">'hive_sync.conf.dir'</span>=<span class="string">'/usr/hdp/3.1.0.0-78/hive/conf'</span>,</span><br><span class="line">  <span class="string">'hive_sync.db'</span> = <span class="string">'hudi'</span>,</span><br><span class="line">  <span class="string">'hive_sync.table'</span> = <span class="string">'test_hudi_flink3'</span>,</span><br><span class="line">  <span class="string">'hive_sync.partition_fields'</span> = <span class="string">'dt'</span>,</span><br><span class="line">  <span class="string">'hive_sync.partition_extractor_class'</span> = <span class="string">'org.apache.hudi.hive.HiveStylePartitionValueExtractor'</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
 <p>HIVE_CONF_DIR和hive_sync.conf.dir作用是一样的，如果没有配置hive_sync.conf.dir的话就会取HIVE_CONF_DIR，如果都没有配置，同步会有异常，具体看后面的异常解决。</p>
@@ -692,14 +692,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">SQL</a>
               </li>
              
@@ -708,15 +700,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -732,14 +732,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
               </li>
              
@@ -748,11 +740,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -764,15 +756,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Scala</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -800,11 +800,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color3">开源</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">开源</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -832,19 +832,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Linux</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -860,11 +856,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -876,14 +876,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Python</a>
               </li>
              
@@ -892,11 +884,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">excel</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -905,6 +909,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -920,11 +928,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
+                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -936,18 +944,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
               </li>
              
@@ -956,7 +952,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">ml</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -972,6 +980,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
@@ -980,11 +992,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -992,11 +1000,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1009,18 +1021,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
             
             <div class="clearfix"></div>
