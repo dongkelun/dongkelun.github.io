@@ -17,7 +17,7 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言Apache Hudi insert源码分析总结，以Java Client为例，不了解Hudi Java Client的可以参考：Hudi Java Client总结|读取Hive写Hudi代码示例。  以Java Client为例的原因：1、自己生产上用的Java Client，相比于Spark客户端更熟悉一点。2、Java Client和Spark、Flink客户端核心逻辑是一样的。不同的">
 <meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2022-11-10T12:04:43.177Z">
+<meta property="og:updated_time" content="2022-11-11T08:46:40.507Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Hudi源码|insert源码分析总结（一）(整体流程)">
 <meta name="twitter:description" content="前言Apache Hudi insert源码分析总结，以Java Client为例，不了解Hudi Java Client的可以参考：Hudi Java Client总结|读取Hive写Hudi代码示例。  以Java Client为例的原因：1、自己生产上用的Java Client，相比于Spark客户端更熟悉一点。2、Java Client和Spark、Flink客户端核心逻辑是一样的。不同的">
@@ -266,7 +266,7 @@
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line">  <span class="function"><span class="keyword">public</span> HoodieTableMetaClient <span class="title">initTable</span><span class="params">(Configuration configuration, String basePath)</span></span></span><br><span class="line"><span class="function">      <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> HoodieTableMetaClient.initTableAndGetMetaClient(configuration, basePath, build());</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Helper method to initialize a given path as a hoodie table with configs passed in as Properties.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> Instance of HoodieTableMetaClient</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> HoodieTableMetaClient <span class="title">initTableAndGetMetaClient</span><span class="params">(Configuration hadoopConf, String basePath,</span></span></span><br><span class="line"><span class="function"><span class="params">    Properties props)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">  LOG.info(<span class="string">"Initializing "</span> + basePath + <span class="string">" as hoodie table "</span> + basePath);</span><br><span class="line">  Path basePathDir = <span class="keyword">new</span> Path(basePath);</span><br><span class="line">  <span class="keyword">final</span> FileSystem fs = FSUtils.getFs(basePath, hadoopConf);</span><br><span class="line">  <span class="keyword">if</span> (!fs.exists(basePathDir)) &#123;</span><br><span class="line">    fs.mkdirs(basePathDir);</span><br><span class="line">  &#125;</span><br><span class="line">  Path metaPathDir = <span class="keyword">new</span> Path(basePath, METAFOLDER_NAME);</span><br><span class="line">  <span class="keyword">if</span> (!fs.exists(metaPathDir)) &#123;</span><br><span class="line">    fs.mkdirs(metaPathDir);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// if anything other than default archive log folder is specified, create that too</span></span><br><span class="line">  String archiveLogPropVal = <span class="keyword">new</span> HoodieConfig(props).getStringOrDefault(HoodieTableConfig.ARCHIVELOG_FOLDER);</span><br><span class="line">  <span class="keyword">if</span> (!StringUtils.isNullOrEmpty(archiveLogPropVal)) &#123;</span><br><span class="line">    Path archiveLogDir = <span class="keyword">new</span> Path(metaPathDir, archiveLogPropVal);</span><br><span class="line">    <span class="keyword">if</span> (!fs.exists(archiveLogDir)) &#123;</span><br><span class="line">      fs.mkdirs(archiveLogDir);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Always create temporaryFolder which is needed for finalizeWrite for Hoodie tables</span></span><br><span class="line">  <span class="keyword">final</span> Path temporaryFolder = <span class="keyword">new</span> Path(basePath, HoodieTableMetaClient.TEMPFOLDER_NAME);</span><br><span class="line">  <span class="keyword">if</span> (!fs.exists(temporaryFolder)) &#123;</span><br><span class="line">    fs.mkdirs(temporaryFolder);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Always create auxiliary folder which is needed to track compaction workloads (stats and any metadata in future)</span></span><br><span class="line">  <span class="keyword">final</span> Path auxiliaryFolder = <span class="keyword">new</span> Path(basePath, HoodieTableMetaClient.AUXILIARYFOLDER_NAME);</span><br><span class="line">  <span class="keyword">if</span> (!fs.exists(auxiliaryFolder)) &#123;</span><br><span class="line">    fs.mkdirs(auxiliaryFolder);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  initializeBootstrapDirsIfNotExists(hadoopConf, basePath, fs);</span><br><span class="line">  HoodieTableConfig.createHoodieProperties(fs, metaPathDir, props);</span><br><span class="line">  <span class="comment">// We should not use fs.getConf as this might be different from the original configuration</span></span><br><span class="line">  <span class="comment">// used to create the fs in unit tests</span></span><br><span class="line">  HoodieTableMetaClient metaClient = HoodieTableMetaClient.builder().setConf(hadoopConf).setBasePath(basePath).build();</span><br><span class="line">  LOG.info(<span class="string">"Finished initializing Table of type "</span> + metaClient.getTableConfig().getTableType() + <span class="string">" from "</span> + basePath);</span><br><span class="line">  <span class="keyword">return</span> metaClient;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h2 id="HoodieWriteConfig"><a href="#HoodieWriteConfig" class="headerlink" title="HoodieWriteConfig"></a>HoodieWriteConfig</h2><p>这里的配置是写数据时使用的配置，上面initTable的配置是持久化文件的配置，当然这俩配置要保持一致（实际上Spark客户端就是保持一致的）。可以看到有Schema、表名、payload、索引、clean、文件大小等一些参数。熟悉这些参数后就可以进行调优了。</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">            Properties indexProperties = <span class="keyword">new</span> Properties();</span><br><span class="line">            indexProperties.put(BLOOM_INDEX_FILTER_DYNAMIC_MAX_ENTRIES.key(), <span class="number">150000</span>); <span class="comment">// 1000万总体时间提升1分钟</span></span><br><span class="line">            HoodieWriteConfig cfg = HoodieWriteConfig.newBuilder().withPath(tablePath)</span><br><span class="line">                    .withSchema(writeSchema.toString())</span><br><span class="line">                    .withParallelism(parallelism, parallelism).withDeleteParallelism(parallelism)</span><br><span class="line">                    .forTable(tableName)</span><br><span class="line">                    .withWritePayLoad(payloadClassName)</span><br><span class="line">                    .withPayloadConfig(HoodiePayloadConfig.newBuilder().withPayloadOrderingField(orderingField).build())</span><br><span class="line">                    .withIndexConfig(HoodieIndexConfig.newBuilder()</span><br><span class="line">                            .withIndexType(HoodieIndex.IndexType.BLOOM)</span><br><span class="line"><span class="comment">//                            .bloomIndexPruneByRanges(false) // 1000万总体时间提升1分钟</span></span><br><span class="line">                            .bloomFilterFPP(<span class="number">0.000001</span>)   <span class="comment">// 1000万总体时间提升3分钟</span></span><br><span class="line">                            .fromProperties(indexProperties)</span><br><span class="line">                            .build())</span><br><span class="line">                    .withCompactionConfig(HoodieCompactionConfig.newBuilder().archiveCommitsWith(<span class="number">150</span>, <span class="number">200</span>)</span><br><span class="line">                            .compactionSmallFileSize(Long.parseLong(smallFileLimit))</span><br><span class="line">                            .approxRecordSize(Integer.parseInt(recordSizeEstimate))</span><br><span class="line">                            .retainCommits(<span class="number">100</span>).build())</span><br><span class="line">                    .withStorageConfig(HoodieStorageConfig.newBuilder()</span><br><span class="line">                            .parquetMaxFileSize(Long.parseLong(maxFileSize)).build())</span><br><span class="line">                    .build();</span><br></pre></td></tr></table></figure>
-<h2 id="HoodieJavaWriteClient"><a href="#HoodieJavaWriteClient" class="headerlink" title="HoodieJavaWriteClient"></a>HoodieJavaWriteClient</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">HoodieJavaWriteClient writeClient = <span class="keyword">new</span> HoodieJavaWriteClient&lt;&gt;(<span class="keyword">new</span> HoodieJavaEngineContext(hadoopConf), cfg)</span><br></pre></td></tr></table></figure>
+<h2 id="HoodieJavaWriteClient"><a href="#HoodieJavaWriteClient" class="headerlink" title="HoodieJavaWriteClient"></a>HoodieJavaWriteClient</h2><p>创建writeClient<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">HoodieJavaWriteClient writeClient = <span class="keyword">new</span> HoodieJavaWriteClient&lt;&gt;(<span class="keyword">new</span> HoodieJavaEngineContext(hadoopConf), cfg)</span><br></pre></td></tr></table></figure></p>
 <h2 id="startCommit"><a href="#startCommit" class="headerlink" title="startCommit"></a>startCommit</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">String newCommitTime = writeClient.startCommit();</span><br></pre></td></tr></table></figure>
 <p>具体的实现在其父类<code>AbstractHoodieWriteClient</code>中。首先调用<code>rollbackFailedWrites</code>执行<code>rollback</code>操作，关于<code>rollback</code>分析本文先不讲。然后通过<code>HoodieActiveTimeline.createNewInstantTime()</code>创建一个新的instantTime。最后创建<code>metaClient</code>，通过metaClient.getActiveTimeline().createNewInstant生成<code>.commit.request</code>文件</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">startCommit</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 首先调用rollbackFailedWrites执行rollback操作</span></span><br><span class="line">  CleanerUtils.rollbackFailedWrites(config.getFailedWritesCleanPolicy(),</span><br><span class="line">      HoodieTimeline.COMMIT_ACTION, () -&gt; rollbackFailedWrites());</span><br><span class="line">  <span class="comment">// 生成新的instantTime</span></span><br><span class="line">  String instantTime = HoodieActiveTimeline.createNewInstantTime();</span><br><span class="line">  <span class="comment">// 创建metaClient</span></span><br><span class="line">  HoodieTableMetaClient metaClient = createMetaClient(<span class="keyword">true</span>);</span><br><span class="line">  startCommit(instantTime, metaClient.getCommitActionType(), metaClient);</span><br><span class="line">  <span class="keyword">return</span> instantTime;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">startCommit</span><span class="params">(String instantTime, String actionType, HoodieTableMetaClient metaClient)</span> </span>&#123;</span><br><span class="line">  LOG.info(<span class="string">"Generate a new instant time: "</span> + instantTime + <span class="string">" action: "</span> + actionType);</span><br><span class="line">  <span class="comment">// if there are pending compactions, their instantTime must not be greater than that of this instant time</span></span><br><span class="line">  metaClient.getActiveTimeline().filterPendingCompactionTimeline().lastInstant().ifPresent(latestPending -&gt;</span><br><span class="line">      ValidationUtils.checkArgument(</span><br><span class="line">          HoodieTimeline.compareTimestamps(latestPending.getTimestamp(), HoodieTimeline.LESSER_THAN, instantTime),</span><br><span class="line">      <span class="string">"Latest pending compaction instant time must be earlier than this instant time. Latest Compaction :"</span></span><br><span class="line">          + latestPending + <span class="string">",  Ingesting at "</span> + instantTime));</span><br><span class="line">  <span class="keyword">if</span> (config.getFailedWritesCleanPolicy().isLazy()) &#123;</span><br><span class="line">    <span class="keyword">this</span>.heartbeatClient.start(instantTime);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 创建.commit.request</span></span><br><span class="line">  metaClient.getActiveTimeline().createNewInstant(<span class="keyword">new</span> HoodieInstant(HoodieInstant.State.REQUESTED, actionType,</span><br><span class="line">      instantTime));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -274,12 +274,12 @@
 <h2 id="client-insert-writeRecords-newCommitTime"><a href="#client-insert-writeRecords-newCommitTime" class="headerlink" title="client.insert(writeRecords, newCommitTime)"></a>client.insert(writeRecords, newCommitTime)</h2><p>首先获取table,这里返回HoodieJavaCopyOnWriteTable，接着验证一下schema和历史数据的兼容性。然后通过preWrite执行写之前的一些步骤，比如设置操作类型，接着调用table.insert执行完整的写数据操作，返回result。最后调用postWrite执行archive、clean等操作返回WriteStatuses。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> List&lt;WriteStatus&gt; <span class="title">insert</span><span class="params">(List&lt;HoodieRecord&lt;T&gt;&gt; records, String instantTime)</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 首先获取table，这里的table为HoodieJavaCopyOnWriteTable</span></span><br><span class="line">  HoodieTable&lt;T, List&lt;HoodieRecord&lt;T&gt;&gt;, List&lt;HoodieKey&gt;, List&lt;WriteStatus&gt;&gt; table =</span><br><span class="line">      getTableAndInitCtx(WriteOperationType.INSERT, instantTime);</span><br><span class="line">  <span class="comment">// 验证schema</span></span><br><span class="line">  table.validateUpsertSchema();</span><br><span class="line">  <span class="comment">// 写之前的一些步骤，比如设置操作类型</span></span><br><span class="line">  preWrite(instantTime, WriteOperationType.INSERT, table.getMetaClient());</span><br><span class="line">  <span class="comment">// 调用table.insert执行写数据操作，返回result</span></span><br><span class="line">  HoodieWriteMetadata&lt;List&lt;WriteStatus&gt;&gt; result = table.insert(context, instantTime, records);</span><br><span class="line">  <span class="keyword">if</span> (result.getIndexLookupDuration().isPresent()) &#123;</span><br><span class="line">    metrics.updateIndexMetrics(LOOKUP_STR, result.getIndexLookupDuration().get().toMillis());</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 调用postWrite返回WriteStatuses</span></span><br><span class="line">  <span class="keyword">return</span> postWrite(result, instantTime, table);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <h2 id="postWrite"><a href="#postWrite" class="headerlink" title="postWrite"></a>postWrite</h2><p>我们先看一下postWrite的逻辑，首先判断是否已经commit生成了.commit文件，如果是的话，则执行archive、clean，也就是archive、clean等操作是在写操作完成、生成.commit文件之后进行的。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 判断是否已经commit生成了.commit文件，如果是的话，则执行archive、clean</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> List&lt;WriteStatus&gt; <span class="title">postWrite</span><span class="params">(HoodieWriteMetadata&lt;List&lt;WriteStatus&gt;&gt; result,</span></span></span><br><span class="line"><span class="function"><span class="params">                                      String instantTime,</span></span></span><br><span class="line"><span class="function"><span class="params">                                      HoodieTable&lt;T, List&lt;HoodieRecord&lt;T&gt;&gt;, List&lt;HoodieKey&gt;, List&lt;WriteStatus&gt;&gt; hoodieTable)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (result.getIndexLookupDuration().isPresent()) &#123;</span><br><span class="line">    metrics.updateIndexMetrics(getOperationType().name(), result.getIndexUpdateDuration().get().toMillis());</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// commit是否已经提交，这里主要考虑是否设置了自动提交，hoodie.auto.commit默认true</span></span><br><span class="line">  <span class="comment">// 如果不是自动提交的话，那么我们需要手动执行clean等操作，然后手动commit</span></span><br><span class="line">  <span class="comment">// 所以这里默认为true</span></span><br><span class="line">  <span class="comment">// isCommitted代表着已经生成了.commit文件，也就是写操作成功了，也就是通过table.insert已经完成了整个的写操作</span></span><br><span class="line">  <span class="keyword">if</span> (result.isCommitted()) &#123;</span><br><span class="line">    <span class="comment">// Perform post commit operations.</span></span><br><span class="line">    <span class="keyword">if</span> (result.getFinalizeDuration().isPresent()) &#123;</span><br><span class="line">      metrics.updateFinalizeWriteMetrics(result.getFinalizeDuration().get().toMillis(),</span><br><span class="line">          result.getWriteStats().get().size());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// postCommit主要是执行archive、clean等操作。也就是archive、clean等操作是在写操作完成，生成.commit文件之后进行的。</span></span><br><span class="line">    postCommit(hoodieTable, result.getCommitMetadata().get(), instantTime, Option.empty());</span><br><span class="line"></span><br><span class="line">    emitCommitMetrics(instantTime, result.getCommitMetadata().get(), hoodieTable.getMetaClient().getCommitActionType());</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> result.getWriteStatuses();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <h2 id="table-insert"><a href="#table-insert" class="headerlink" title="table.insert"></a>table.insert</h2><p>先调用JavaInsertCommitActionExecutor.execute接着调用JavaWriteHelper.newInstance().write<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> HoodieWriteMetadata&lt;List&lt;WriteStatus&gt;&gt; insert(HoodieEngineContext context,</span><br><span class="line">                                                     String instantTime,</span><br><span class="line">                                                     List&lt;HoodieRecord&lt;T&gt;&gt; records) &#123;</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">new</span> JavaInsertCommitActionExecutor&lt;&gt;(context, config,</span><br><span class="line">      <span class="keyword">this</span>, instantTime, records).execute();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> HoodieWriteMetadata&lt;List&lt;WriteStatus&gt;&gt; execute() &#123;</span><br><span class="line">  <span class="keyword">return</span> JavaWriteHelper.newInstance().write(instantTime, inputRecords, context, table,</span><br><span class="line">      config.shouldCombineBeforeInsert(), config.getInsertShuffleParallelism(), <span class="keyword">this</span>, <span class="keyword">false</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<h2 id="JavaWriteHelper-write"><a href="#JavaWriteHelper-write" class="headerlink" title="JavaWriteHelper.write"></a>JavaWriteHelper.write</h2><p>它的write方法是在其父类<code>AbstractWriteHelper</code>中实现的,首先首先判断是否需要去重（通过配置项hoodie.combine.before.insert配置是否需要去重），insert默认不需要去重（upsert/delete默认需要）。如果需要去重的话调用方法<code>combineOnCondition</code>先进行去重。<br>然后判断是否需要tag, tag的作用主要是利用文件中报错的索引信息（默认布隆索引），判断records中的数据哪些是新增数据，哪些是更新数据,对于更新的数据，还要添加上对应的文件位置信息，方便后面更新时查找对应的parquet文件。由于这里为insert所以不需要tag,这也是insert和upsert一个比较大的区别。<br>我们后面分析upsert源码时，会专门分析tag怎么实现的，本文先略过。然后通过调用executor.execute执行写操作，返回result，这里的executor为JavaInsertCommitActionExecutor。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> HoodieWriteMetadata&lt;O&gt; <span class="title">write</span><span class="params">(String instantTime,</span></span></span><br><span class="line"><span class="function"><span class="params">                                    I inputRecords,</span></span></span><br><span class="line"><span class="function"><span class="params">                                    HoodieEngineContext context,</span></span></span><br><span class="line"><span class="function"><span class="params">                                    HoodieTable&lt;T, I, K, O&gt; table,</span></span></span><br><span class="line"><span class="function"><span class="params">                                    <span class="keyword">boolean</span> shouldCombine,</span></span></span><br><span class="line"><span class="function"><span class="params">                                    <span class="keyword">int</span> shuffleParallelism,</span></span></span><br><span class="line"><span class="function"><span class="params">                                    BaseCommitActionExecutor&lt;T, I, K, O, R&gt; executor,</span></span></span><br><span class="line"><span class="function"><span class="params">                                    <span class="keyword">boolean</span> performTagging)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="comment">// De-dupe/merge if needed</span></span><br><span class="line">    <span class="comment">// 如果开启了去重，则先去重，insert默认不去重</span></span><br><span class="line">    <span class="comment">// 配置项hoodie.combine.before.insert</span></span><br><span class="line">    I dedupedRecords =</span><br><span class="line">        combineOnCondition(shouldCombine, inputRecords, shuffleParallelism, table);</span><br><span class="line"></span><br><span class="line">    Instant lookupBegin = Instant.now();</span><br><span class="line">    I taggedRecords = dedupedRecords;</span><br><span class="line">    <span class="keyword">if</span> (performTagging) &#123; <span class="comment">// 是否需要tag,insert为false</span></span><br><span class="line">      <span class="comment">// perform index loop up to get existing location of records</span></span><br><span class="line">      <span class="comment">// tag的作用主要是利用文件中保存的索引信息（默认布隆索引），判断records中的数据哪些是新增数据，哪些是更新数据</span></span><br><span class="line">      <span class="comment">// 对于更新的数据，还要添加上对应的文件位置信息，方便后面更新时查找对应的parquet文件</span></span><br><span class="line">      taggedRecords = tag(dedupedRecords, context, table);</span><br><span class="line">    &#125;</span><br><span class="line">    Duration indexLookupDuration = Duration.between(lookupBegin, Instant.now());</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 通过调用executor.execute执行写操作，返回result。这里的executor为JavaInsertCommitActionExecutor</span></span><br><span class="line">    HoodieWriteMetadata&lt;O&gt; result = executor.execute(taggedRecords);</span><br><span class="line">    result.setIndexLookupDuration(indexLookupDuration);</span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">  &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">    <span class="keyword">if</span> (e <span class="keyword">instanceof</span> HoodieUpsertException) &#123;</span><br><span class="line">      <span class="keyword">throw</span> (HoodieUpsertException) e;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> HoodieUpsertException(<span class="string">"Failed to upsert for commit time "</span> + instantTime, e);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">shouldCombineBeforeInsert</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> getBoolean(COMBINE_BEFORE_INSERT);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> ConfigProperty&lt;String&gt; COMBINE_BEFORE_INSERT = ConfigProperty</span><br><span class="line">    .key(<span class="string">"hoodie.combine.before.insert"</span>)</span><br><span class="line">    .defaultValue(<span class="string">"false"</span>)</span><br><span class="line">    .withDocumentation(<span class="string">"When inserted records share same key, controls whether they should be first combined (i.e de-duplicated) before"</span></span><br><span class="line">        + <span class="string">" writing to storage."</span>);</span><br></pre></td></tr></table></figure></p>
+<h2 id="JavaWriteHelper-write"><a href="#JavaWriteHelper-write" class="headerlink" title="JavaWriteHelper.write"></a>JavaWriteHelper.write</h2><p>它的write方法是在其父类<code>AbstractWriteHelper</code>中实现的,首先首先判断是否需要去重（通过配置项hoodie.combine.before.insert配置是否需要去重），insert默认不需要去重（upsert/delete默认需要）。如果需要去重的话调用方法<code>combineOnCondition</code>先进行去重。<br>然后判断是否需要tag, tag的作用主要是利用文件中保存的索引信息（默认布隆索引），判断records中的数据哪些是新增数据，哪些是更新数据,对于更新的数据，还要添加上对应的文件位置信息，方便后面更新时查找对应的parquet文件。由于这里为insert所以不需要tag,这也是insert和upsert一个比较大的区别。<br>我们后面分析upsert源码时，会专门分析tag怎么实现的，本文先略过。然后通过调用executor.execute执行写操作，返回result，这里的executor为JavaInsertCommitActionExecutor。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> HoodieWriteMetadata&lt;O&gt; <span class="title">write</span><span class="params">(String instantTime,</span></span></span><br><span class="line"><span class="function"><span class="params">                                    I inputRecords,</span></span></span><br><span class="line"><span class="function"><span class="params">                                    HoodieEngineContext context,</span></span></span><br><span class="line"><span class="function"><span class="params">                                    HoodieTable&lt;T, I, K, O&gt; table,</span></span></span><br><span class="line"><span class="function"><span class="params">                                    <span class="keyword">boolean</span> shouldCombine,</span></span></span><br><span class="line"><span class="function"><span class="params">                                    <span class="keyword">int</span> shuffleParallelism,</span></span></span><br><span class="line"><span class="function"><span class="params">                                    BaseCommitActionExecutor&lt;T, I, K, O, R&gt; executor,</span></span></span><br><span class="line"><span class="function"><span class="params">                                    <span class="keyword">boolean</span> performTagging)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="comment">// De-dupe/merge if needed</span></span><br><span class="line">    <span class="comment">// 如果开启了去重，则先去重，insert默认不去重</span></span><br><span class="line">    <span class="comment">// 配置项hoodie.combine.before.insert</span></span><br><span class="line">    I dedupedRecords =</span><br><span class="line">        combineOnCondition(shouldCombine, inputRecords, shuffleParallelism, table);</span><br><span class="line"></span><br><span class="line">    Instant lookupBegin = Instant.now();</span><br><span class="line">    I taggedRecords = dedupedRecords;</span><br><span class="line">    <span class="keyword">if</span> (performTagging) &#123; <span class="comment">// 是否需要tag,insert为false</span></span><br><span class="line">      <span class="comment">// perform index loop up to get existing location of records</span></span><br><span class="line">      <span class="comment">// tag的作用主要是利用文件中保存的索引信息（默认布隆索引），判断records中的数据哪些是新增数据，哪些是更新数据</span></span><br><span class="line">      <span class="comment">// 对于更新的数据，还要添加上对应的文件位置信息，方便后面更新时查找对应的parquet文件</span></span><br><span class="line">      taggedRecords = tag(dedupedRecords, context, table);</span><br><span class="line">    &#125;</span><br><span class="line">    Duration indexLookupDuration = Duration.between(lookupBegin, Instant.now());</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 通过调用executor.execute执行写操作，返回result。这里的executor为JavaInsertCommitActionExecutor</span></span><br><span class="line">    HoodieWriteMetadata&lt;O&gt; result = executor.execute(taggedRecords);</span><br><span class="line">    result.setIndexLookupDuration(indexLookupDuration);</span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">  &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">    <span class="keyword">if</span> (e <span class="keyword">instanceof</span> HoodieUpsertException) &#123;</span><br><span class="line">      <span class="keyword">throw</span> (HoodieUpsertException) e;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> HoodieUpsertException(<span class="string">"Failed to upsert for commit time "</span> + instantTime, e);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">shouldCombineBeforeInsert</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> getBoolean(COMBINE_BEFORE_INSERT);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> ConfigProperty&lt;String&gt; COMBINE_BEFORE_INSERT = ConfigProperty</span><br><span class="line">    .key(<span class="string">"hoodie.combine.before.insert"</span>)</span><br><span class="line">    .defaultValue(<span class="string">"false"</span>)</span><br><span class="line">    .withDocumentation(<span class="string">"When inserted records share same key, controls whether they should be first combined (i.e de-duplicated) before"</span></span><br><span class="line">        + <span class="string">" writing to storage."</span>);</span><br></pre></td></tr></table></figure></p>
 <h2 id="JavaInsertCommitActionExecutor-execute"><a href="#JavaInsertCommitActionExecutor-execute" class="headerlink" title="JavaInsertCommitActionExecutor.execute"></a>JavaInsertCommitActionExecutor.execute</h2><p>JavaInsertCommitActionExecutor.execute实际上调用的父类<code>BaseJavaCommitActionExecutor</code>的<code>execute</code><br>首先通过buildProfile构建WorkloadProfile，构建WorkloadProfile的目的主要是为给getPartitioner使用。WorkloadProfile包含了分区路径对应的insert/upsert数量以及upsert数据对应的文件位置信息。数量信息是为了分桶，或者说是为了分几个文件，这里涉及了小文件合并、文件大小等原理，位置信息是为了获取要更新的文件，也就是对应的fileId。对于upsert数据，我们复用原来的fileId。对于insert数据，我们生成新的fileId,如果record数比较多，则分多个文件写。然后将WorkloadProfile元数据信息持久化到.inflight文件中，.commit.request-&gt;.commit.inflight。这一步主要是为了mor表的rollback,rollback时可以从.inflight文件中读取对应的元数据信息。然后通过getPartitioner根据WorkloadProfile获取partitioner，接着调用partition方法返回partitionedRecords（&lt;桶号,对应的HoodieRecord&gt;），一个桶对应一个文件 fileId。最后再遍历partitionedRecords，也就是每个桶执行一次写操作handleInsertPartition/handleUpsertPartition，最后调用BoundedInMemoryExecutor.execute，利用生产者消费者模式写数据，关于如何通过生产者消费者模式写数据，我已经在<a href="https://mp.weixin.qq.com/s/9SOH3kOid0GSN31hF6M4dg" target="_blank" rel="noopener">Hudi源码|bootstrap源码分析总结（写Hudi）</a>分析过bootstrap的源码了，原理一样，不同的是实现类不一样，感兴趣的可以看看。</p>
 <p>关于tag(索引相关)、WorkloadProfile、getPartitioner、handleInsertPartition/handleUpsertPartition本文讲个大概，可能有不准确的地方，大家可以先结合<a href="https://mp.weixin.qq.com/s/TttUXfN5VtPOyY3E0SJh1w" target="_blank" rel="noopener">17张图带你彻底理解Hudi Upsert原理</a>进行学习，至于具体的源码分析，限于篇幅及个人精力，本文先不涉及，会放在后面的文章单独讲解，对于本文可能不准确的地方，也会在后面的文章中更新。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> HoodieWriteMetadata&lt;List&lt;WriteStatus&gt;&gt; execute(List&lt;HoodieRecord&lt;T&gt;&gt; inputRecords) &#123;</span><br><span class="line">  HoodieWriteMetadata&lt;List&lt;WriteStatus&gt;&gt; result = <span class="keyword">new</span> HoodieWriteMetadata&lt;&gt;();</span><br><span class="line"></span><br><span class="line">  WorkloadProfile profile = <span class="keyword">null</span>;</span><br><span class="line">  <span class="keyword">if</span> (isWorkloadProfileNeeded()) &#123; <span class="comment">// 始终为true</span></span><br><span class="line">    <span class="comment">// 构建WorkloadProfile，构建WorkloadProfile的目的主要是为给getPartitioner使用</span></span><br><span class="line">    <span class="comment">// WorkloadProfile包含了分区路径对应的insert/upsert数量以及upsert数据对应的文件位置信息</span></span><br><span class="line">    <span class="comment">// 数量信息是为了分桶，或者说是为了分几个文件，这里涉及了小文件合并、文件大小等原理</span></span><br><span class="line">    <span class="comment">// 位置信息是为了获取要更新的文件</span></span><br><span class="line">    <span class="comment">// 对于upsert数据，我们复用原来的fileId</span></span><br><span class="line">    <span class="comment">// 对于insert数据，我们生成新的fileId,如果record数比较多，则分多个文件写</span></span><br><span class="line">    profile = <span class="keyword">new</span> WorkloadProfile(buildProfile(inputRecords));</span><br><span class="line">    LOG.info(<span class="string">"Workload profile :"</span> + profile);</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="comment">// 将WorkloadProfile元数据信息持久化到.inflight文件中，.commit.request-&gt;.commit.inflight.</span></span><br><span class="line">      <span class="comment">// 这一步主要是为了mor表的rollback,rollback时可以从.inflight文件中读取对应的元数据信息</span></span><br><span class="line">      saveWorkloadProfileMetadataToInflight(profile, instantTime);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">      HoodieTableMetaClient metaClient = table.getMetaClient();</span><br><span class="line">      HoodieInstant inflightInstant = <span class="keyword">new</span> HoodieInstant(HoodieInstant.State.INFLIGHT, metaClient.getCommitActionType(), instantTime);</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (!metaClient.getFs().exists(<span class="keyword">new</span> Path(metaClient.getMetaPath(), inflightInstant.getFileName()))) &#123;</span><br><span class="line">          <span class="keyword">throw</span> <span class="keyword">new</span> HoodieCommitException(<span class="string">"Failed to commit "</span> + instantTime + <span class="string">" unable to save inflight metadata "</span>, e);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125; <span class="keyword">catch</span> (IOException ex) &#123;</span><br><span class="line">        LOG.error(<span class="string">"Check file exists failed"</span>);</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> HoodieCommitException(<span class="string">"Failed to commit "</span> + instantTime + <span class="string">" unable to save inflight metadata "</span>, ex);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 根据WorkloadProfile获取partitioner</span></span><br><span class="line">  <span class="keyword">final</span> Partitioner partitioner = getPartitioner(profile);</span><br><span class="line">  <span class="comment">// &lt;桶号,对应的HoodieRecord&gt;，一个桶对应一个文件 fileId</span></span><br><span class="line">  Map&lt;Integer, List&lt;HoodieRecord&lt;T&gt;&gt;&gt; partitionedRecords = partition(inputRecords, partitioner);</span><br><span class="line"></span><br><span class="line">  List&lt;WriteStatus&gt; writeStatuses = <span class="keyword">new</span> LinkedList&lt;&gt;();</span><br><span class="line">  <span class="comment">// forEach，每个桶执行一次写操作handleInsertPartition/handleUpsertPartition</span></span><br><span class="line">  <span class="comment">// 最终通过BoundedInMemoryExecutor.execute 生产者消费者模式写数据</span></span><br><span class="line">  partitionedRecords.forEach((partition, records) -&gt; &#123;</span><br><span class="line">    <span class="comment">// 是否更新、删除</span></span><br><span class="line">    <span class="keyword">if</span> (WriteOperationType.isChangingRecords(operationType)) &#123;</span><br><span class="line">      handleUpsertPartition(instantTime, partition, records.iterator(), partitioner).forEachRemaining(writeStatuses::addAll);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      handleInsertPartition(instantTime, partition, records.iterator(), partitioner).forEachRemaining(writeStatuses::addAll);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;);</span><br><span class="line">  updateIndex(writeStatuses, result);</span><br><span class="line">  <span class="comment">// commit生成.commit文件，.commit文件的生成标记着写数据的完成</span></span><br><span class="line">  updateIndexAndCommitIfNeeded(writeStatuses, result);</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <h2 id="commit"><a href="#commit" class="headerlink" title="commit"></a>commit</h2><p>上面通过handleInsertPartition/handleUpsertPartition实际上已经完成了数据的写入。但是最后还要生成.commit元数据文件，代表一次commit的完成，否则如果没有生成commit的话,比如只有.commit.request或者commit.inflight，这样在查询时候不会查到本地写数据生成的文件，而且下次写数据时会触发rollback来处理。</p>
 <p>这里索引相关的先不看，commit调用链<code>updateIndexAndCommitIfNeeded</code>-&gt;<code>commitOnAutoCommit</code>-&gt;<code>autoCommit</code>-&gt;<code>commit</code>-&gt;<code>commit</code>,最终在BaseJavaCommitActionExecutor的commit方法中通过activeTimeline.saveAsComplete生成.commit文件。<br>前面讲过了，在生成.commit文件后，会调用postWrite方法触发archive、clean等操作。实际上archive、clean等操作的失败，不影响本次写数据的成功。比如clean失败了，可以下次再clean就可以了。所以当commit完成后，如果clean失败了，这样对于有失败机制的集成工具，比如我们使用的Apache NIFI,是不能将本批次数据放进失败队列的。PS：当本次commit不成功时，我们需要放进失败队列，目的是防止数据丢失。其实我们可以自己写代码继承JavaClient类，将postWrite方法和table.insert分开。这样便于判断是写数据失败还是clean失败，以后我会分享相关代码实现。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">updateIndexAndCommitIfNeeded</span><span class="params">(List&lt;WriteStatus&gt; writeStatuses, HoodieWriteMetadata result)</span> </span>&#123;</span><br><span class="line">  Instant indexStartTime = Instant.now();</span><br><span class="line">  <span class="comment">// Update the index back</span></span><br><span class="line">  List&lt;WriteStatus&gt; statuses = table.getIndex().updateLocation(writeStatuses, context, table);</span><br><span class="line">  result.setIndexUpdateDuration(Duration.between(indexStartTime, Instant.now()));</span><br><span class="line">  result.setWriteStatuses(statuses);</span><br><span class="line">  result.setPartitionToReplaceFileIds(getPartitionToReplacedFileIds(result));</span><br><span class="line">  commitOnAutoCommit(result);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">commitOnAutoCommit</span><span class="params">(HoodieWriteMetadata result)</span> </span>&#123;</span><br><span class="line">  <span class="comment">// validate commit action before committing result</span></span><br><span class="line">  runPrecommitValidators(result);</span><br><span class="line">  <span class="comment">// validate commit action before committing result</span></span><br><span class="line">  <span class="keyword">if</span> (config.shouldAutoCommit()) &#123;</span><br><span class="line">    LOG.info(<span class="string">"Auto commit enabled: Committing "</span> + instantTime);</span><br><span class="line">    autoCommit(extraMetadata, result);</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    LOG.info(<span class="string">"Auto commit disabled for "</span> + instantTime);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">autoCommit</span><span class="params">(Option&lt;Map&lt;String, String&gt;&gt; extraMetadata, HoodieWriteMetadata&lt;O&gt; result)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">this</span>.txnManager.beginTransaction(Option.of(<span class="keyword">new</span> HoodieInstant(State.INFLIGHT, HoodieTimeline.COMMIT_ACTION, instantTime)),</span><br><span class="line">      lastCompletedTxn.isPresent() ? Option.of(lastCompletedTxn.get().getLeft()) : Option.empty());</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    TransactionUtils.resolveWriteConflictIfAny(table, <span class="keyword">this</span>.txnManager.getCurrentTransactionOwner(),</span><br><span class="line">        result.getCommitMetadata(), config, <span class="keyword">this</span>.txnManager.getLastCompletedTransactionOwner());</span><br><span class="line">    commit(extraMetadata, result);</span><br><span class="line">  &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    <span class="keyword">this</span>.txnManager.endTransaction();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// BaseJavaCommitActionExecutor</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">commit</span><span class="params">(Option&lt;Map&lt;String, String&gt;&gt; extraMetadata, HoodieWriteMetadata&lt;List&lt;WriteStatus&gt;&gt; result)</span> </span>&#123;</span><br><span class="line">  commit(extraMetadata, result, result.getWriteStatuses().stream().map(WriteStatus::getStat).collect(Collectors.toList()));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">commit</span><span class="params">(Option&lt;Map&lt;String, String&gt;&gt; extraMetadata, HoodieWriteMetadata&lt;List&lt;WriteStatus&gt;&gt; result, List&lt;HoodieWriteStat&gt; writeStats)</span> </span>&#123;</span><br><span class="line">  String actionType = getCommitActionType();</span><br><span class="line">  LOG.info(<span class="string">"Committing "</span> + instantTime + <span class="string">", action Type "</span> + actionType);</span><br><span class="line">  result.setCommitted(<span class="keyword">true</span>);</span><br><span class="line">  result.setWriteStats(writeStats);</span><br><span class="line">  <span class="comment">// Finalize write</span></span><br><span class="line">  finalizeWrite(instantTime, writeStats, result);</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    LOG.info(<span class="string">"Committing "</span> + instantTime + <span class="string">", action Type "</span> + getCommitActionType());</span><br><span class="line">    HoodieActiveTimeline activeTimeline = table.getActiveTimeline();</span><br><span class="line">    HoodieCommitMetadata metadata = CommitUtils.buildMetadata(writeStats, result.getPartitionToReplaceFileIds(),</span><br><span class="line">        extraMetadata, operationType, getSchemaToStoreInCommit(), getCommitActionType());</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 通过activeTimeline.saveAsComplete生成.commit文件</span></span><br><span class="line">    activeTimeline.saveAsComplete(<span class="keyword">new</span> HoodieInstant(<span class="keyword">true</span>, getCommitActionType(), instantTime),</span><br><span class="line">        Option.of(metadata.toJsonString().getBytes(StandardCharsets.UTF_8)));</span><br><span class="line">    LOG.info(<span class="string">"Committed "</span> + instantTime);</span><br><span class="line">    result.setCommitMetadata(Option.of(metadata));</span><br><span class="line">  &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> HoodieCommitException(<span class="string">"Failed to complete commit "</span> + config.getBasePath() + <span class="string">" at time "</span> + instantTime,</span><br><span class="line">        e);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<h2 id="handleInsertPartition"><a href="#handleInsertPartition" class="headerlink" title="handleInsertPartition"></a>handleInsertPartition</h2><p>附<code>handleInsertPartition</code>到生产者消费者模式调用链</p>
+<h2 id="handleInsertPartition"><a href="#handleInsertPartition" class="headerlink" title="handleInsertPartition"></a>handleInsertPartition</h2><p>附<code>handleInsertPartition</code>到生产者消费者模式调用链，<code>handleInsertPartition</code>-&gt;<code>handleUpsertPartition</code>-&gt;<code>handleInsert</code>-&gt;<code>JavaLazyInsertIterable.computeNext</code>-&gt;<code>BoundedInMemoryExecutor.execute</code></p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> Iterator&lt;List&lt;WriteStatus&gt;&gt; handleInsertPartition(String instantTime, Integer partition, Iterator recordItr,</span><br><span class="line">                                                            Partitioner partitioner) &#123;</span><br><span class="line">  <span class="keyword">return</span> handleUpsertPartition(instantTime, partition, recordItr, partitioner);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">protected</span> Iterator&lt;List&lt;WriteStatus&gt;&gt; handleUpsertPartition(String instantTime, Integer partition, Iterator recordItr,</span><br><span class="line">                                                            Partitioner partitioner) &#123;</span><br><span class="line">  JavaUpsertPartitioner javaUpsertPartitioner = (JavaUpsertPartitioner) partitioner;</span><br><span class="line">  BucketInfo binfo = javaUpsertPartitioner.getBucketInfo(partition);</span><br><span class="line">  BucketType btype = binfo.bucketType;</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (btype.equals(BucketType.INSERT)) &#123;</span><br><span class="line">      <span class="keyword">return</span> handleInsert(binfo.fileIdPrefix, recordItr);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (btype.equals(BucketType.UPDATE)) &#123;</span><br><span class="line">      <span class="keyword">return</span> handleUpdate(binfo.partitionPath, binfo.fileIdPrefix, recordItr);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> HoodieUpsertException(<span class="string">"Unknown bucketType "</span> + btype + <span class="string">" for partition :"</span> + partition);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">    String msg = <span class="string">"Error upserting bucketType "</span> + btype + <span class="string">" for partition :"</span> + partition;</span><br><span class="line">    LOG.error(msg, t);</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> HoodieUpsertException(msg, t);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> Iterator&lt;List&lt;WriteStatus&gt;&gt; handleInsert(String idPfx, Iterator&lt;HoodieRecord&lt;T&gt;&gt; recordItr) &#123;</span><br><span class="line">  <span class="comment">// This is needed since sometimes some buckets are never picked in getPartition() and end up with 0 records</span></span><br><span class="line">  <span class="keyword">if</span> (!recordItr.hasNext()) &#123;</span><br><span class="line">    LOG.info(<span class="string">"Empty partition"</span>);</span><br><span class="line">    <span class="keyword">return</span> Collections.singletonList((List&lt;WriteStatus&gt;) Collections.EMPTY_LIST).iterator();</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">new</span> JavaLazyInsertIterable&lt;&gt;(recordItr, <span class="keyword">true</span>, config, instantTime, table, idPfx,</span><br><span class="line">      taskContextSupplier, <span class="keyword">new</span> CreateHandleFactory&lt;&gt;());</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// JavaLazyInsertIterable</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> List&lt;WriteStatus&gt; <span class="title">computeNext</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="comment">// Executor service used for launching writer thread.</span></span><br><span class="line">  BoundedInMemoryExecutor&lt;HoodieRecord&lt;T&gt;, HoodieInsertValueGenResult&lt;HoodieRecord&gt;, List&lt;WriteStatus&gt;&gt; bufferedIteratorExecutor =</span><br><span class="line">      <span class="keyword">null</span>;</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="keyword">final</span> Schema schema = <span class="keyword">new</span> Schema.Parser().parse(hoodieConfig.getSchema());</span><br><span class="line">    bufferedIteratorExecutor =</span><br><span class="line">        <span class="keyword">new</span> BoundedInMemoryExecutor&lt;&gt;(hoodieConfig.getWriteBufferLimitBytes(), <span class="keyword">new</span> IteratorBasedQueueProducer&lt;&gt;(inputItr), Option.of(getInsertHandler()), getTransformFunction(schema));</span><br><span class="line">    <span class="comment">// bufferedIteratorExecutor.execute通过生产者消费者模型实现写数据    </span></span><br><span class="line">    <span class="keyword">final</span> List&lt;WriteStatus&gt; result = bufferedIteratorExecutor.execute();</span><br><span class="line">    <span class="keyword">assert</span> result != <span class="keyword">null</span> &amp;&amp; !result.isEmpty() &amp;&amp; !bufferedIteratorExecutor.isRemaining();</span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">  &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> HoodieException(e);</span><br><span class="line">  &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">null</span> != bufferedIteratorExecutor) &#123;</span><br><span class="line">      bufferedIteratorExecutor.shutdownNow();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>本文以Java Client为例，对Apache Hudi insert源码进行了整体逻辑的分析总结，希望能对大家有所帮助。由于精力有限，对于文中提到的WorkloadProfile、getPartitioner、handleInsertPartition/handleUpsertPartition等，我会在后面的文章再进行总结。并且等insert相关源码分析完后，会再进行upsert的源码分析。可能有些地方不够准确，还请大家多多指正，让我们共同进步。</p>
 <h2 id="注释代码"><a href="#注释代码" class="headerlink" title="注释代码"></a>注释代码</h2><p>github: <a href="https://github.com/dongkelun/hudi/tree/0.9.0-learning-comments" target="_blank" rel="noopener">https://github.com/dongkelun/hudi/tree/0.9.0-learning-comments</a><br>gitee: <a href="https://gitee.com/dongkelun/hudi/tree/0.9.0-learning-comments" target="_blank" rel="noopener">https://gitee.com/dongkelun/hudi/tree/0.9.0-learning-comments</a></p>
@@ -289,7 +289,7 @@
 <li><a href="https://mp.weixin.qq.com/s/YbVnkVyf7EbTAxNshX9gRA" target="_blank" rel="noopener">Hudi Clean Policy 清理策略实现分析</a></li>
 <li><a href="https://mp.weixin.qq.com/s/97CpClzK1skczpszc8VeEg" target="_blank" rel="noopener">Hudi Clean 清理文件实现分析</a></li>
 <li><a href="https://mp.weixin.qq.com/s/rdvCSHV5ObUSGMl9FciMfA" target="_blank" rel="noopener">Hudi查询类型/视图总结</a></li>
-<li><a href="https://mp.weixin.qq.com/s/vrBvB0SOCNPrMKHSUn4VOg" target="_blank" rel="noopener">HUDI preCombinedField 总结(二)-源码分析</a></li>
+<li><a href="https://mp.weixin.qq.com/s/vrBvB0SOCNPrMKHSUn4VOg" target="_blank" rel="noopener">Hudi preCombinedField 总结(二)-源码分析</a></li>
 <li><a href="https://mp.weixin.qq.com/s/8LiNiFe_kUS0oyN27PGTwg" target="_blank" rel="noopener">Hudi Spark SQL源码学习总结-Create Table</a></li>
 <li><a href="https://mp.weixin.qq.com/s/djuWfw0_abiifNnE7Usghg" target="_blank" rel="noopener">Hudi Spark SQL源码学习总结-CTAS</a></li>
 <li><a href="https://mp.weixin.qq.com/s/FlKoYL4ZqtYdzoxUOWx31w" target="_blank" rel="noopener">Hudi Spark源码学习总结-df.write.format(“hudi”).save</a></li>
@@ -618,6 +618,14 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">SQL</a>
               </li>
              
@@ -634,19 +642,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -654,11 +654,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -670,11 +670,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -686,27 +682,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -718,15 +694,47 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -738,19 +746,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -759,6 +759,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">开源</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -786,15 +790,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -802,11 +798,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -818,11 +818,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -834,31 +842,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -870,23 +858,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">持久化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">cache</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">persist</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -902,6 +890,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
               </li>
              
@@ -910,19 +902,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -930,7 +910,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -938,11 +922,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -954,15 +938,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">vmware</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -978,7 +970,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+                <a href="javascript:void(0)" class="js-tag color4">持久化</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">cache</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">persist</a>
               </li>
             
             <div class="clearfix"></div>
