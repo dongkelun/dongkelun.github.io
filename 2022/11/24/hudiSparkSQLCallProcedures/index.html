@@ -17,7 +17,7 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言学习总结Hudi Spark SQL Call Procedures，Call Procedures在官网被称作存储过程（Stored procedures），它是在Hudi 0.11.0版本由腾讯的ForwardXu大佬贡献的，它除了官网提到的几个Procedures外，还支持其他许多Procedures命令。本文先学习其中的几个我觉得比较常用的命令，主要是查询统计表路径下的各种文件信息。">
 <meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2022-11-24T03:36:20.463Z">
+<meta property="og:updated_time" content="2022-11-24T06:50:03.590Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Hudi Spark SQL Call Procedures学习总结（一）（查询统计表文件信息）">
 <meta name="twitter:description" content="前言学习总结Hudi Spark SQL Call Procedures，Call Procedures在官网被称作存储过程（Stored procedures），它是在Hudi 0.11.0版本由腾讯的ForwardXu大佬贡献的，它除了官网提到的几个Procedures外，还支持其他许多Procedures命令。本文先学习其中的几个我觉得比较常用的命令，主要是查询统计表路径下的各种文件信息。">
@@ -345,6 +345,18 @@
 </ul>
 <p>查询一级子目录<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> show_fs_path_detail(<span class="keyword">path</span> =&gt; <span class="string">'hdfs://cluster1/warehouse/tablespace/managed/hive/hudi.db/test_hudi_call_cow'</span>, is_sub =&gt; <span class="literal">true</span>);</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----------+-----------+---------------+---------------------+----------------------------------------------------+-----------------+----------+--------------+</span></span><br><span class="line">| path_num  | file_num  | storage_size  | storage_size(unit)  |                    storage_path                    | space_consumed  |  quota   | space_quota  |</span><br><span class="line">+<span class="comment">-----------+-----------+---------------+---------------------+----------------------------------------------------+-----------------+----------+--------------+</span></span><br><span class="line">| 1         | 7         | 2611728       | 2.49MB              | hdfs://cluster1/warehouse/tablespace/managed/hive/hudi.db/test_hudi_call_cow/dt=2021-05-05 | -1              | 7835184  | -1           |</span><br><span class="line">| 1         | 2         | 435272        | 425.07KB            | hdfs://cluster1/warehouse/tablespace/managed/hive/hudi.db/test_hudi_call_cow/dt=2022-11-23 | -1              | 1305816  | -1           |</span><br><span class="line">| 19        | 44        | 153109        | 149.52KB            | hdfs://cluster1/warehouse/tablespace/managed/hive/hudi.db/test_hudi_call_cow/.hoodie | -1              | 459327   | -1           |</span><br><span class="line">+<span class="comment">-----------+-----------+---------------+---------------------+----------------------------------------------------+-----------------+----------+--------------+</span></span><br></pre></td></tr></table></figure></p>
 <p>查询二级子目录<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> show_fs_path_detail(<span class="keyword">path</span> =&gt; <span class="string">'hdfs://cluster1/warehouse/tablespace/managed/hive/hudi.db/test_hudi_call_cow/dt=2021-05-05'</span>, is_sub =&gt; <span class="literal">true</span>);</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----------+-----------+---------------+---------------------+----------------------------------------------------+-----------------+----------+--------------+</span></span><br><span class="line">| path_num  | file_num  | storage_size  | storage_size(unit)  |                    storage_path                    | space_consumed  |  quota   | space_quota  |</span><br><span class="line">+<span class="comment">-----------+-----------+---------------+---------------------+----------------------------------------------------+-----------------+----------+--------------+</span></span><br><span class="line">| 0         | 1         | 435353        | 425.15KB            | hdfs://cluster1/warehouse/tablespace/managed/hive/hudi.db/test_hudi_call_cow/dt=2021-05-05/35b07424-6e63-4b65-9182-7c37cbe756b1-0_0-192-1549_20221123231230786.parquet | -1              | 1306059  | -1           |</span><br><span class="line">| 0         | 1         | 435308        | 425.11KB            | hdfs://cluster1/warehouse/tablespace/managed/hive/hudi.db/test_hudi_call_cow/dt=2021-05-05/35b07424-6e63-4b65-9182-7c37cbe756b1-0_0-147-118_20221123205701931.parquet | -1              | 1305924  | -1           |</span><br><span class="line">| 0         | 1         | 435298        | 425.10KB            | hdfs://cluster1/warehouse/tablespace/managed/hive/hudi.db/test_hudi_call_cow/dt=2021-05-05/35b07424-6e63-4b65-9182-7c37cbe756b1-0_0-238-2982_20221123232449644.parquet | -1              | 1305894  | -1           |</span><br><span class="line">| 0         | 1         | 435279        | 425.08KB            | hdfs://cluster1/warehouse/tablespace/managed/hive/hudi.db/test_hudi_call_cow/dt=2021-05-05/35b07424-6e63-4b65-9182-7c37cbe756b1-0_0-105-83_20221123205650038.parquet | -1              | 1305837  | -1           |</span><br><span class="line">| 0         | 1         | 435246        | 425.04KB            | hdfs://cluster1/warehouse/tablespace/managed/hive/hudi.db/test_hudi_call_cow/dt=2021-05-05/35b07424-6e63-4b65-9182-7c37cbe756b1-0_0-66-52_20221123205636715.parquet | -1              | 1305738  | -1           |</span><br><span class="line">| 0         | 1         | 435148        | 424.95KB            | hdfs://cluster1/warehouse/tablespace/managed/hive/hudi.db/test_hudi_call_cow/dt=2021-05-05/35b07424-6e63-4b65-9182-7c37cbe756b1-0_0-27-21_20221123205546254.parquet | -1              | 1305444  | -1           |</span><br><span class="line">| 0         | 1         | 96            | 96B                 | hdfs://cluster1/warehouse/tablespace/managed/hive/hudi.db/test_hudi_call_cow/dt=2021-05-05/.hoodie_partition_metadata | -1              | 288      | -1           |</span><br><span class="line">+<span class="comment">-----------+-----------+---------------+---------------------+----------------------------------------------------+-----------------+----------+--------------+</span></span><br></pre></td></tr></table></figure></p>
+<h2 id="相关阅读"><a href="#相关阅读" class="headerlink" title="相关阅读"></a>相关阅读</h2><ul>
+<li><a href="https://mp.weixin.qq.com/s/9cKherIGgeVxBeqY39nL2Q" target="_blank" rel="noopener">Apache Hudi 入门学习总结</a></li>
+<li><a href="https://mp.weixin.qq.com/s/hII86LSXPankmLarIZu9rg" target="_blank" rel="noopener">Hudi Spark SQL总结</a></li>
+<li><a href="https://mp.weixin.qq.com/s/8LiNiFe_kUS0oyN27PGTwgs" target="_blank" rel="noopener">Hudi Spark SQL源码学习总结-Create Table</a></li>
+<li><a href="https://mp.weixin.qq.com/s/djuWfw0_abiifNnE7Usghg" target="_blank" rel="noopener">Hudi Spark SQL源码学习总结-CTAS</a></li>
+<li><a href="https://mp.weixin.qq.com/s/FlKoYL4ZqtYdzoxUOWx31w" target="_blank" rel="noopener">Hudi Spark源码学习总结-df.write.format(“hudi”).save</a></li>
+<li><a href="https://mp.weixin.qq.com/s/FiJIyyondhZoofSWRTzADw" target="_blank" rel="noopener">Hudi Spark源码学习总结-spark.read.format(“hudi”).load</a></li>
+<li><a href="https://mp.weixin.qq.com/s/gijtcvfbGt7Hy7TbAQUwzQ" target="_blank" rel="noopener">Hudi Spark源码学习总结-spark.read.format(“hudi”).load（2）</a></li>
+<li><a href="https://mp.weixin.qq.com/s/slscIdvbCB_BUPdWlFVt1Q" target="_blank" rel="noopener">Hudi Spark SQL源码学习总结-select（查询）</a></li>
+<li><a href="https://mp.weixin.qq.com/s/AY671EpIiFnyJZyzlFlFDg" target="_blank" rel="noopener">Hudi源码 | Insert源码分析总结（二）(WorkloadProfile)</a></li>
+<li><a href="https://mp.weixin.qq.com/s/U0C3GzbcU25KrWv4S7zu_g" target="_blank" rel="noopener">开源经验分享 | 如何从一名小白成为Apache Hudi Contributor</a></li>
+</ul>
 
       
 
@@ -495,7 +507,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参数形式"><span class="toc-number">2.</span> <span class="toc-text">参数形式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#支持的Procedures命令"><span class="toc-number">3.</span> <span class="toc-text">支持的Procedures命令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#建表造数"><span class="toc-number">4.</span> <span class="toc-text">建表造数</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-table-properties"><span class="toc-number">5.</span> <span class="toc-text">show_table_properties</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数"><span class="toc-number">5.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例"><span class="toc-number">5.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-commits"><span class="toc-number">6.</span> <span class="toc-text">show_commits</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-1"><span class="toc-number">6.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-1"><span class="toc-number">6.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-commits-metadata"><span class="toc-number">7.</span> <span class="toc-text">show_commits_metadata</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-2"><span class="toc-number">7.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-2"><span class="toc-number">7.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-commit-files"><span class="toc-number">8.</span> <span class="toc-text">show_commit_files</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-3"><span class="toc-number">8.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-3"><span class="toc-number">8.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-commit-partitions"><span class="toc-number">9.</span> <span class="toc-text">show_commit_partitions</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-4"><span class="toc-number">9.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-4"><span class="toc-number">9.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-commit-write-stats"><span class="toc-number">10.</span> <span class="toc-text">show_commit_write_stats</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数："><span class="toc-number">10.1.</span> <span class="toc-text">参数：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-5"><span class="toc-number">10.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-commit-extra-metadata"><span class="toc-number">11.</span> <span class="toc-text">show_commit_extra_metadata</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-5"><span class="toc-number">11.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-6"><span class="toc-number">11.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-fs-path-detail"><span class="toc-number">12.</span> <span class="toc-text">show_fs_path_detail</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-6"><span class="toc-number">12.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-7"><span class="toc-number">12.2.</span> <span class="toc-text">示例</span></a></li></ol></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参数形式"><span class="toc-number">2.</span> <span class="toc-text">参数形式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#支持的Procedures命令"><span class="toc-number">3.</span> <span class="toc-text">支持的Procedures命令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#建表造数"><span class="toc-number">4.</span> <span class="toc-text">建表造数</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-table-properties"><span class="toc-number">5.</span> <span class="toc-text">show_table_properties</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数"><span class="toc-number">5.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例"><span class="toc-number">5.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-commits"><span class="toc-number">6.</span> <span class="toc-text">show_commits</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-1"><span class="toc-number">6.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-1"><span class="toc-number">6.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-commits-metadata"><span class="toc-number">7.</span> <span class="toc-text">show_commits_metadata</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-2"><span class="toc-number">7.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-2"><span class="toc-number">7.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-commit-files"><span class="toc-number">8.</span> <span class="toc-text">show_commit_files</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-3"><span class="toc-number">8.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-3"><span class="toc-number">8.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-commit-partitions"><span class="toc-number">9.</span> <span class="toc-text">show_commit_partitions</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-4"><span class="toc-number">9.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-4"><span class="toc-number">9.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-commit-write-stats"><span class="toc-number">10.</span> <span class="toc-text">show_commit_write_stats</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数："><span class="toc-number">10.1.</span> <span class="toc-text">参数：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-5"><span class="toc-number">10.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-commit-extra-metadata"><span class="toc-number">11.</span> <span class="toc-text">show_commit_extra_metadata</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-5"><span class="toc-number">11.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-6"><span class="toc-number">11.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-fs-path-detail"><span class="toc-number">12.</span> <span class="toc-text">show_fs_path_detail</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-6"><span class="toc-number">12.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-7"><span class="toc-number">12.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#相关阅读"><span class="toc-number">13.</span> <span class="toc-text">相关阅读</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -512,7 +524,6 @@
 
   
 
-  
   
 
   
@@ -687,19 +698,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -711,15 +722,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -735,6 +746,14 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
               </li>
              
@@ -743,11 +762,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -759,10 +774,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
               </li>
              
@@ -771,11 +782,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -787,19 +802,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -815,15 +826,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -843,7 +854,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">MySQL</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -859,39 +882,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">MySQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -907,11 +898,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -943,11 +950,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -971,7 +978,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -979,11 +990,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -991,19 +998,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1011,7 +1010,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
