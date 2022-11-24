@@ -9,18 +9,18 @@
   <link rel="dns-prefetch" href="https://dongkelun.com">
   <title>Hudi Spark SQL Call Procedures学习总结（一）（查询统计表文件信息） | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="前言学习总结Hudi Spark SQL Call Procedures，Call Procedures在官网被称作存储过程（Stored procedures），它是在Hudi 0.11.0版本由腾讯的ForwardXu大佬贡献的，它除了官网提到的几个Procedures外，还支持其他许多Procedures命令。本文先学习其中的几个我觉得比较常用的命令，主要是查询统计表路径下的各种文件信息。">
+  <meta name="description" content="前言学习总结Hudi Spark SQL Call Procedures，Call Procedures在官网被称作存储过程（Stored Procedures），它是在Hudi 0.11.0版本由腾讯的ForwardXu大佬贡献的，它除了官网提到的几个Procedures外，还支持其他许多Procedures命令。本文先学习其中的几个我觉得比较常用的命令，主要是查询统计表路径下的各种文件信息。">
 <meta name="keywords" content="Spark,Hudi">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Hudi Spark SQL Call Procedures学习总结（一）（查询统计表文件信息）">
 <meta property="og:url" content="https://dongkelun.com/2022/11/24/hudiSparkSQLCallProcedures/index.html">
 <meta property="og:site_name" content="伦少的博客">
-<meta property="og:description" content="前言学习总结Hudi Spark SQL Call Procedures，Call Procedures在官网被称作存储过程（Stored procedures），它是在Hudi 0.11.0版本由腾讯的ForwardXu大佬贡献的，它除了官网提到的几个Procedures外，还支持其他许多Procedures命令。本文先学习其中的几个我觉得比较常用的命令，主要是查询统计表路径下的各种文件信息。">
+<meta property="og:description" content="前言学习总结Hudi Spark SQL Call Procedures，Call Procedures在官网被称作存储过程（Stored Procedures），它是在Hudi 0.11.0版本由腾讯的ForwardXu大佬贡献的，它除了官网提到的几个Procedures外，还支持其他许多Procedures命令。本文先学习其中的几个我觉得比较常用的命令，主要是查询统计表路径下的各种文件信息。">
 <meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2022-11-24T06:50:03.590Z">
+<meta property="og:updated_time" content="2022-11-24T07:14:22.394Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Hudi Spark SQL Call Procedures学习总结（一）（查询统计表文件信息）">
-<meta name="twitter:description" content="前言学习总结Hudi Spark SQL Call Procedures，Call Procedures在官网被称作存储过程（Stored procedures），它是在Hudi 0.11.0版本由腾讯的ForwardXu大佬贡献的，它除了官网提到的几个Procedures外，还支持其他许多Procedures命令。本文先学习其中的几个我觉得比较常用的命令，主要是查询统计表路径下的各种文件信息。">
+<meta name="twitter:description" content="前言学习总结Hudi Spark SQL Call Procedures，Call Procedures在官网被称作存储过程（Stored Procedures），它是在Hudi 0.11.0版本由腾讯的ForwardXu大佬贡献的，它除了官网提到的几个Procedures外，还支持其他许多Procedures命令。本文先学习其中的几个我觉得比较常用的命令，主要是查询统计表路径下的各种文件信息。">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -259,9 +259,10 @@
         
         
       
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>学习总结Hudi Spark SQL Call Procedures，Call Procedures在<a href="https://hudi.apache.org/cn/docs/procedures" target="_blank" rel="noopener">官网</a>被称作存储过程（Stored procedures），它是在Hudi 0.11.0版本由腾讯的<code>ForwardXu</code>大佬贡献的，它除了官网提到的几个Procedures外，还支持其他许多Procedures命令。本文先学习其中的几个我觉得比较常用的命令，主要是查询统计表路径下的各种文件信息。</p>
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>学习总结Hudi Spark SQL Call Procedures，Call Procedures在<a href="https://hudi.apache.org/cn/docs/procedures" target="_blank" rel="noopener">官网</a>被称作存储过程（Stored Procedures），它是在Hudi 0.11.0版本由腾讯的<code>ForwardXu</code>大佬贡献的，它除了官网提到的几个Procedures外，还支持其他许多Procedures命令。本文先学习其中的几个我觉得比较常用的命令，主要是查询统计表路径下的各种文件信息。</p>
+<h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>Hudi  master 0.13.0-SNAPSHOT<br>Spark 3.1.2 (实际上所有Hudi支持的Spark版本都支持Call Procedures)<br>Kyuubi 1.5.2 (使用Kyuubi是因为返回结果可以展示列名，Spark自带的spark-sql不返回列名)</p>
 <h2 id="参数形式"><a href="#参数形式" class="headerlink" title="参数形式"></a>参数形式</h2><p>按名称传递参数，没有顺序，可以省略可选参数<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CALL</span> system.procedure_name(arg_name_2 =&gt; arg_2, arg_name_1 =&gt; arg_1, ... arg_name_n =&gt; arg_n)</span><br></pre></td></tr></table></figure></p>
-<p>按位置参数传递参数，有顺序，可以省略可选参数<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CALL system.procedure_name(arg_1, arg_2, ... arg_n)</span><br></pre></td></tr></table></figure></p>
+<p>按位置参数传递参数，有顺序，可以省略可选参数<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CALL</span> system.procedure_name(arg_1, arg_2, ... arg_n)</span><br></pre></td></tr></table></figure></p>
 <a id="more"></a>
 <h2 id="支持的Procedures命令"><a href="#支持的Procedures命令" class="headerlink" title="支持的Procedures命令"></a>支持的Procedures命令</h2><p>我们可以在类<code>HoodieProcedures</code>获取对应版本支持的所有的Procedures命令。目前支持如下：</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line">show_fs_path_detail</span><br><span class="line">show_bootstrap_partitions</span><br><span class="line">repair_deduplicate</span><br><span class="line">create_metadata_table</span><br><span class="line">stats_file_sizes</span><br><span class="line">validate_metadata_table_files</span><br><span class="line">show_commit_partitions</span><br><span class="line">show_commit_extra_metadata</span><br><span class="line">show_table_properties</span><br><span class="line">run_clustering</span><br><span class="line">run_bootstrap</span><br><span class="line">show_commit_files</span><br><span class="line">run_clean</span><br><span class="line">show_rollback_detail</span><br><span class="line">rollback_to_savepoint</span><br><span class="line">show_fsview_all</span><br><span class="line">show_compaction</span><br><span class="line">copy_to_temp_view</span><br><span class="line">show_invalid_parquet</span><br><span class="line">delete_savepoint</span><br><span class="line">show_bootstrap_mapping</span><br><span class="line">show_archived_commits</span><br><span class="line">show_fsview_latest</span><br><span class="line">show_metadata_table_files</span><br><span class="line">export_instants</span><br><span class="line">show_commits_metadata</span><br><span class="line">rollback_to_instant</span><br><span class="line">delete_metadata_table</span><br><span class="line">delete_marker</span><br><span class="line">show_metadata_table_stats</span><br><span class="line">sync_validate</span><br><span class="line">copy_to_table</span><br><span class="line">show_savepoints</span><br><span class="line">init_metadata_table</span><br><span class="line">repair_overwrite_hoodie_props</span><br><span class="line">show_metadata_table_partitions</span><br><span class="line">show_logfile_records</span><br><span class="line">downgrade_table</span><br><span class="line">show_clustering</span><br><span class="line">repair_migrate_partition_meta</span><br><span class="line">show_rollbacks</span><br><span class="line">show_logfile_metadata</span><br><span class="line">upgrade_table</span><br><span class="line">repair_add_partition_meta</span><br><span class="line">hive_sync</span><br><span class="line">commits_compare</span><br><span class="line">hdfs_parquet_import</span><br><span class="line">show_commit_write_stats</span><br><span class="line">show_commits</span><br><span class="line">show_archived_commits_metadata</span><br><span class="line">run_compaction</span><br><span class="line">create_savepoint</span><br><span class="line">repair_corrupted_clean_files</span><br><span class="line">stats_wa</span><br></pre></td></tr></table></figure>
@@ -348,7 +349,8 @@
 <h2 id="相关阅读"><a href="#相关阅读" class="headerlink" title="相关阅读"></a>相关阅读</h2><ul>
 <li><a href="https://mp.weixin.qq.com/s/9cKherIGgeVxBeqY39nL2Q" target="_blank" rel="noopener">Apache Hudi 入门学习总结</a></li>
 <li><a href="https://mp.weixin.qq.com/s/hII86LSXPankmLarIZu9rg" target="_blank" rel="noopener">Hudi Spark SQL总结</a></li>
-<li><a href="https://mp.weixin.qq.com/s/8LiNiFe_kUS0oyN27PGTwgs" target="_blank" rel="noopener">Hudi Spark SQL源码学习总结-Create Table</a></li>
+<li><a href="https://mp.weixin.qq.com/s/7V5RpaOpB4_XETkMlbv9pQ" target="_blank" rel="noopener">Spark3.12+Kyuubi1.5.2+kyuubi-spark-authz源码编译打包+部署配置HA</a></li>
+<li><a href="https://mp.weixin.qq.com/s/8LiNiFe_kUS0oyN27PGTwg" target="_blank" rel="noopener">Hudi Spark SQL源码学习总结-Create Table</a></li>
 <li><a href="https://mp.weixin.qq.com/s/djuWfw0_abiifNnE7Usghg" target="_blank" rel="noopener">Hudi Spark SQL源码学习总结-CTAS</a></li>
 <li><a href="https://mp.weixin.qq.com/s/FlKoYL4ZqtYdzoxUOWx31w" target="_blank" rel="noopener">Hudi Spark源码学习总结-df.write.format(“hudi”).save</a></li>
 <li><a href="https://mp.weixin.qq.com/s/FiJIyyondhZoofSWRTzADw" target="_blank" rel="noopener">Hudi Spark源码学习总结-spark.read.format(“hudi”).load</a></li>
@@ -507,7 +509,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参数形式"><span class="toc-number">2.</span> <span class="toc-text">参数形式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#支持的Procedures命令"><span class="toc-number">3.</span> <span class="toc-text">支持的Procedures命令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#建表造数"><span class="toc-number">4.</span> <span class="toc-text">建表造数</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-table-properties"><span class="toc-number">5.</span> <span class="toc-text">show_table_properties</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数"><span class="toc-number">5.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例"><span class="toc-number">5.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-commits"><span class="toc-number">6.</span> <span class="toc-text">show_commits</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-1"><span class="toc-number">6.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-1"><span class="toc-number">6.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-commits-metadata"><span class="toc-number">7.</span> <span class="toc-text">show_commits_metadata</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-2"><span class="toc-number">7.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-2"><span class="toc-number">7.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-commit-files"><span class="toc-number">8.</span> <span class="toc-text">show_commit_files</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-3"><span class="toc-number">8.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-3"><span class="toc-number">8.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-commit-partitions"><span class="toc-number">9.</span> <span class="toc-text">show_commit_partitions</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-4"><span class="toc-number">9.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-4"><span class="toc-number">9.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-commit-write-stats"><span class="toc-number">10.</span> <span class="toc-text">show_commit_write_stats</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数："><span class="toc-number">10.1.</span> <span class="toc-text">参数：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-5"><span class="toc-number">10.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-commit-extra-metadata"><span class="toc-number">11.</span> <span class="toc-text">show_commit_extra_metadata</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-5"><span class="toc-number">11.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-6"><span class="toc-number">11.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-fs-path-detail"><span class="toc-number">12.</span> <span class="toc-text">show_fs_path_detail</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-6"><span class="toc-number">12.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-7"><span class="toc-number">12.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#相关阅读"><span class="toc-number">13.</span> <span class="toc-text">相关阅读</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#版本"><span class="toc-number">2.</span> <span class="toc-text">版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参数形式"><span class="toc-number">3.</span> <span class="toc-text">参数形式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#支持的Procedures命令"><span class="toc-number">4.</span> <span class="toc-text">支持的Procedures命令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#建表造数"><span class="toc-number">5.</span> <span class="toc-text">建表造数</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-table-properties"><span class="toc-number">6.</span> <span class="toc-text">show_table_properties</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数"><span class="toc-number">6.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例"><span class="toc-number">6.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-commits"><span class="toc-number">7.</span> <span class="toc-text">show_commits</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-1"><span class="toc-number">7.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-1"><span class="toc-number">7.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-commits-metadata"><span class="toc-number">8.</span> <span class="toc-text">show_commits_metadata</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-2"><span class="toc-number">8.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-2"><span class="toc-number">8.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-commit-files"><span class="toc-number">9.</span> <span class="toc-text">show_commit_files</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-3"><span class="toc-number">9.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-3"><span class="toc-number">9.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-commit-partitions"><span class="toc-number">10.</span> <span class="toc-text">show_commit_partitions</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-4"><span class="toc-number">10.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-4"><span class="toc-number">10.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-commit-write-stats"><span class="toc-number">11.</span> <span class="toc-text">show_commit_write_stats</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数："><span class="toc-number">11.1.</span> <span class="toc-text">参数：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-5"><span class="toc-number">11.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-commit-extra-metadata"><span class="toc-number">12.</span> <span class="toc-text">show_commit_extra_metadata</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-5"><span class="toc-number">12.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-6"><span class="toc-number">12.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#show-fs-path-detail"><span class="toc-number">13.</span> <span class="toc-text">show_fs_path_detail</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-6"><span class="toc-number">13.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#示例-7"><span class="toc-number">13.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#相关阅读"><span class="toc-number">14.</span> <span class="toc-text">相关阅读</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -690,14 +692,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -710,15 +704,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">SQL</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -730,14 +732,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
@@ -746,23 +740,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -774,11 +756,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
+                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -787,6 +777,18 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Flink</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -814,11 +816,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -831,10 +837,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">HUDI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -854,11 +856,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -870,19 +884,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -894,7 +912,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -902,23 +920,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -926,15 +928,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -950,10 +948,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
               </li>
              
@@ -963,6 +957,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -978,19 +976,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">yarn</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1006,19 +1000,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1027,6 +1013,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1043,6 +1037,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
             
             <div class="clearfix"></div>
