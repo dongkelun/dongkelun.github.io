@@ -17,15 +17,15 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言记录博主第一次使用Flink SQL查询Hive的配置以及问题解决过程  博主目前还没有用过Flink,没有写过Flink代码，完全是一个小白。之所以使用Flink，是因为博主目前需要测试使用dolphinscheduler的一些功能，其中包括Flink数据源，这里Flink数据源我们使用的是Kyuubi Flink Engine,且学会、了解了Flink之后对于学习Hudi、Kyuubi也是">
 <meta property="og:locale" content="cn">
-<meta property="og:image" content="https://tva3.sinaimg.cn/large/e44344dcly1h5k6bndtdej21s304uabk.jpg">
-<meta property="og:image" content="https://tva4.sinaimg.cn/large/e44344dcly1h5k6bs0g1jj21yy0olmzw.jpg">
-<meta property="og:image" content="https://tva3.sinaimg.cn/large/e44344dcly1h5huhfuk4lj21hn0u0myw.jpg">
-<meta property="og:image" content="https://tva1.sinaimg.cn/large/e44344dcly1h5k6bx8mc6j21ym0lwtcx.jpg">
-<meta property="og:updated_time" content="2023-01-09T08:26:49.455Z">
+<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/99e0bc423fe6a52cddc68580b542d2e7.jpeg">
+<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/2da203eae027afddad33cbc1dbfe51b9.jpeg">
+<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/b892414c829b5b0b63e4f2dfacc36cda.jpeg">
+<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/e65c2edaf015cbabf895079d20cc17c9.jpeg">
+<meta property="og:updated_time" content="2023-01-13T06:12:06.118Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Flink SQL 客户端查询Hive配置及问题解决">
 <meta name="twitter:description" content="前言记录博主第一次使用Flink SQL查询Hive的配置以及问题解决过程  博主目前还没有用过Flink,没有写过Flink代码，完全是一个小白。之所以使用Flink，是因为博主目前需要测试使用dolphinscheduler的一些功能，其中包括Flink数据源，这里Flink数据源我们使用的是Kyuubi Flink Engine,且学会、了解了Flink之后对于学习Hudi、Kyuubi也是">
-<meta name="twitter:image" content="https://tva3.sinaimg.cn/large/e44344dcly1h5k6bndtdej21s304uabk.jpg">
+<meta name="twitter:image" content="https://img-blog.csdnimg.cn/img_convert/99e0bc423fe6a52cddc68580b542d2e7.jpeg">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -270,7 +270,7 @@
 </blockquote>
 <h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>flink-1.14.3，这里使用kyuubi1.5.2自带的Flink</p>
 <h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><p>HDP环境，Hadoop、Hive等已经安装配置好</p>
-<h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><h3 id="HADOOP-CLASSPATH"><a href="#HADOOP-CLASSPATH" class="headerlink" title="HADOOP_CLASSPATH"></a>HADOOP_CLASSPATH</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">export HADOOP_CLASSPATH=`hadoop classpath`</span><br></pre></td></tr></table></figure>
+<h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><h3 id="HADOOP-CLASSPATH"><a href="#HADOOP-CLASSPATH" class="headerlink" title="HADOOP_CLASSPATH"></a>HADOOP_CLASSPATH</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> HADOOP_CLASSPATH=`hadoop classpath`</span><br></pre></td></tr></table></figure>
 <p>可以添加在比如/ect/profile里，这样等于修改全局的环境，如果想只对Flink生效，可以添加在bin/config.sh文件里</p>
 <blockquote>
 <p>一开始我对<code>hadoop classpath</code>理解错了，以为是自己手动修改成实际的路径，但是hadoop对应的jar包的路径有很多，后来发现它的意思是执行命令<code>hadoop classpath</code>将返回值赋给<code>HADOOP_CLASSPATH</code></p>
@@ -285,7 +285,7 @@
 <h3 id="yarn-session"><a href="#yarn-session" class="headerlink" title="yarn-session"></a>yarn-session</h3><h4 id="启动yarn-session"><a href="#启动yarn-session" class="headerlink" title="启动yarn-session"></a>启动yarn-session</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/yarn-session.sh  -nm flink-sql -d</span><br></pre></td></tr></table></figure>
 <p>相关参数：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">bin/yarn-session.sh -h</span><br><span class="line">Usage:</span><br><span class="line">   Optional</span><br><span class="line">     -at,--applicationType &lt;arg&gt;     Set a custom application <span class="built_in">type</span> <span class="keyword">for</span> the application on YARN</span><br><span class="line">     -D &lt;property=value&gt;             use value <span class="keyword">for</span> given property</span><br><span class="line">     -d,--detached                   If present, runs the job <span class="keyword">in</span> detached mode</span><br><span class="line">     -h,--<span class="built_in">help</span>                       Help <span class="keyword">for</span> the Yarn session CLI.</span><br><span class="line">     -id,--applicationId &lt;arg&gt;       Attach to running YARN session</span><br><span class="line">     -j,--jar &lt;arg&gt;                  Path to Flink jar file</span><br><span class="line">     -jm,--jobManagerMemory &lt;arg&gt;    Memory <span class="keyword">for</span> JobManager Container with optional unit (default: MB)</span><br><span class="line">     -m,--jobmanager &lt;arg&gt;           Set to yarn-cluster to use YARN execution mode.</span><br><span class="line">     -nl,--nodeLabel &lt;arg&gt;           Specify YARN node label <span class="keyword">for</span> the YARN application</span><br><span class="line">     -nm,--name &lt;arg&gt;                Set a custom name <span class="keyword">for</span> the application on YARN</span><br><span class="line">     -q,--query                      Display available YARN resources (memory, cores)</span><br><span class="line">     -qu,--queue &lt;arg&gt;               Specify YARN queue.</span><br><span class="line">     -s,--slots &lt;arg&gt;                Number of slots per TaskManager</span><br><span class="line">     -t,--ship &lt;arg&gt;                 Ship files <span class="keyword">in</span> the specified directory (t <span class="keyword">for</span> transfer)</span><br><span class="line">     -tm,--taskManagerMemory &lt;arg&gt;   Memory per TaskManager Container with optional unit (default: MB)</span><br><span class="line">     -yd,--yarndetached              If present, runs the job <span class="keyword">in</span> detached mode (deprecated; use non-YARN specific option instead)</span><br><span class="line">     -z,--zookeeperNamespace &lt;arg&gt;   Namespace to create the Zookeeper sub-paths <span class="keyword">for</span> high availability mode</span><br></pre></td></tr></table></figure></p>
 <h4 id="停止yarn-session"><a href="#停止yarn-session" class="headerlink" title="停止yarn-session"></a>停止yarn-session</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">In order to stop Flink gracefully, use the following command:</span><br><span class="line">$ echo <span class="string">"stop"</span> | ./bin/yarn-session.sh -id application_1661394335976_0016</span><br><span class="line">If <span class="keyword">this</span> should not be possible, then you can also kill Flink via YARN<span class="string">'s web interface or via:</span></span><br><span class="line"><span class="string">$ yarn application -kill application_1661394335976_0016</span></span><br><span class="line"><span class="string">Note that killing Flink might not clean up all job artifacts and temporary files.</span></span><br></pre></td></tr></table></figure>
-<h4 id="配置flink-conf-yaml"><a href="#配置flink-conf-yaml" class="headerlink" title="配置flink-conf.yaml"></a>配置flink-conf.yaml</h4><p>成功启动yarn-session后，可以在yarn ui界面看到 (点击Tracking UI中的 ApplicationMaster，可以进入到flink的管理界面)<br><img src="https://tva3.sinaimg.cn/large/e44344dcly1h5k6bndtdej21s304uabk.jpg" alt=""><br><img src="https://tva4.sinaimg.cn/large/e44344dcly1h5k6bs0g1jj21yy0olmzw.jpg" alt=""></p>
+<h4 id="配置flink-conf-yaml"><a href="#配置flink-conf-yaml" class="headerlink" title="配置flink-conf.yaml"></a>配置flink-conf.yaml</h4><p>成功启动yarn-session后，可以在yarn ui界面看到 (点击Tracking UI中的 ApplicationMaster，可以进入到flink的管理界面)<br><img src="https://img-blog.csdnimg.cn/img_convert/99e0bc423fe6a52cddc68580b542d2e7.jpeg" alt=""><br><img src="https://img-blog.csdnimg.cn/img_convert/2da203eae027afddad33cbc1dbfe51b9.jpeg" alt=""></p>
 <p>除了要修改execution.target为yarn-session外，还要添加yarn.application.id，值为yarn对应的id<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">execution.target: yarn-session</span><br><span class="line">yarn.application.id: application_1661394335976_0013</span><br></pre></td></tr></table></figure></p>
 <h2 id="启动-sql-客户端"><a href="#启动-sql-客户端" class="headerlink" title="启动 sql 客户端"></a>启动 sql 客户端</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line">bin/sql-client.sh</span><br><span class="line">Setting HBASE_CONF_DIR=/etc/hbase/conf because no HBASE_CONF_DIR was <span class="built_in">set</span>.</span><br><span class="line">SLF4J: Class path contains multiple SLF4J bindings.</span><br><span class="line">SLF4J: Found binding <span class="keyword">in</span> [jar:file:/opt/hdp/kyuubi-1.5.2/externals/flink-1.14.3/lib/log4j-slf4j-impl-2.17.1.jar!/org/slf4j/impl/StaticLoggerBinder.class]</span><br><span class="line">SLF4J: Found binding <span class="keyword">in</span> [jar:file:/usr/hdp/3.1.0.0-78/hadoop/lib/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]</span><br><span class="line">SLF4J: See http://www.slf4j.org/codes.html<span class="comment">#multiple_bindings for an explanation.</span></span><br><span class="line">SLF4J: Actual binding is of <span class="built_in">type</span> [org.apache.logging.slf4j.Log4jLoggerFactory]</span><br><span class="line">Command <span class="built_in">history</span> file path: /root/.flink-sql-history</span><br><span class="line"></span><br><span class="line">                                   ▒▓██▓██▒</span><br><span class="line">                               ▓████▒▒█▓▒▓███▓▒</span><br><span class="line">                            ▓███▓░░        ▒▒▒▓██▒  ▒</span><br><span class="line">                          ░██▒   ▒▒▓▓█▓▓▒░      ▒████</span><br><span class="line">                          ██▒         ░▒▓███▒    ▒█▒█▒</span><br><span class="line">                            ░▓█            ███   ▓░▒██</span><br><span class="line">                              ▓█       ▒▒▒▒▒▓██▓░▒░▓▓█</span><br><span class="line">                            █░ █   ▒▒░       ███▓▓█ ▒█▒▒▒</span><br><span class="line">                            ████░   ▒▓█▓      ██▒▒▒ ▓███▒</span><br><span class="line">                         ░▒█▓▓██       ▓█▒    ▓█▒▓██▓ ░█░</span><br><span class="line">                   ▓░▒▓████▒ ██         ▒█    █▓░▒█▒░▒█▒</span><br><span class="line">                  ███▓░██▓  ▓█           █   █▓ ▒▓█▓▓█▒</span><br><span class="line">                ░██▓  ░█░            █  █▒ ▒█████▓▒ ██▓░▒</span><br><span class="line">               ███░ ░ █░          ▓ ░█ █████▒░░    ░█░▓  ▓░</span><br><span class="line">              ██▓█ ▒▒▓▒          ▓███████▓░       ▒█▒ ▒▓ ▓██▓</span><br><span class="line">           ▒██▓ ▓█ █▓█       ░▒█████▓▓▒░         ██▒▒  █ ▒  ▓█▒</span><br><span class="line">           ▓█▓  ▓█ ██▓ ░▓▓▓▓▓▓▓▒              ▒██▓           ░█▒</span><br><span class="line">           ▓█    █ ▓███▓▒░              ░▓▓▓███▓          ░▒░ ▓█</span><br><span class="line">           ██▓    ██▒    ░▒▓▓███▓▓▓▓▓██████▓▒            ▓███  █</span><br><span class="line">          ▓███▒ ███   ░▓▓▒░░   ░▓████▓░                  ░▒▓▒  █▓</span><br><span class="line">          █▓▒▒▓▓██  ░▒▒░░░▒▒▒▒▓██▓░                            █▓</span><br><span class="line">          ██ ▓░▒█   ▓▓▓▓▒░░  ▒█▓       ▒▓▓██▓    ▓▒          ▒▒▓</span><br><span class="line">          ▓█▓ ▓▒█  █▓░  ░▒▓▓██▒            ░▓█▒   ▒▒▒░▒▒▓█████▒</span><br><span class="line">           ██░ ▓█▒█▒  ▒▓▓▒  ▓█                █░      ░░░░   ░█▒</span><br><span class="line">           ▓█   ▒█▓   ░     █░                ▒█              █▓</span><br><span class="line">            █▓   ██         █░                 ▓▓        ▒█▓▓▓▒█░</span><br><span class="line">             █▓ ░▓██░       ▓▒                  ▓█▓▒░░░▒▓█░    ▒█</span><br><span class="line">              ██   ▓█▓░      ▒                    ░▒█▒██▒      ▓▓</span><br><span class="line">               ▓█▒   ▒█▓▒░                         ▒▒ █▒█▓▒▒░░▒██</span><br><span class="line">                ░██▒    ▒▓▓▒                     ▓██▓▒█▒ ░▓▓▓▓▒█▓</span><br><span class="line">                  ░▓██▒                          ▓░  ▒█▓█  ░░▒▒▒</span><br><span class="line">                      ▒▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░▓▓  ▓░▒█░</span><br><span class="line"></span><br><span class="line">    ______ _ _       _       _____  ____  _         _____ _ _            _  BETA</span><br><span class="line">   |  ____| (_)     | |     / ____|/ __ \| |       / ____| (_)          | |</span><br><span class="line">   | |__  | |_ _ __ | | __ | (___ | |  | | |      | |    | |_  ___ _ __ | |_</span><br><span class="line">   |  __| | | | <span class="string">'_ \| |/ /  \___ \| |  | | |      | |    | | |/ _ \ '</span>_ \| __|</span><br><span class="line">   | |    | | | | | |   &lt;   ____) | |__| | |____  | |____| | |  __/ | | | |_</span><br><span class="line">   |_|    |_|_|_| |_|_|\_\ |_____/ \___\_\______|  \_____|_|_|\___|_| |_|\__|</span><br><span class="line"></span><br><span class="line">        Welcome! Enter <span class="string">'HELP;'</span> to list all available commands. <span class="string">'QUIT;'</span> to <span class="built_in">exit</span>.</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Flink SQL&gt;</span><br></pre></td></tr></table></figure>
 <h2 id="创建-hive-catalog"><a href="#创建-hive-catalog" class="headerlink" title="创建 hive catalog"></a>创建 hive catalog</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">CATALOG</span> hive_catalog <span class="keyword">WITH</span> (</span><br><span class="line">    <span class="string">'type'</span> = <span class="string">'hive'</span>,</span><br><span class="line">    <span class="string">'default-database'</span> = <span class="string">'default'</span>,</span><br><span class="line">    <span class="string">'hive-conf-dir'</span> = <span class="string">'/usr/hdp/3.1.0.0-78/hive/conf'</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
@@ -293,8 +293,8 @@
 <h2 id="切换-catalog"><a href="#切换-catalog" class="headerlink" title="切换 catalog"></a>切换 catalog</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> <span class="keyword">catalog</span> hive_catalog;</span><br></pre></td></tr></table></figure>
 <h2 id="查询Hive表"><a href="#查询Hive表" class="headerlink" title="查询Hive表"></a>查询Hive表</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">Flink SQL&gt; show tables;</span><br><span class="line">+<span class="comment">--------------------------+</span></span><br><span class="line">|               table name |</span><br><span class="line">+<span class="comment">--------------------------+</span></span><br><span class="line">|                      tba |</span><br><span class="line">|                      tbb |</span><br><span class="line">|                     test |</span><br><span class="line">|                    test1 |</span><br><span class="line">|                   test_2 |</span><br><span class="line">|          test_hive_table |</span><br><span class="line">|        test_hudi_table_1 |</span><br><span class="line">|        test_hudi_table_2 |</span><br><span class="line">|        test_hudi_table_3 |</span><br><span class="line">|        test_hudi_table_4 |</span><br><span class="line">| test_hudi_table_cow_ctas |</span><br><span class="line">|   test_hudi_table_kyuubi |</span><br><span class="line">|    test_hudi_table_merge |</span><br><span class="line">|             test_no_hudi |</span><br><span class="line">|           test_no_hudi_2 |</span><br><span class="line">+<span class="comment">--------------------------+</span></span><br><span class="line">15 rows in <span class="keyword">set</span></span><br></pre></td></tr></table></figure>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> test_hive_table;</span><br></pre></td></tr></table></figure>
-<p><img src="https://tva3.sinaimg.cn/large/e44344dcly1h5huhfuk4lj21hn0u0myw.jpg" alt=""></p>
-<p>如果是yarn-session模式，我们可以在flink的管理界面看到对应的job信息：<br><img src="https://tva1.sinaimg.cn/large/e44344dcly1h5k6bx8mc6j21ym0lwtcx.jpg" alt=""></p>
+<p><img src="https://img-blog.csdnimg.cn/img_convert/b892414c829b5b0b63e4f2dfacc36cda.jpeg" alt=""></p>
+<p>如果是yarn-session模式，我们可以在flink的管理界面看到对应的job信息：<br><img src="https://img-blog.csdnimg.cn/img_convert/e65c2edaf015cbabf895079d20cc17c9.jpeg" alt=""></p>
 <h3 id="创建Hive表"><a href="#创建Hive表" class="headerlink" title="创建Hive表"></a>创建Hive表</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">set table.sql-dialect = hive; #使用hive方言</span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> test_hive_table_flink(<span class="keyword">id</span> <span class="built_in">int</span>,<span class="keyword">name</span> <span class="keyword">string</span>);</span><br></pre></td></tr></table></figure>
 <h3 id="insert"><a href="#insert" class="headerlink" title="insert"></a>insert</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test_hive_table_flink <span class="keyword">values</span>(<span class="number">1</span>,<span class="string">'flink'</span>);</span><br></pre></td></tr></table></figure>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span>  test_hive_table_flink;</span><br><span class="line"></span><br><span class="line">          id                           name</span><br><span class="line">           1                          flink</span><br></pre></td></tr></table></figure>
@@ -655,18 +655,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
@@ -683,6 +671,18 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">SQL</a>
               </li>
              
@@ -695,14 +695,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
@@ -712,6 +704,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -731,6 +727,14 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
               </li>
              
@@ -739,11 +743,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -751,7 +751,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -787,23 +787,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">开源</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -835,6 +831,14 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">sql</a>
               </li>
              
@@ -847,23 +851,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -871,7 +859,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -887,11 +883,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -907,10 +903,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">持久化</a>
               </li>
              
@@ -920,6 +912,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">persist</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -935,11 +931,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+                <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -955,19 +959,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
+                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -975,15 +971,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">linux</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -991,11 +983,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1012,6 +1008,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">开源</a>
               </li>
             
             <div class="clearfix"></div>
