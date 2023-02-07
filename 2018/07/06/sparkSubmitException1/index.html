@@ -17,14 +17,14 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言记录spark-submit提交Spark程序出现的一个异常，以供第一次出现这种异常且不知道原因，该怎么解决的的同学参考。 1、异常信息12345678910111213Exception in thread &quot;main&quot; org.apache.spark.SparkException: Application application_1529650293575_0148 finished w">
 <meta property="og:locale" content="cn">
-<meta property="og:image" content="https://tva3.sinaimg.cn/large/e44344dcly1ft03ty5158j21ag0bh0tr.jpg">
-<meta property="og:image" content="https://tva4.sinaimg.cn/large/e44344dcly1ft03tyzcxhj20vj07wwfi.jpg">
-<meta property="og:image" content="https://tva1.sinaimg.cn/large/e44344dcly1ft2r5gp9v2j214g078my0.jpg">
-<meta property="og:updated_time" content="2019-05-09T01:49:29.328Z">
+<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/9c57e76e6d017fe7f7fed34e4eae6cdd.png">
+<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/437a926329084c65c5fea7cc6169b884.png">
+<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/5e6fa958bc7d0a69f6101163a12a9983.png">
+<meta property="og:updated_time" content="2023-02-07T06:48:33.354Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="spark-submit报错:Application application_1529650293575_0148 finished with failed status">
 <meta name="twitter:description" content="前言记录spark-submit提交Spark程序出现的一个异常，以供第一次出现这种异常且不知道原因，该怎么解决的的同学参考。 1、异常信息12345678910111213Exception in thread &quot;main&quot; org.apache.spark.SparkException: Application application_1529650293575_0148 finished w">
-<meta name="twitter:image" content="https://tva3.sinaimg.cn/large/e44344dcly1ft03ty5158j21ag0bh0tr.jpg">
+<meta name="twitter:image" content="https://img-blog.csdnimg.cn/img_convert/9c57e76e6d017fe7f7fed34e4eae6cdd.png">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -277,10 +277,10 @@
 <p>结果也会正常打印出来，因为在代码里指定了master为local所以实际上应该还是用的local，但是没有研究client模式不报错，可能是用的client模式用提交代码的那台机器为Driver，然后再用local模式吧</p>
 <h2 id="5、yarn-cluster"><a href="#5、yarn-cluster" class="headerlink" title="5、yarn cluster"></a>5、yarn cluster</h2><p>用下面的命令，即可再现异常<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --master yarn --deploy-mode cluster --class com.dkl.leanring.spark.exception.YarnClusterDemo spark-scala_2.11-1.0.jar</span><br></pre></td></tr></table></figure></p>
 <p>所以实际用spark-submit提交程序的时候，将master在代码里删掉，然后用命令行–master指定即可<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">val spark = SparkSession.builder().appName(&quot;YarnClusterDemo&quot;).getOrCreate()</span><br></pre></td></tr></table></figure></p>
-<h2 id="6、附图"><a href="#6、附图" class="headerlink" title="6、附图"></a>6、附图</h2><p><img src="https://tva3.sinaimg.cn/large/e44344dcly1ft03ty5158j21ag0bh0tr.jpg" alt=""><br><img src="https://tva4.sinaimg.cn/large/e44344dcly1ft03tyzcxhj20vj07wwfi.jpg" alt=""></p>
+<h2 id="6、附图"><a href="#6、附图" class="headerlink" title="6、附图"></a>6、附图</h2><p><img src="https://img-blog.csdnimg.cn/img_convert/9c57e76e6d017fe7f7fed34e4eae6cdd.png" alt=""><br><img src="https://img-blog.csdnimg.cn/img_convert/437a926329084c65c5fea7cc6169b884.png" alt=""></p>
 <h2 id="7、更新：其他情况"><a href="#7、更新：其他情况" class="headerlink" title="7、更新：其他情况"></a>7、更新：其他情况</h2><p>在我后面用yarn cluster模式的时候，又碰到了一样的异常信息，检查了一下master没有在代码里指定为local，经过一步步的测试，最后发现，是由于有一行代码读取的本地文件，在yarn client模式的时候，提交程序的那台机器即为Driver，会从Driver的机器上对应的目录找本地文件，所以在yarn client的时候不会报错（Driver有该文件）在yarn cluster会随机选择集群上一个节点作为Driver，那么Driver没有该文件，就会产生异常，而yarn cluster模式返回的异常不很明确，只是返回<br><figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Exception in thread <span class="string">"main"</span> org.apache.spark.SparkException: Application application_*** finished with failed status</span><br></pre></td></tr></table></figure></p>
 <p>这样的异常，所以不知道是哪里出错了，可以在代码里加上捕获异常的代码，这样就可以在yarn的日志里看到具体的异常信息了，具体的代码我就不贴了，贴一下捕获异常的<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="comment">//此处为你的可能产生异常的代码</span></span><br><span class="line">   &#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">     <span class="keyword">case</span> e: <span class="type">Exception</span> =&gt; println(e)</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure></p>
-<p>在加了捕获异常代码后，yarn日志<br><img src="https://tva1.sinaimg.cn/large/e44344dcly1ft2r5gp9v2j214g078my0.jpg" alt=""></p>
+<p>在加了捕获异常代码后，yarn日志<br><img src="https://img-blog.csdnimg.cn/img_convert/5e6fa958bc7d0a69f6101163a12a9983.png" alt=""></p>
 
       
 
@@ -615,18 +615,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
@@ -643,11 +631,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -663,15 +659,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -683,7 +687,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -703,43 +719,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Flink</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -751,7 +731,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -759,19 +759,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -783,15 +783,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Linux</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -811,15 +811,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -831,27 +839,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -863,11 +859,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -899,6 +899,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
@@ -908,14 +912,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -931,15 +927,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -947,7 +939,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -972,6 +964,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
             
             <div class="clearfix"></div>

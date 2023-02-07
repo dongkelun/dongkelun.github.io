@@ -17,12 +17,12 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言本文介绍如何在Spark Sql和DataFrame中使用UDF，如何利用UDF给一个表或者一个DataFrame根据需求添加几列，并给出了旧版（Spark1.x）和新版（Spark2.x）完整的代码示例。  关于UDF：UDF：User Defined Function，用户自定义函数。  1、创建测试用DataFrame下面以Spark2.x为例给出代码，关于Spark1.x创建DataF">
 <meta property="og:locale" content="cn">
-<meta property="og:image" content="https://tva2.sinaimg.cn/large/e44344dcly1ftvr5q8aftj215y0pkwgl.jpg">
-<meta property="og:updated_time" content="2019-05-09T01:49:41.408Z">
+<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/9daefe094d616864e908ac50d05b2d1d.png">
+<meta property="og:updated_time" content="2023-02-07T06:35:50.848Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Spark UDF使用详解及代码示例">
 <meta name="twitter:description" content="前言本文介绍如何在Spark Sql和DataFrame中使用UDF，如何利用UDF给一个表或者一个DataFrame根据需求添加几列，并给出了旧版（Spark1.x）和新版（Spark2.x）完整的代码示例。  关于UDF：UDF：User Defined Function，用户自定义函数。  1、创建测试用DataFrame下面以Spark2.x为例给出代码，关于Spark1.x创建DataF">
-<meta name="twitter:image" content="https://tva2.sinaimg.cn/large/e44344dcly1ftvr5q8aftj215y0pkwgl.jpg">
+<meta name="twitter:image" content="https://img-blog.csdnimg.cn/img_convert/9daefe094d616864e908ac50d05b2d1d.png">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -304,7 +304,7 @@
 </ul>
 <h2 id="4、完整代码"><a href="#4、完整代码" class="headerlink" title="4、完整代码"></a>4、完整代码</h2><p>下面的代码的功能是使用UDF给user表添加两列:name_len、isAdult，每个输出结果都是一样的<br><figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">+-----+---+--------+-------+</span><br><span class="line">| name|age|name_len|isAdult|</span><br><span class="line">+-----+---+--------+-------+</span><br><span class="line">|  Leo| <span class="number">16</span>|       <span class="number">3</span>|  false|</span><br><span class="line">|Marry| <span class="number">21</span>|       <span class="number">5</span>|   true|</span><br><span class="line">| Jack| <span class="number">14</span>|       <span class="number">4</span>|  false|</span><br><span class="line">|  Tom| <span class="number">18</span>|       <span class="number">3</span>|   true|</span><br><span class="line">+-----+---+--------+-------+</span><br></pre></td></tr></table></figure></p>
 <p>代码：<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.dkl.leanring.spark.sql</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.<span class="type">SparkContext</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SQLContext</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.<span class="type">SparkConf</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SparkSession</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Spark Sql 用户自定义函数示例</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">UdfDemo</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">    oldUdf</span><br><span class="line">    newUdf</span><br><span class="line">    newDfUdf</span><br><span class="line">    oldDfUdf</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * 根据年龄大小返回是否成年 成年：true,未成年：false</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">isAdult</span></span>(age: <span class="type">Int</span>) = &#123;</span><br><span class="line">    <span class="keyword">if</span> (age &lt; <span class="number">18</span>) &#123;</span><br><span class="line">      <span class="literal">false</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="literal">true</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * 旧版本(Spark1.x)Spark Sql udf示例</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">oldUdf</span></span>() &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//spark 初始化</span></span><br><span class="line">    <span class="keyword">val</span> conf = <span class="keyword">new</span> <span class="type">SparkConf</span>()</span><br><span class="line">      .setMaster(<span class="string">"local"</span>)</span><br><span class="line">      .setAppName(<span class="string">"oldUdf"</span>)</span><br><span class="line">    <span class="keyword">val</span> sc = <span class="keyword">new</span> <span class="type">SparkContext</span>(conf)</span><br><span class="line">    <span class="keyword">val</span> sqlContext = <span class="keyword">new</span> <span class="type">SQLContext</span>(sc)</span><br><span class="line">    <span class="keyword">import</span> sqlContext.implicits._</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 构造测试数据，有两个字段、名字和年龄</span></span><br><span class="line">    <span class="keyword">val</span> userData = <span class="type">Array</span>((<span class="string">"Leo"</span>, <span class="number">16</span>), (<span class="string">"Marry"</span>, <span class="number">21</span>), (<span class="string">"Jack"</span>, <span class="number">14</span>), (<span class="string">"Tom"</span>, <span class="number">18</span>))</span><br><span class="line">    <span class="comment">//创建测试df</span></span><br><span class="line">    <span class="keyword">val</span> userDF = sc.parallelize(userData).toDF(<span class="string">"name"</span>, <span class="string">"age"</span>)</span><br><span class="line">    <span class="comment">// 注册一张user表</span></span><br><span class="line">    userDF.registerTempTable(<span class="string">"user"</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 注册自定义函数（通过匿名函数）</span></span><br><span class="line">    sqlContext.udf.register(<span class="string">"strLen"</span>, (str: <span class="type">String</span>) =&gt; str.length())</span><br><span class="line"></span><br><span class="line">    sqlContext.udf.register(<span class="string">"isAdult"</span>, isAdult _)</span><br><span class="line">    <span class="comment">// 使用自定义函数</span></span><br><span class="line">    sqlContext.sql(<span class="string">"select *,strLen(name)as name_len,isAdult(age) as isAdult from user"</span>).show</span><br><span class="line">    <span class="comment">//关闭</span></span><br><span class="line">    sc.stop()</span><br><span class="line"></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * 新版本(Spark2.x)Spark Sql udf示例</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">newUdf</span></span>() &#123;</span><br><span class="line">    <span class="comment">//spark初始化</span></span><br><span class="line">    <span class="keyword">val</span> spark = <span class="type">SparkSession</span>.builder().appName(<span class="string">"newUdf"</span>).master(<span class="string">"local"</span>).getOrCreate()</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 构造测试数据，有两个字段、名字和年龄</span></span><br><span class="line">    <span class="keyword">val</span> userData = <span class="type">Array</span>((<span class="string">"Leo"</span>, <span class="number">16</span>), (<span class="string">"Marry"</span>, <span class="number">21</span>), (<span class="string">"Jack"</span>, <span class="number">14</span>), (<span class="string">"Tom"</span>, <span class="number">18</span>))</span><br><span class="line"></span><br><span class="line">    <span class="comment">//创建测试df</span></span><br><span class="line">    <span class="keyword">val</span> userDF = spark.createDataFrame(userData).toDF(<span class="string">"name"</span>, <span class="string">"age"</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 注册一张user表</span></span><br><span class="line">    userDF.createOrReplaceTempView(<span class="string">"user"</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment">//注册自定义函数（通过匿名函数）</span></span><br><span class="line">    spark.udf.register(<span class="string">"strLen"</span>, (str: <span class="type">String</span>) =&gt; str.length())</span><br><span class="line">    <span class="comment">//注册自定义函数（通过实名函数）</span></span><br><span class="line">    spark.udf.register(<span class="string">"isAdult"</span>, isAdult _)</span><br><span class="line">    spark.sql(<span class="string">"select *,strLen(name) as name_len,isAdult(age) as isAdult from user"</span>).show</span><br><span class="line"></span><br><span class="line">    <span class="comment">//关闭</span></span><br><span class="line">    spark.stop()</span><br><span class="line"></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * 新版本(Spark2.x)DataFrame udf示例</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">newDfUdf</span></span>() &#123;</span><br><span class="line">    <span class="keyword">val</span> spark = <span class="type">SparkSession</span>.builder().appName(<span class="string">"newDfUdf"</span>).master(<span class="string">"local"</span>).getOrCreate()</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 构造测试数据，有两个字段、名字和年龄</span></span><br><span class="line">    <span class="keyword">val</span> userData = <span class="type">Array</span>((<span class="string">"Leo"</span>, <span class="number">16</span>), (<span class="string">"Marry"</span>, <span class="number">21</span>), (<span class="string">"Jack"</span>, <span class="number">14</span>), (<span class="string">"Tom"</span>, <span class="number">18</span>))</span><br><span class="line"></span><br><span class="line">    <span class="comment">//创建测试df</span></span><br><span class="line">    <span class="keyword">val</span> userDF = spark.createDataFrame(userData).toDF(<span class="string">"name"</span>, <span class="string">"age"</span>)</span><br><span class="line">    <span class="keyword">import</span> org.apache.spark.sql.functions._</span><br><span class="line">    <span class="comment">//注册自定义函数（通过匿名函数）</span></span><br><span class="line">    <span class="keyword">val</span> strLen = udf((str: <span class="type">String</span>) =&gt; str.length())</span><br><span class="line">    <span class="comment">//注册自定义函数（通过实名函数）</span></span><br><span class="line">    <span class="keyword">val</span> udf_isAdult = udf(isAdult _)</span><br><span class="line"></span><br><span class="line">    <span class="comment">//通过withColumn添加列</span></span><br><span class="line">    userDF.withColumn(<span class="string">"name_len"</span>, strLen(col(<span class="string">"name"</span>))).withColumn(<span class="string">"isAdult"</span>, udf_isAdult(col(<span class="string">"age"</span>))).show</span><br><span class="line">    <span class="comment">//通过select添加列</span></span><br><span class="line">    userDF.select(col(<span class="string">"*"</span>), strLen(col(<span class="string">"name"</span>)) as <span class="string">"name_len"</span>, udf_isAdult(col(<span class="string">"age"</span>)) as <span class="string">"isAdult"</span>).show</span><br><span class="line"></span><br><span class="line">    <span class="comment">//关闭</span></span><br><span class="line">    spark.stop()</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * 旧版本(Spark1.x)DataFrame udf示例</span></span><br><span class="line"><span class="comment">   * 注意，这里只是用的Spark1.x创建sc的和df的语法，其中注册udf在Spark1.x也是可以使用的的</span></span><br><span class="line"><span class="comment">   * 但是withColumn和select方法Spark2.0.0之后才有的，关于spark1.xDataFrame怎么使用注册好的UDF没有研究</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">oldDfUdf</span></span>() &#123;</span><br><span class="line">    <span class="comment">//spark 初始化</span></span><br><span class="line">    <span class="keyword">val</span> conf = <span class="keyword">new</span> <span class="type">SparkConf</span>()</span><br><span class="line">      .setMaster(<span class="string">"local"</span>)</span><br><span class="line">      .setAppName(<span class="string">"oldDfUdf"</span>)</span><br><span class="line">    <span class="keyword">val</span> sc = <span class="keyword">new</span> <span class="type">SparkContext</span>(conf)</span><br><span class="line">    <span class="keyword">val</span> sqlContext = <span class="keyword">new</span> <span class="type">SQLContext</span>(sc)</span><br><span class="line">    <span class="keyword">import</span> sqlContext.implicits._</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 构造测试数据，有两个字段、名字和年龄</span></span><br><span class="line">    <span class="keyword">val</span> userData = <span class="type">Array</span>((<span class="string">"Leo"</span>, <span class="number">16</span>), (<span class="string">"Marry"</span>, <span class="number">21</span>), (<span class="string">"Jack"</span>, <span class="number">14</span>), (<span class="string">"Tom"</span>, <span class="number">18</span>))</span><br><span class="line">    <span class="comment">//创建测试df</span></span><br><span class="line">    <span class="keyword">val</span> userDF = sc.parallelize(userData).toDF(<span class="string">"name"</span>, <span class="string">"age"</span>)</span><br><span class="line">    <span class="keyword">import</span> org.apache.spark.sql.functions._</span><br><span class="line">    <span class="comment">//注册自定义函数（通过匿名函数）</span></span><br><span class="line">    <span class="keyword">val</span> strLen = udf((str: <span class="type">String</span>) =&gt; str.length())</span><br><span class="line">    <span class="comment">//注册自定义函数（通过实名函数）</span></span><br><span class="line">    <span class="keyword">val</span> udf_isAdult = udf(isAdult _)</span><br><span class="line"></span><br><span class="line">    <span class="comment">//通过withColumn添加列</span></span><br><span class="line">    userDF.withColumn(<span class="string">"name_len"</span>, strLen(col(<span class="string">"name"</span>))).withColumn(<span class="string">"isAdult"</span>, udf_isAdult(col(<span class="string">"age"</span>))).show</span><br><span class="line">    <span class="comment">//通过select添加列</span></span><br><span class="line">    userDF.select(col(<span class="string">"*"</span>), strLen(col(<span class="string">"name"</span>)) as <span class="string">"name_len"</span>, udf_isAdult(col(<span class="string">"age"</span>)) as <span class="string">"isAdult"</span>).show</span><br><span class="line"></span><br><span class="line">    <span class="comment">//关闭</span></span><br><span class="line">    sc.stop()</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p><img src="https://tva2.sinaimg.cn/large/e44344dcly1ftvr5q8aftj215y0pkwgl.jpg" alt=""></p>
+<p><img src="https://img-blog.csdnimg.cn/img_convert/9daefe094d616864e908ac50d05b2d1d.png" alt=""></p>
 
       
 
@@ -639,18 +639,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
@@ -667,11 +655,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -687,15 +683,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -707,7 +711,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -727,43 +743,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Flink</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -775,7 +755,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -783,19 +783,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -807,15 +807,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Linux</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -835,15 +835,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -855,27 +863,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -887,11 +883,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -923,6 +923,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
@@ -932,14 +936,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -955,15 +951,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -971,7 +963,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -996,6 +988,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
             
             <div class="clearfix"></div>

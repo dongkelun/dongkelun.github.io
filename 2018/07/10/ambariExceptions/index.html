@@ -17,15 +17,15 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言本文总结在使用ambari时产生的异常，以及如何解决的。如果发生了异常，在界面上不能直观的看出异常的原因，那么我一般通过查看日志的方法解决。通过下面的命令查看1vim /var/log/ambari-server/ambari-server.log  若该日志文件没有异常信息，可在其他日志文件里查找1、异常一异常发生在add host并confirm host的时候，会卡住不动，然后看日志会发">
 <meta property="og:locale" content="cn">
-<meta property="og:image" content="https://tva3.sinaimg.cn/large/e44344dcly1ft4ix0a6arj20f90c20ti.jpg">
-<meta property="og:image" content="https://tva4.sinaimg.cn/large/e44344dcly1ft4j423gwvj20wk0efq3s.jpg">
-<meta property="og:image" content="https://tva1.sinaimg.cn/large/e44344dcly1ft4ix0xr37j21gc0pjjug.jpg">
-<meta property="og:image" content="https://tva1.sinaimg.cn/large/e44344dcly1ft4ix19ng2j218e0nmacb.jpg">
-<meta property="og:updated_time" content="2022-08-04T09:06:54.924Z">
+<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/b957d837009d696bdf8e59d79c8a6a7f.png">
+<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/6d1f954f46919f792d69cb7fec02d0f1.png">
+<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/1837e65142a27eb1d6e6f8fdf03682f6.png">
+<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/8a7f68b830444f43d3730b6b98ff5c46.png">
+<meta property="og:updated_time" content="2023-02-07T06:42:36.991Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="ambari 异常总结及解决办法">
 <meta name="twitter:description" content="前言本文总结在使用ambari时产生的异常，以及如何解决的。如果发生了异常，在界面上不能直观的看出异常的原因，那么我一般通过查看日志的方法解决。通过下面的命令查看1vim /var/log/ambari-server/ambari-server.log  若该日志文件没有异常信息，可在其他日志文件里查找1、异常一异常发生在add host并confirm host的时候，会卡住不动，然后看日志会发">
-<meta name="twitter:image" content="https://tva3.sinaimg.cn/large/e44344dcly1ft4ix0a6arj20f90c20ti.jpg">
+<meta name="twitter:image" content="https://img-blog.csdnimg.cn/img_convert/b957d837009d696bdf8e59d79c8a6a7f.png">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -274,9 +274,9 @@
 <h3 id="1-2-解决办法"><a href="#1-2-解决办法" class="headerlink" title="1.2 解决办法"></a>1.2 解决办法</h3><p>通过查看，/var/run/ambari-server目录下确实没有bootstrap文件夹，手动添加即可<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkdir bootstrap</span><br></pre></td></tr></table></figure></p>
 <p>但是，如果只创建该文件夹的话，ambari依然报错，大概是没有权限相关的，就不贴出详细的异常了</p>
 <p>为ambari用户添加权限即可<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">chown -R ambari:ambari /var/run/ambari-server/bootstrap/</span><br></pre></td></tr></table></figure></p>
-<h3 id="1-3-解决添加host时给出的警告"><a href="#1-3-解决添加host时给出的警告" class="headerlink" title="1.3 解决添加host时给出的警告"></a>1.3 解决添加host时给出的警告</h3><p>在添加host时，如果没有异常，最后会检查该host相关的配置，最后会给出警告，点击警告的详细信息，会看到下面的界面<br><img src="https://tva3.sinaimg.cn/large/e44344dcly1ft4ix0a6arj20f90c20ti.jpg" alt=""><br>根绝他的提示，在对应的host上执行下面的命令<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python /usr/lib/python2.6/site-packages/ambari_agent/HostCleanup.py --silent --skip=users</span><br></pre></td></tr></table></figure></p>
+<h3 id="1-3-解决添加host时给出的警告"><a href="#1-3-解决添加host时给出的警告" class="headerlink" title="1.3 解决添加host时给出的警告"></a>1.3 解决添加host时给出的警告</h3><p>在添加host时，如果没有异常，最后会检查该host相关的配置，最后会给出警告，点击警告的详细信息，会看到下面的界面<br><img src="https://img-blog.csdnimg.cn/img_convert/b957d837009d696bdf8e59d79c8a6a7f.png" alt=""><br>根绝他的提示，在对应的host上执行下面的命令<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python /usr/lib/python2.6/site-packages/ambari_agent/HostCleanup.py --silent --skip=users</span><br></pre></td></tr></table></figure></p>
 <p>在重新检查一下，可能还有警告，且警告为，该host存在一些用户，根据界面上的提示，将–skip=users去掉，即可删除这些用户<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python /usr/lib/python2.6/site-packages/ambari_agent/HostCleanup.py</span><br></pre></td></tr></table></figure></p>
-<h2 id="2、异常二"><a href="#2、异常二" class="headerlink" title="2、异常二"></a>2、异常二</h2><p>异常体现在，添加完host，选择要安装的组件的时候，next为灰色，不能点击，检查网页源代码为disabled(不可用)，重试几次发现结果一样，然后尝试修改界面上的代码disabled删掉，然后next按钮可用，点击next，但是依然会卡住，确定不是ambari的bug<br><img src="https://tva4.sinaimg.cn/large/e44344dcly1ft4j423gwvj20wk0efq3s.jpg" alt=""><br><img src="https://tva1.sinaimg.cn/large/e44344dcly1ft4ix0xr37j21gc0pjjug.jpg" alt=""><br><img src="https://tva1.sinaimg.cn/large/e44344dcly1ft4ix19ng2j218e0nmacb.jpg" alt=""></p>
+<h2 id="2、异常二"><a href="#2、异常二" class="headerlink" title="2、异常二"></a>2、异常二</h2><p>异常体现在，添加完host，选择要安装的组件的时候，next为灰色，不能点击，检查网页源代码为disabled(不可用)，重试几次发现结果一样，然后尝试修改界面上的代码disabled删掉，然后next按钮可用，点击next，但是依然会卡住，确定不是ambari的bug<br><img src="https://img-blog.csdnimg.cn/img_convert/6d1f954f46919f792d69cb7fec02d0f1.png" alt=""><br><img src="https://img-blog.csdnimg.cn/img_convert/1837e65142a27eb1d6e6f8fdf03682f6.png" alt=""><br><img src="https://img-blog.csdnimg.cn/img_convert/8a7f68b830444f43d3730b6b98ff5c46.png" alt=""></p>
 <h3 id="2-1-具体的异常"><a href="#2-1-具体的异常" class="headerlink" title="2.1 具体的异常"></a>2.1 具体的异常</h3><p>然后在浏览器的console发现ambari打印出了异常，大概是哪个目录或地址找不到，没有截图保存~，发现ambari报了异常之后，继续在ambari-server.log查看，发现确实有异常，且该异常和第一个异常类似<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">org.apache.ambari.server.api.services.stackadvisor.StackAdvisorException: Error occured during stack advisor command invocation: Cannot create /var/run/ambari-server/stack-recommendations</span><br></pre></td></tr></table></figure></p>
 <h3 id="2-2-解决办法"><a href="#2-2-解决办法" class="headerlink" title="2.2 解决办法"></a>2.2 解决办法</h3><p>和第一个异常解决方法一样<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /var/run/ambari-server</span><br><span class="line">mkdir stack-recommendations</span><br><span class="line">chown -R ambari:ambari /var/run/ambari-server/stack-recommendations/</span><br></pre></td></tr></table></figure></p>
 <h3 id="2、3-重新添加host"><a href="#2、3-重新添加host" class="headerlink" title="2、3 重新添加host"></a>2、3 重新添加host</h3><p>重新执行添加host的操作，到这一步，就可以点击next继续后面的操作了！</p>
@@ -617,18 +617,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
@@ -645,11 +633,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -665,15 +661,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -685,7 +689,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -705,43 +721,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Flink</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -753,7 +733,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -761,19 +761,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -785,15 +785,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Linux</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -813,15 +813,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -833,27 +841,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -865,11 +861,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -901,6 +901,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
@@ -910,14 +914,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -933,15 +929,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -949,7 +941,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -974,6 +966,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
             
             <div class="clearfix"></div>

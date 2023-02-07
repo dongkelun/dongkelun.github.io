@@ -17,13 +17,13 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言本文利用SparkStreaming和Kafka实现基于缓存的实时wordcount程序，什么意思呢，因为一般的SparkStreaming的wordcount程序比如官网上的，只能统计最新时间间隔内的每个单词的数量，而不能将历史的累加起来，本文是看了教程之后，自己实现了一下kafka的程序，记录在这里。其实没什么难度，只是用了一个updateStateByKey算子就能实现，因为第一次用这个">
 <meta property="og:locale" content="cn">
-<meta property="og:image" content="https://tva2.sinaimg.cn/large/e44344dcly1fsb3o33nzij20pn01sgln.jpg">
-<meta property="og:image" content="https://tva2.sinaimg.cn/large/e44344dcly1fsb3o2k036j21ev0rfwi6.jpg">
-<meta property="og:updated_time" content="2019-05-09T01:49:54.260Z">
+<meta property="og:image" content="https://img-blog.csdnimg.cn/a2550fd2020d40438c0e4a9a365a200b.png">
+<meta property="og:image" content="https://img-blog.csdnimg.cn/7b42d903287a43ed9cbf3a1ab37a528b.png">
+<meta property="og:updated_time" content="2023-02-07T07:22:17.183Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="SparkStreaming+Kafka 实现基于缓存的实时wordcount程序">
 <meta name="twitter:description" content="前言本文利用SparkStreaming和Kafka实现基于缓存的实时wordcount程序，什么意思呢，因为一般的SparkStreaming的wordcount程序比如官网上的，只能统计最新时间间隔内的每个单词的数量，而不能将历史的累加起来，本文是看了教程之后，自己实现了一下kafka的程序，记录在这里。其实没什么难度，只是用了一个updateStateByKey算子就能实现，因为第一次用这个">
-<meta name="twitter:image" content="https://tva2.sinaimg.cn/large/e44344dcly1fsb3o33nzij20pn01sgln.jpg">
+<meta name="twitter:image" content="https://img-blog.csdnimg.cn/a2550fd2020d40438c0e4a9a365a200b.png">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -274,8 +274,8 @@
 <h2 id="4、Spark代码"><a href="#4、Spark代码" class="headerlink" title="4、Spark代码"></a>4、Spark代码</h2><p>启动下面的程序<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.dkl.leanring.spark.kafka</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.streaming.<span class="type">StreamingContext</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SparkSession</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.streaming.<span class="type">Seconds</span></span><br><span class="line"><span class="keyword">import</span> org.apache.kafka.common.serialization.<span class="type">StringDeserializer</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.streaming.kafka010.<span class="type">KafkaUtils</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.streaming.kafka010.<span class="type">LocationStrategies</span>.<span class="type">PreferConsistent</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.streaming.kafka010.<span class="type">ConsumerStrategies</span>.<span class="type">Subscribe</span></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">UpdateStateBykeyWordCount</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="comment">//初始化，创建SparkSession</span></span><br><span class="line">    <span class="keyword">val</span> spark = <span class="type">SparkSession</span>.builder().appName(<span class="string">"sskt"</span>).master(<span class="string">"local[2]"</span>).enableHiveSupport().getOrCreate()</span><br><span class="line">    <span class="comment">//初始化，创建sparkContext</span></span><br><span class="line">    <span class="keyword">val</span> sc = spark.sparkContext</span><br><span class="line">    <span class="comment">//初始化，创建StreamingContext，batchDuration为1秒</span></span><br><span class="line">    <span class="keyword">val</span> ssc = <span class="keyword">new</span> <span class="type">StreamingContext</span>(sc, <span class="type">Seconds</span>(<span class="number">5</span>))</span><br><span class="line"></span><br><span class="line">    <span class="comment">//开启checkpoint机制</span></span><br><span class="line">    ssc.checkpoint(<span class="string">"hdfs://ambari.master.com:8020/spark/dkl/kafka/wordcount_checkpoint"</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment">//kafka集群地址</span></span><br><span class="line">    <span class="keyword">val</span> server = <span class="string">"ambari.master.com:6667"</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">//配置消费者</span></span><br><span class="line">    <span class="keyword">val</span> kafkaParams = <span class="type">Map</span>[<span class="type">String</span>, <span class="type">Object</span>](</span><br><span class="line">      <span class="string">"bootstrap.servers"</span> -&gt; server, <span class="comment">//kafka集群地址</span></span><br><span class="line">      <span class="string">"key.deserializer"</span> -&gt; classOf[<span class="type">StringDeserializer</span>],</span><br><span class="line">      <span class="string">"value.deserializer"</span> -&gt; classOf[<span class="type">StringDeserializer</span>],</span><br><span class="line">      <span class="string">"group.id"</span> -&gt; <span class="string">"UpdateStateBykeyWordCount"</span>, <span class="comment">//消费者组名</span></span><br><span class="line">      <span class="string">"auto.offset.reset"</span> -&gt; <span class="string">"latest"</span>, <span class="comment">//latest自动重置偏移量为最新的偏移量   earliest 、none</span></span><br><span class="line">      <span class="string">"enable.auto.commit"</span> -&gt; (<span class="literal">false</span>: java.lang.<span class="type">Boolean</span>)) <span class="comment">//如果是true，则这个消费者的偏移量会在后台自动提交</span></span><br><span class="line">    <span class="keyword">val</span> topics = <span class="type">Array</span>(<span class="string">"UpdateStateBykeyWordCount"</span>) <span class="comment">//消费主题</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">//基于Direct方式创建DStream</span></span><br><span class="line">    <span class="keyword">val</span> stream = <span class="type">KafkaUtils</span>.createDirectStream(ssc, <span class="type">PreferConsistent</span>, <span class="type">Subscribe</span>[<span class="type">String</span>, <span class="type">String</span>](topics, kafkaParams))</span><br><span class="line"></span><br><span class="line">    <span class="comment">//开始执行WordCount程序</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">//以空格为切分符切分单词，并转化为 (word,1)形式</span></span><br><span class="line">    <span class="keyword">val</span> words = stream.flatMap(_.value().split(<span class="string">" "</span>)).map((_, <span class="number">1</span>))</span><br><span class="line">    <span class="keyword">val</span> wordCounts = words.updateStateByKey(</span><br><span class="line">      <span class="comment">//每个单词每次batch计算的时候都会调用这个函数</span></span><br><span class="line">      <span class="comment">//第一个参数为每个key对应的新的值，可能有多个，比如(hello,1)(hello,1),那么values为(1,1)</span></span><br><span class="line">      <span class="comment">//第二个参数为这个key对应的之前的状态</span></span><br><span class="line">      (values: <span class="type">Seq</span>[<span class="type">Int</span>], state: <span class="type">Option</span>[<span class="type">Int</span>]) =&gt; &#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">var</span> newValue = state.getOrElse(<span class="number">0</span>)</span><br><span class="line">        values.foreach(newValue += _)</span><br><span class="line">        <span class="type">Option</span>(newValue)</span><br><span class="line"></span><br><span class="line">      &#125;)</span><br><span class="line">    wordCounts.print()</span><br><span class="line"></span><br><span class="line">    ssc.start()</span><br><span class="line">    ssc.awaitTermination()</span><br><span class="line"></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <h2 id="5、生产几条数据"><a href="#5、生产几条数据" class="headerlink" title="5、生产几条数据"></a>5、生产几条数据</h2><p>随便写几条即可</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-console-producer.sh --broker-list ambari.master.com:6667 --topic UpdateStateBykeyWordCount</span><br></pre></td></tr></table></figure>
-<p><img src="https://tva2.sinaimg.cn/large/e44344dcly1fsb3o33nzij20pn01sgln.jpg" alt=""></p>
-<h2 id="6、结果"><a href="#6、结果" class="headerlink" title="6、结果"></a>6、结果</h2><p>根据结果可以看到，历史的单词也被统计打印出来了<br><img src="https://tva2.sinaimg.cn/large/e44344dcly1fsb3o2k036j21ev0rfwi6.jpg" alt=""></p>
+<p><img src="https://img-blog.csdnimg.cn/a2550fd2020d40438c0e4a9a365a200b.png" alt=""></p>
+<h2 id="6、结果"><a href="#6、结果" class="headerlink" title="6、结果"></a>6、结果</h2><p>根据结果可以看到，历史的单词也被统计打印出来了<br><img src="https://img-blog.csdnimg.cn/7b42d903287a43ed9cbf3a1ab37a528b.png" alt=""></p>
 
       
 
@@ -610,18 +610,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
@@ -638,11 +626,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -658,15 +654,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -678,7 +682,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -698,43 +714,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Flink</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -746,7 +726,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -754,19 +754,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -778,15 +778,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Linux</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -806,15 +806,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -826,27 +834,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -858,11 +854,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -894,6 +894,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
@@ -903,14 +907,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -926,15 +922,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -942,7 +934,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -967,6 +959,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
             
             <div class="clearfix"></div>
