@@ -17,12 +17,12 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言本文源自一位群友的一道美团面试题，解题思路（基于倒排索引）和代码都是这位大佬（相对于尚处于小白阶段的我）写的，我只是在基于倒排索引的基础上帮忙想出了最后一步思路，感觉这个解题思路不错，值得记录一下。 1、原始数据1234567892017-01-01	a2017-01-01	b2017-01-01	c2017-01-02	a2017-01-02	b2017-01-02	d2017-01-03">
 <meta property="og:locale" content="cn">
-<meta property="og:image" content="https://tva3.sinaimg.cn/large/e44344dcly1fqardqntzwj21480ifdi1.jpg">
-<meta property="og:updated_time" content="2019-05-09T01:49:10.054Z">
+<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/f8acf2fd587b2e7b634559dc7fc68423.png">
+<meta property="og:updated_time" content="2023-02-09T11:43:33.493Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Spark 统计每天新增用户数">
 <meta name="twitter:description" content="前言本文源自一位群友的一道美团面试题，解题思路（基于倒排索引）和代码都是这位大佬（相对于尚处于小白阶段的我）写的，我只是在基于倒排索引的基础上帮忙想出了最后一步思路，感觉这个解题思路不错，值得记录一下。 1、原始数据1234567892017-01-01	a2017-01-01	b2017-01-01	c2017-01-02	a2017-01-02	b2017-01-02	d2017-01-03">
-<meta name="twitter:image" content="https://tva3.sinaimg.cn/large/e44344dcly1fqardqntzwj21480ifdi1.jpg">
+<meta name="twitter:image" content="https://img-blog.csdnimg.cn/img_convert/f8acf2fd587b2e7b634559dc7fc68423.png">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -273,54 +273,53 @@
 <thead>
 <tr>
 <th>用户名</th>
-<th style="text-align:center">列一</th>
-<th style="text-align:center">列二</th>
-<th style="text-align:center">列三</th>
+<th>列一</th>
+<th>列二</th>
+<th>列三</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>a</td>
-<td style="text-align:center">2017-01-01</td>
-<td style="text-align:center">2017-01-02</td>
-<td style="text-align:center"></td>
+<td>2017-01-01</td>
+<td>2017-01-02</td>
+<td></td>
 </tr>
 <tr>
 <td>b</td>
-<td style="text-align:center">2017-01-01</td>
-<td style="text-align:center">2017-01-02</td>
-<td style="text-align:center">2017-01-03</td>
+<td>2017-01-01</td>
+<td>2017-01-02</td>
+<td>2017-01-03</td>
 </tr>
 <tr>
 <td>c</td>
-<td style="text-align:center">2017-01-01</td>
-<td style="text-align:center"></td>
-<td style="text-align:center"></td>
+<td>2017-01-01</td>
+<td></td>
+<td></td>
 </tr>
 <tr>
 <td>d</td>
-<td style="text-align:center">2017-01-02</td>
-<td style="text-align:center"></td>
-<td style="text-align:center"></td>
+<td>2017-01-02</td>
+<td></td>
+<td></td>
 </tr>
 <tr>
 <td>e</td>
-<td style="text-align:center">2017-01-03</td>
-<td style="text-align:center"></td>
-<td style="text-align:center"></td>
+<td>2017-01-03</td>
+<td></td>
+<td></td>
 </tr>
 <tr>
 <td>f</td>
-<td style="text-align:center">2017-01-03</td>
-<td style="text-align:center"></td>
-<td style="text-align:center"></td>
+<td>2017-01-03</td>
+<td></td>
 </tr>
 </tbody>
 </table>
 <h3 id="2-2-统计列一中每个日期出现的次数"><a href="#2-2-统计列一中每个日期出现的次数" class="headerlink" title="2.2 统计列一中每个日期出现的次数"></a>2.2 统计列一中每个日期出现的次数</h3><p>这样我们只看列一，统计每个日期在列一出现的次数，即为对应日期新增用户数。</p>
 <h2 id="3、代码"><a href="#3、代码" class="headerlink" title="3、代码"></a>3、代码</h2><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.dkl.leanring.spark.test</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SparkSession</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">NewUVDemo</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> spark = <span class="type">SparkSession</span>.builder().appName(<span class="string">"NewUVDemo"</span>).master(<span class="string">"local"</span>).getOrCreate()</span><br><span class="line">    <span class="keyword">val</span> rdd1 = spark.sparkContext.parallelize(</span><br><span class="line">      <span class="type">Array</span>(</span><br><span class="line">        (<span class="string">"2017-01-01"</span>, <span class="string">"a"</span>), (<span class="string">"2017-01-01"</span>, <span class="string">"b"</span>), (<span class="string">"2017-01-01"</span>, <span class="string">"c"</span>),</span><br><span class="line">        (<span class="string">"2017-01-02"</span>, <span class="string">"a"</span>), (<span class="string">"2017-01-02"</span>, <span class="string">"b"</span>), (<span class="string">"2017-01-02"</span>, <span class="string">"d"</span>),</span><br><span class="line">        (<span class="string">"2017-01-03"</span>, <span class="string">"b"</span>), (<span class="string">"2017-01-03"</span>, <span class="string">"e"</span>), (<span class="string">"2017-01-03"</span>, <span class="string">"f"</span>)))</span><br><span class="line">    <span class="comment">//倒排</span></span><br><span class="line">    <span class="keyword">val</span> rdd2 = rdd1.map(kv =&gt; (kv._2, kv._1))</span><br><span class="line">    <span class="comment">//倒排后的key分组</span></span><br><span class="line">    <span class="keyword">val</span> rdd3 = rdd2.groupByKey()</span><br><span class="line">    <span class="comment">//取最小时间</span></span><br><span class="line">    <span class="keyword">val</span> rdd4 = rdd3.map(kv =&gt; (kv._2.min, <span class="number">1</span>))</span><br><span class="line">    rdd4.countByKey().foreach(println)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>结果：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(2017-01-03,2)</span><br><span class="line">(2017-01-02,1)</span><br><span class="line">(2017-01-01,3)</span><br></pre></td></tr></table></figure></p>
-<p>附图：<br><img src="https://tva3.sinaimg.cn/large/e44344dcly1fqardqntzwj21480ifdi1.jpg" alt=""></p>
+<p>附图：<br><img src="https://img-blog.csdnimg.cn/img_convert/f8acf2fd587b2e7b634559dc7fc68423.png" alt=""></p>
 
       
 
@@ -663,14 +662,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -683,7 +674,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -695,22 +694,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">mysql</a>
               </li>
              
@@ -719,15 +702,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -739,7 +714,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -751,6 +742,18 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
               </li>
              
@@ -759,15 +762,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">hbase</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -783,11 +778,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+                <a href="javascript:void(0)" class="js-tag color1">hbase</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -795,7 +794,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">开源</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -803,15 +802,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color3">开源</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">java</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -820,6 +815,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Maven</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -835,10 +834,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
@@ -851,11 +846,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -863,11 +854,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -876,6 +871,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -891,19 +890,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">scala</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">日期</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">scala</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">日期</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -927,23 +926,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">压缩文件</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -955,19 +946,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">面试题</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -975,7 +962,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -988,10 +995,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1008,10 +1011,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
             
             <div class="clearfix"></div>
