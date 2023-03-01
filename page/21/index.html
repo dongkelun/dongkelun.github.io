@@ -206,6 +206,429 @@
           <div id="js-content" class="content-ll">
             
   
+    <article id="post-sparkOracle2Hive" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2018/08/27/sparkOracle2Hive/">利用Spark实现Oracle到Hive的历史数据同步</a>
+    </h1>
+  
+
+        
+        <a href="/2018/08/27/sparkOracle2Hive/" class="archive-article-date">
+  	<time datetime="2018-08-26T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2018-08-27</time>
+</a>
+        
+      </header>
+	    
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+        <h2 id="1、需求背景"><a href="#1、需求背景" class="headerlink" title="1、需求背景"></a>1、需求背景</h2><p>和上一篇文章<a href="https://dongkelun.com/2018/08/20/sparkDfAddComments/">Spark通过修改DataFrame的schema给表字段添加注释</a>一样，通过Spark将关系型数据库（以Oracle为例）的表同步的Hive，这里讲的只是同步历史数据，不包括同步增量数据。</p>
+<h2 id="2、Oracle和Hive的字段类型对应"><a href="#2、Oracle和Hive的字段类型对应" class="headerlink" title="2、Oracle和Hive的字段类型对应"></a>2、Oracle和Hive的字段类型对应</h2><p>利用Spark的字段类型自动匹配，本来以为Spark匹配的不是很好，只是简单的判断一下是否为数字、字符串，结果经验证，Spark可以获取到Oracle的小数点精度，Spark的字段类型对应和我自己整理的差不多，所以就索性用Spark自带的字段类型匹配，而不是自己去Oracle相关表获取每个字段类型，然后一一转化为Hive对应的字段类型，下面是Oracle和Hive的字段类型对应，只是整理了大概：</p>
+<table>
+<thead>
+<tr>
+<th>Oracle</th>
+<th style="text-align:center">Hive </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VARCHAR2</td>
+<td style="text-align:center">String </td>
+</tr>
+<tr>
+<td>NVARCHAR2</td>
+<td style="text-align:center">String </td>
+</tr>
+<tr>
+<td>NUMBER</td>
+<td style="text-align:center">DECIMAL/Int</td>
+</tr>
+<tr>
+<td>DATE</td>
+<td style="text-align:center">TIMESTAMP</td>
+</tr>
+<tr>
+<td>TIMESTAMP</td>
+<td style="text-align:center">TIMESTAMP</td>
+</tr>
+<tr>
+<td>CHAR</td>
+<td style="text-align:center">String </td>
+</tr>
+<tr>
+<td>CLOB（一般用不到）</td>
+<td style="text-align:center">String</td>
+</tr>
+<tr>
+<td>BLOB（一般用不到）</td>
+<td style="text-align:center">BINARY</td>
+</tr>
+<tr>
+<td>RAW （一般用不到）</td>
+<td style="text-align:center">BINARY</td>
+</tr>
+<tr>
+<td>Other</td>
+<td style="text-align:center">String</td>
+</tr>
+</tbody>
+</table>
+        
+          <a class="article-more-a" href="/2018/08/27/sparkOracle2Hive/#more">more >></a>
+        
+      
+
+      
+	  
+    </div>
+    <div class="article-info article-info-index">
+      
+	   
+		  
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hive</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">Oracle</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">DataFrame</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+		  
+
+	  
+	 
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2018/08/27/sparkOracle2Hive/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-sparkDfAddComments" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2018/08/20/sparkDfAddComments/">Spark通过修改DataFrame的schema给表字段添加注释</a>
+    </h1>
+  
+
+        
+        <a href="/2018/08/20/sparkDfAddComments/" class="archive-article-date">
+  	<time datetime="2018-08-19T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2018-08-20</time>
+</a>
+        
+      </header>
+	    
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+        <h2 id="1、需求背景"><a href="#1、需求背景" class="headerlink" title="1、需求背景"></a>1、需求背景</h2><p>通过Spark将关系型数据库（以Oracle为例）的表同步的Hive表，要求用Spark建表，有字段注释的也要加上注释。Spark建表，有两种方法：</p>
+<ul>
+<li>用Spark Sql，在程序里组建表语句，然后用Spark.sql(“建表语句”)建表，这种方法麻烦的地方在于你要读取Oracle表的详细的表结构信息，且要进行Oracle和Hive的字段类型进行一一对应</li>
+<li>用DataFrame 的saveAsTable方法，这种方法如果对应的数据库里没有表，则Spark会根据DataFrame的schema自动建表，比较简单，不用考虑字段类型匹配转化问题，但是这种方法有一个问题，Spark读取Oracle的表为DataFrame时，并不能将表字段的注释读进来，所以就有了如标题所示的需求。（一开始以为DataFrame不能加注释，经过研究，发现是可以的！）<h2 id="2、如何查看DataFrame是否有注释"><a href="#2、如何查看DataFrame是否有注释" class="headerlink" title="2、如何查看DataFrame是否有注释"></a>2、如何查看DataFrame是否有注释</h2></li>
+</ul>
+<p>前面讲到DataFrame里没有Oracle的注释信息，但是如果数据源为Hive的话，是可以将注释获取到的。</p>
+<h3 id="2-1-新建Hive测试表（带注释）"><a href="#2-1-新建Hive测试表（带注释）" class="headerlink" title="2.1 新建Hive测试表（带注释）"></a>2.1 新建Hive测试表（带注释）</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> <span class="string">`test`</span> (</span><br><span class="line"><span class="string">`id`</span> <span class="keyword">string</span> <span class="keyword">comment</span> <span class="string">'ID'</span>, </span><br><span class="line"><span class="string">`Name`</span> <span class="keyword">string</span> <span class="keyword">comment</span> <span class="string">'名字'</span></span><br><span class="line">)</span><br><span class="line"><span class="keyword">comment</span> <span class="string">'测试'</span>;</span><br></pre></td></tr></table></figure>
+        
+          <a class="article-more-a" href="/2018/08/20/sparkDfAddComments/#more">more >></a>
+        
+      
+
+      
+	  
+    </div>
+    <div class="article-info article-info-index">
+      
+	   
+		  
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">DataFrame</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+		  
+
+	  
+	 
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2018/08/20/sparkDfAddComments/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-sparkEmptyDataFrame" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2018/08/14/sparkEmptyDataFrame/">Spark创建空的DataFrame</a>
+    </h1>
+  
+
+        
+        <a href="/2018/08/14/sparkEmptyDataFrame/" class="archive-article-date">
+  	<time datetime="2018-08-13T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2018-08-14</time>
+</a>
+        
+      </header>
+	    
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>本文主要给出Spark创建空的DataFrame的代码示例，这里讲的空的DataFrame主要指有列名（可以自己随意指定），但是没有行的DataFrame，因为自己在开发过程中有这个需求，之前并不知道怎么创建，就查了一下，发现资料并不多，不知道因为太简单还是用的人少~，至于具体什么需求就不阐述了，主要给有这方面需求的小伙伴参考一下。还有另一种空的DataFrame就是没有任何行任何列的DataFrame，不知道有什么用，反正贴在代码里，万一有人用呢~</p>
+<h2 id="1、代码"><a href="#1、代码" class="headerlink" title="1、代码"></a>1、代码</h2><p>代码较简单，如下<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.dkl.leanring.spark.df</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SparkSession</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.types._</span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">Row</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.rdd.<span class="type">EmptyRDD</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Spark创建空DataFrame示例</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">EmptyDataFrame</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> spark = <span class="type">SparkSession</span>.builder().appName(<span class="string">"EmptyDataFrame"</span>).master(<span class="string">"local"</span>).getOrCreate()</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 创建一个空的DataFrame，代表用户</span></span><br><span class="line"><span class="comment">     * 有四列，分别代表ID、名字、年龄、生日</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">val</span> colNames = <span class="type">Array</span>(<span class="string">"id"</span>, <span class="string">"name"</span>, <span class="string">"age"</span>, <span class="string">"birth"</span>)</span><br><span class="line">    <span class="comment">//为了简单起见，字段类型都为String</span></span><br><span class="line">    <span class="keyword">val</span> schema = <span class="type">StructType</span>(colNames.map(fieldName =&gt; <span class="type">StructField</span>(fieldName, <span class="type">StringType</span>, <span class="literal">true</span>)))</span><br><span class="line">    <span class="comment">//主要是利用了spark.sparkContext.emptyRDD</span></span><br><span class="line">    <span class="keyword">val</span> emptyDf = spark.createDataFrame(spark.sparkContext.emptyRDD[<span class="type">Row</span>], schema)</span><br><span class="line"></span><br><span class="line">    emptyDf.show</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 也可以给每列指定相对应的类型</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">val</span> schema1 = <span class="type">StructType</span>(</span><br><span class="line">      <span class="type">Seq</span>(</span><br><span class="line">        <span class="type">StructField</span>(<span class="string">"id"</span>, <span class="type">IntegerType</span>, <span class="literal">true</span>),</span><br><span class="line">        <span class="type">StructField</span>(<span class="string">"name"</span>, <span class="type">StringType</span>, <span class="literal">true</span>),</span><br><span class="line">        <span class="type">StructField</span>(<span class="string">"age"</span>, <span class="type">IntegerType</span>, <span class="literal">true</span>),</span><br><span class="line">        <span class="type">StructField</span>(<span class="string">"birth"</span>, <span class="type">StringType</span>, <span class="literal">true</span>)))</span><br><span class="line">    <span class="keyword">val</span> emptyDf1 = spark.createDataFrame(spark.sparkContext.emptyRDD[<span class="type">Row</span>], schema1)</span><br><span class="line">    emptyDf1.show</span><br><span class="line"></span><br><span class="line">    <span class="comment">//还有一种空的DataFrame，没有任何行任何列</span></span><br><span class="line">    spark.emptyDataFrame.show</span><br><span class="line"></span><br><span class="line">    spark.stop()</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+        
+          <a class="article-more-a" href="/2018/08/14/sparkEmptyDataFrame/#more">more >></a>
+        
+      
+
+      
+	  
+    </div>
+    <div class="article-info article-info-index">
+      
+	   
+		  
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">DataFrame</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+		  
+
+	  
+	 
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2018/08/14/sparkEmptyDataFrame/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-sparkDefaultPartitionNums" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2018/08/13/sparkDefaultPartitionNums/">Spark 创建RDD、DataFrame各种情况的默认分区数</a>
+    </h1>
+  
+
+        
+        <a href="/2018/08/13/sparkDefaultPartitionNums/" class="archive-article-date">
+  	<time datetime="2018-08-12T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2018-08-13</time>
+</a>
+        
+      </header>
+	    
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>熟悉Spark的分区对于Spark性能调优很重要，本文总结Spark通过各种函数创建RDD、DataFrame时默认的分区数，其中主要和sc.defaultParallelism、sc.defaultMinPartitions以及HDFS文件的Block数量有关，还有很坑的某些情况的默认分区数为1。</p>
+<ul>
+<li>如果分区数少，那么并行执行的task就少，特别情况下，分区数为1，即使你分配的Executor很多，而实际执行的Executor只有1个，如果数据很大的话，那么任务执行的就很慢，好像是卡死了~，所以熟悉各种情况下默认的分区数对于Spark调优就很有必要了，特别是执行完算子返回的结果分区数为1的情况，更需要特别注意。（我就被坑过，我已经分配了足够多的Executor、默认的并行度、以及执行之前的数据集分区数，但分区数依然为1）</li>
+</ul>
+<h2 id="1、关于-sc-defaultMinPartitions"><a href="#1、关于-sc-defaultMinPartitions" class="headerlink" title="1、关于 sc.defaultMinPartitions"></a>1、关于 sc.defaultMinPartitions</h2><p>sc.defaultMinPartitions=min(sc.defaultParallelism,2)<br>也就是sc.defaultMinPartitions只有两个值1和2，当sc.defaultParallelism&gt;1时值为2，当sc.defaultParallelism=1时，值为1<br>上面的公式是在源码里定义的（均在类SparkContext里）：<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">defaultMinPartitions</span></span>: <span class="type">Int</span> = math.min(defaultParallelism, <span class="number">2</span>)</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">defaultParallelism</span></span>: <span class="type">Int</span> = &#123;</span><br><span class="line">    assertNotStopped()</span><br><span class="line">    taskScheduler.defaultParallelism</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="2、关于sc-defaultParallelism"><a href="#2、关于sc-defaultParallelism" class="headerlink" title="2、关于sc.defaultParallelism"></a>2、关于sc.defaultParallelism</h2><h3 id="2-1-首先可通过spark-default-parallelism设置sc-defaultParallelism的值"><a href="#2-1-首先可通过spark-default-parallelism设置sc-defaultParallelism的值" class="headerlink" title="2.1 首先可通过spark.default.parallelism设置sc.defaultParallelism的值"></a>2.1 首先可通过spark.default.parallelism设置sc.defaultParallelism的值</h3>
+        
+          <a class="article-more-a" href="/2018/08/13/sparkDefaultPartitionNums/#more">more >></a>
+        
+      
+
+      
+	  
+    </div>
+    <div class="article-info article-info-index">
+      
+	   
+		  
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">DataFrame</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Partition</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">Rdd</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+		  
+
+	  
+	 
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2018/08/13/sparkDefaultPartitionNums/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
     <article id="post-sparkUDF" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -273,366 +696,6 @@
       
         <p class="article-more-link">
           <a class="article-more-a" href="/2018/08/02/sparkUDF/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-dbeaverConnectHive" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2018/07/13/dbeaverConnectHive/">通过数据库客户端界面工具DBeaver连接Hive</a>
-    </h1>
-  
-
-        
-        <a href="/2018/07/13/dbeaverConnectHive/" class="archive-article-date">
-  	<time datetime="2018-07-12T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2018-07-13</time>
-</a>
-        
-      </header>
-	    
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-      
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>本文讲解如何通过数据库客户端界面工具DBeaver连接hive，并解决驱动下载不下来的问题。</p>
-<h2 id="1、为什么使用客户端界面工具"><a href="#1、为什么使用客户端界面工具" class="headerlink" title="1、为什么使用客户端界面工具"></a>1、为什么使用客户端界面工具</h2><p>为什么使用客户端界面工具而不用命令行使用hive</p>
-<ul>
-<li>通过界面工具查看分析hive里的数据要方便很多</li>
-<li>业务人员没有权限通过命令行连接hive</li>
-<li>领导喜欢在界面工具上查看hive里的数据</li>
-</ul>
-<h2 id="2、为什么使用DBeaver"><a href="#2、为什么使用DBeaver" class="headerlink" title="2、为什么使用DBeaver"></a>2、为什么使用DBeaver</h2><p>其实在网上搜一下，连接hive的工具还有很多，使用DBeaver的原因是因为我之前连接关系型数据库使用的就是DBeaver，正好DBeaver支持连接hive，且个人认为DBeaver确实挺好用的，支持各种关系型数据库，如连接Oracle数据库不需要像plsql那样自己配置连接文件，只需要在界面上输入url、用户名、密码即可，还有就是DBeaver的快捷键和Eclipse是一样的，比如注释、删除一行、复制一行到下一行等。</p>
-<h2 id="3、DBeaver下载、安装"><a href="#3、DBeaver下载、安装" class="headerlink" title="3、DBeaver下载、安装"></a>3、DBeaver下载、安装</h2><p>之前我一直用的旧版的，现在在官网上下载了最新版的DBeaver，发现界面功能比旧版好用了很多，亲测连hive没有问题。<br>下载地址：<a href="https://dbeaver.io/download/" target="_blank" rel="noopener">https://dbeaver.io/download/</a><br>我下载的免安装版（不带jre），windows64位，大家可以根据自己情况下载对应版本。<br><img src="https://img-blog.csdnimg.cn/img_convert/3f053144eaf40dbeb8ec3ed7371f8293.png" alt=""><br>
-        
-          <a class="article-more-a" href="/2018/07/13/dbeaverConnectHive/#more">more >></a>
-        
-      
-
-      
-	  
-    </div>
-    <div class="article-info article-info-index">
-      
-	   
-		  
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">界面工具</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">hive</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-		  
-
-	  
-	 
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2018/07/13/dbeaverConnectHive/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-HadoopException" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2018/07/10/HadoopException/">HDFS DataNode启动异常:/opt/jdk1.8.0_151/bin/java:权限不够</a>
-    </h1>
-  
-
-        
-        <a href="/2018/07/10/HadoopException/" class="archive-article-date">
-  	<time datetime="2018-07-09T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2018-07-10</time>
-</a>
-        
-      </header>
-	    
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-      
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>这个异常是在在ambari里启动DataNode产生的，其实这个问题很久就发现了，只是没时间去处理，所以之前把发生问题的slave1节点给移除了，现在有时间处理，就又把slave1加上了，所以就有了<a href="https://dongkelun.com/2018/07/10/ambariExceptions/">ambari 异常总结及解决办法</a>里面的问题，这个java权限不够的问题，在添加slave1之后，并安装datanode和nodemanager之后启动服务依然报错。</p>
-<p>异常信息：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/usr/hdp/2.6.4.0-91//hadoop-hdfs/bin/hdfs.distro:行317: /opt/jdk1.8.0_151/bin/java: 权限不够</span><br><span class="line">/usr/hdp/2.6.4.0-91//hadoop-hdfs/bin/hdfs.distro: 第 317 行:exec: /opt/jdk1.8.0_151/bin/java: 无法执行: 权限不够</span><br></pre></td></tr></table></figure></p>
-<p>这个问题在网上找也找不到对应的解决办法，所以有必要单独记录一下，没有放在<a href="https://dongkelun.com/2018/07/10/ambariExceptions/">ambari 异常总结及解决办法</a>，且我认为即使不用ambari，该问题依然可能会发生。</p>
-<h2 id="1、详细异常信息"><a href="#1、详细异常信息" class="headerlink" title="1、详细异常信息"></a>1、详细异常信息</h2><p>部分截图:<br><img src="https://img-blog.csdnimg.cn/img_convert/b51a9e45523c8c502b77838ede44fae0.png" alt=""><br>
-        
-          <a class="article-more-a" href="/2018/07/10/HadoopException/#more">more >></a>
-        
-      
-
-      
-	  
-    </div>
-    <div class="article-info article-info-index">
-      
-	   
-		  
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">Hadoop</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">ambari</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-		  
-
-	  
-	 
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2018/07/10/HadoopException/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-ambariExceptions" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2018/07/10/ambariExceptions/">ambari 异常总结及解决办法</a>
-    </h1>
-  
-
-        
-        <a href="/2018/07/10/ambariExceptions/" class="archive-article-date">
-  	<time datetime="2018-07-09T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2018-07-10</time>
-</a>
-        
-      </header>
-	    
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-      
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>本文总结在使用ambari时产生的异常，以及如何解决的。<br>如果发生了异常，在界面上不能直观的看出异常的原因，那么我一般通过查看日志的方法解决。<br>通过下面的命令查看<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vim /var/<span class="built_in">log</span>/ambari-server/ambari-server.log</span><br></pre></td></tr></table></figure></p>
-<ul>
-<li>若该日志文件没有异常信息，可在其他日志文件里查找<h2 id="1、异常一"><a href="#1、异常一" class="headerlink" title="1、异常一"></a>1、异常一</h2>异常发生在add host并confirm host的时候，会卡住不动，然后看日志会发现异常信息：<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Error executing bootstrap Cannot create /var/run/ambari-server/bootstrap</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-        
-          <a class="article-more-a" href="/2018/07/10/ambariExceptions/#more">more >></a>
-        
-      
-
-      
-	  
-    </div>
-    <div class="article-info article-info-index">
-      
-	   
-		  
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">ambari</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">centos7</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-		  
-
-	  
-	 
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2018/07/10/ambariExceptions/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-sparkSubmitException1" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2018/07/06/sparkSubmitException1/">spark-submit报错:Application application_1529650293575_0148 finished with failed status</a>
-    </h1>
-  
-
-        
-        <a href="/2018/07/06/sparkSubmitException1/" class="archive-article-date">
-  	<time datetime="2018-07-05T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2018-07-06</time>
-</a>
-        
-      </header>
-	    
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-      
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>记录spark-submit提交Spark程序出现的一个异常，以供第一次出现这种异常且不知道原因，该怎么解决的的同学参考。</p>
-<h2 id="1、异常信息"><a href="#1、异常信息" class="headerlink" title="1、异常信息"></a>1、异常信息</h2><figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Exception in thread <span class="string">"main"</span> org.apache.spark.SparkException: Application application_1529650293575_0148 finished with failed status</span><br><span class="line">	at org.apache.spark.deploy.yarn.Client.run(Client.scal<span class="variable">a:1187</span>)</span><br><span class="line">	at org.apache.spark.deploy.yarn.Client$.main(Client.scal<span class="variable">a:1233</span>)</span><br><span class="line">	at org.apache.spark.deploy.yarn.Client.main(Client.scala)</span><br><span class="line">	at <span class="keyword">sun</span>.reflect.NativeMethodAccessorImpl.invoke0(Native Method)</span><br><span class="line">	at <span class="keyword">sun</span>.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.jav<span class="variable">a:62</span>)</span><br><span class="line">	at <span class="keyword">sun</span>.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.jav<span class="variable">a:43</span>)</span><br><span class="line">	at java.lang.reflect.Method.invoke(Method.jav<span class="variable">a:498</span>)</span><br><span class="line">	at org.apache.spark.deploy.SparkSubmit$.org$apache$spark$deploy$SparkSubmit$$runMain(SparkSubmit.scal<span class="variable">a:782</span>)</span><br><span class="line">	at org.apache.spark.deploy.SparkSubmit$.doRunMain$<span class="number">1</span>(SparkSubmit.scal<span class="variable">a:180</span>)</span><br><span class="line">	at org.apache.spark.deploy.SparkSubmit$.submit(SparkSubmit.scal<span class="variable">a:205</span>)</span><br><span class="line">	at org.apache.spark.deploy.SparkSubmit$.main(SparkSubmit.scal<span class="variable">a:119</span>)</span><br><span class="line">	at org.apache.spark.deploy.SparkSubmit.main(SparkSubmit.scala)</span><br></pre></td></tr></table></figure>
-        
-          <a class="article-more-a" href="/2018/07/06/sparkSubmitException1/#more">more >></a>
-        
-      
-
-      
-	  
-    </div>
-    <div class="article-info article-info-index">
-      
-	   
-		  
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">spark-submit</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-		  
-
-	  
-	 
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2018/07/06/sparkSubmitException1/">展开全文 >></a>
         </p>
       
 
@@ -862,6 +925,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">mysql</a>
               </li>
              
@@ -870,7 +937,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -882,15 +949,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -902,23 +965,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -930,7 +981,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">hbase</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -946,19 +1017,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">hbase</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+                <a href="javascript:void(0)" class="js-tag color3">开源</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -970,7 +1037,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">开源</a>
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -983,10 +1050,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Maven</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1006,6 +1069,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">sql</a>
               </li>
              
@@ -1014,15 +1081,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1031,6 +1090,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1046,23 +1109,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1071,6 +1126,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1094,15 +1157,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">压缩文件</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1114,11 +1181,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1126,11 +1189,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1138,11 +1197,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
+                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1151,10 +1218,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">vmware</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1178,7 +1241,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
             
             <div class="clearfix"></div>

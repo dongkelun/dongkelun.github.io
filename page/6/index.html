@@ -206,6 +206,390 @@
           <div id="js-content" class="content-ll">
             
   
+    <article id="post-hudiSparkSqlSourceCodeLearning-ctas" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2022/07/30/hudiSparkSqlSourceCodeLearning-ctas/">Hudi Spark SQL源码学习总结-CTAS</a>
+    </h1>
+  
+
+        
+        <a href="/2022/07/30/hudiSparkSqlSourceCodeLearning-ctas/" class="archive-article-date">
+  	<time datetime="2022-07-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2022-07-30</time>
+</a>
+        
+      </header>
+	    
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>上一篇文章<a href="https://dongkelun.com/2022/07/20/hudiSparkSqlSourceCodeLearning/">Hudi Spark SQL源码学习总结-Create Table</a>总结了<code>Create Table</code>的源码执行逻辑，这一篇继续总结<code>CTAS</code>，之所以总结<code>CTAS</code>，是之前在我提交的一个PR中发现，Spark2和Spark3.2.1版本的CTAS的逻辑不一样，最终走的Hudi实现类也不一样，所以本文分Spark2和Spark3.2.1两个版本分析</p>
+<h2 id="不同点"><a href="#不同点" class="headerlink" title="不同点"></a>不同点</h2><p>先总结一下Spark2和Spark3.2.1的整体逻辑的不同点</p>
+<p>Spark2:     <code>visitCreateTable</code>-&gt;<code>CreateTable</code>-&gt;<code>CreateHoodieTableAsSelectCommand.run</code><br>Spark3.2.1: 前提配置了：<code>spark.sql.catalog.spark_catalog=org.apache.spark.sql.hudi.catalog.HoodieCatalog</code>，如果没有配置则和Spark2一样<br>            <code>visitCreateTable</code>-&gt;<code>CreateTableAsSelectStatement</code>-&gt;<code>isV2Provider</code>-&gt;true-&gt;<code>CreateTableAsSelect</code>-&gt;<code>HoodieCatalog.createHoodieTable</code><br>            <code>visitCreateTable</code>-&gt;<code>CreateTableAsSelectStatement</code>-&gt;<code>isV2Provider</code>-&gt;false-&gt;<code>CreateTable</code>-&gt;<code>CreateHoodieTableAsSelectCommand.run</code></p>
+<p>Spark2和Spark3.2.1不同的关键点有两个:</p>
+<ul>
+<li>1、配置<code>spark.sql.catalog.spark_catalog=org.apache.spark.sql.hudi.catalog.HoodieCatalog</code></li>
+<li>2、isV2Provider(“hudi”)返回ture</li>
+</ul>
+<p>只要有一个不满足，Spark3.2.1的逻辑就和Spark2一样，引进<code>HoodieCatalog</code>和令<code>hudi</code>为V2Provider的PR为： <a href="https://github.com/apache/hudi/pull/4611" target="_blank" rel="noopener">[HUDI-3254] Introduce HoodieCatalog to manage tables for Spark Datasource V2</a><br>目前master最新代码已将spark3.2.1的isV2Provider(“hudi”)改为了false,也就是Spark2和Saprk3.2.1的逻辑又一致了，PR：<a href="https://github.com/apache/hudi/pull/5737" target="_blank" rel="noopener">[HUDI-4178] Addressing performance regressions in Spark DataSourceV2 Integration</a></p>
+<h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>Hudi <a href="https://github.com/apache/hudi/pull/5592" target="_blank" rel="noopener">https://github.com/apache/hudi/pull/5592</a> 本文基于这个PR对应的代码进行调试分析，因为我就是在贡献这个PR时才发现Spark3.2.1和Saprk2的<code>CTAS</code>的逻辑不同的</p>
+        
+          <a class="article-more-a" href="/2022/07/30/hudiSparkSqlSourceCodeLearning-ctas/#more">more >></a>
+        
+      
+
+      
+	  
+    </div>
+    <div class="article-info article-info-index">
+      
+	   
+		  
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">源码</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+		  
+
+	  
+	 
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2022/07/30/hudiSparkSqlSourceCodeLearning-ctas/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-hudiSparkSqlSourceCodeLearning" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2022/07/20/hudiSparkSqlSourceCodeLearning/">Hudi Spark SQL源码学习总结-Create Table</a>
+    </h1>
+  
+
+        
+        <a href="/2022/07/20/hudiSparkSqlSourceCodeLearning/" class="archive-article-date">
+  	<time datetime="2022-07-19T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2022-07-20</time>
+</a>
+        
+      </header>
+	    
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>简要总结Hudi Spark Sql源码执行逻辑，从建表开始。其实从去年开始接触Hudi的时候就研究学习了Hudi Spark SQL的部分源码，并贡献了几个PR，但是完整的逻辑有些地方还没有完全梳理清楚，所以现在想要从头开始学习，搞懂一些知识难点，这样以后看相关源码的时候就不会导致因为一些关键点不懂影响进度。</p>
+<blockquote>
+<p>由于本人能力和精力有限，本文只讲解自己觉得比较关键的点，主要目的是梳理整个流程。</p>
+</blockquote>
+<h2 id="Spark-SQL源码"><a href="#Spark-SQL源码" class="headerlink" title="Spark SQL源码"></a>Spark SQL源码</h2><p>既然是学习Hudi Spark SQL源码，那么肯定离不开Spark SQL源码，所以需要先学习了解Spark SQL的源码，在CSDN上发现一位作者写的几篇文章不错，这几天我也主要是参考他写的这几篇文章并结合源码进行学习的,我把它们放在后面的参考文章中，大家可以参考一下。</p>
+<h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>Spark 2.4.4<br>Hudi master分支 0.12.0-SNAPSHOT</p>
+<p>虽然在学习Spark SQL源码的时候用的是Spark3.3,但是因为Hudi源码默认的Spark版本是2.4.4，如果改版本在IDEA调试的话比较麻烦，所以是用Spark2.4.4版本，但我和Spark3.3对比了一下，大致逻辑是一样的。</p>
+        
+          <a class="article-more-a" href="/2022/07/20/hudiSparkSqlSourceCodeLearning/#more">more >></a>
+        
+      
+
+      
+	  
+    </div>
+    <div class="article-info article-info-index">
+      
+	   
+		  
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">源码</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+		  
+
+	  
+	 
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2022/07/20/hudiSparkSqlSourceCodeLearning/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-sparkKyuubiPackConf" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2022/07/06/sparkKyuubiPackConf/">Spark3.12+Kyuubi1.5.2+kyuubi-spark-authz源码编译打包+部署配置HA</a>
+    </h1>
+  
+
+        
+        <a href="/2022/07/06/sparkKyuubiPackConf/" class="archive-article-date">
+  	<time datetime="2022-07-05T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2022-07-06</time>
+</a>
+        
+      </header>
+	    
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>记录Spark3.1.2+Kyuubi1.5.2从源码打包到部署配置过程，虽然之前总结过一篇Kyuubi配置的文章：<a href="https://dongkelun.com/2022/03/25/kyuubiConf/">Kyuubi 安装配置总结</a>，但是这次和之前还是有不同的:</p>
+<ul>
+<li>1、Kyuubi版本升级 当时最新版本1.4.0，现在要升级到最新版1.5.2，并且1.4.0打包的时候很快完成没有任何问题，1.5.2打包时比较慢，且遇到了比较棘手的问题，这里记录一下解决过程</li>
+<li>2、当时没有配置Spark的权限，虽然之前总结了一篇<a href="https://dongkelun.com/2021/12/02/submarinSparkRanger/">利用Submarin集成Spark-Ranger</a>,但是这次用的不是Submarin,用的是kyuubi自带的kyuubi-spark-authz插件，而且解决了当时没有解决的问题，正好更新一下，之所以不用submarin，是因为submarin在新版本已经被去掉了，不再维护，而kyuubi-spark-authz和submarin的作者是同一个人，且kyuubi一直在维护，即使有问题也可以在社区提问题解决，这样还少学习配置一个组件，减少了维护成本</li>
+</ul>
+        
+          <a class="article-more-a" href="/2022/07/06/sparkKyuubiPackConf/#more">more >></a>
+        
+      
+
+      
+	  
+    </div>
+    <div class="article-info article-info-index">
+      
+	   
+		  
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">Kyuubi</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">Ranger</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+		  
+
+	  
+	 
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2022/07/06/sparkKyuubiPackConf/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-hudiQueryTypes" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2022/06/29/hudiQueryTypes/">Hudi查询类型/视图总结</a>
+    </h1>
+  
+
+        
+        <a href="/2022/06/29/hudiQueryTypes/" class="archive-article-date">
+  	<time datetime="2022-06-28T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2022-06-29</time>
+</a>
+        
+      </header>
+	    
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>上面文章<a href="https://dongkelun.com/2022/06/27/hiveIncrQueryHudi/">Hive增量查询Hudi表</a>提到Hudi表有读优化视图和实时视图，其实当时并没有完全掌握，所以现在单独学习总结。Hudi官网文档<a href="https://hudi.apache.org/cn/docs/0.9.0/concepts/" target="_blank" rel="noopener">中文</a>称之为视图，其实<a href="https://hudi.apache.org/cn/docs/concepts/#views" target="_blank" rel="noopener">英文</a>为query types翻译过来为查询类型</p>
+<h2 id="Query-types"><a href="#Query-types" class="headerlink" title="Query types"></a>Query types</h2><p>Hudi 支持下面三种视图</p>
+<ul>
+<li><p>Snapshot Queries 快照查询/实时视图 Queries see the latest snapshot of the table as of a given commit or compaction action. In case of merge on read table, it exposes near-real time data(few mins) by merging the base and delta files of the latest file slice on-the-fly. For copy on write table, it provides a drop-in replacement for existing parquet tables, while providing upsert/delete and other write side features. 在此视图上的查询可以查看给定提交或压缩操作时表的最新快照。对于读时合并表（MOR表） 该视图通过动态合并最新文件切片的基本文件(例如parquet)和增量文件(例如avro)来提供近实时数据集（几分钟的延迟）。对于写时复制表（COW表），它提供了现有parquet表的插入式替换，同时提供了插入/删除和其他写侧功能。</p>
+</li>
+<li><p>Incremental Queries 增量查询/增量视图，也就是上篇文章讲的增量查询 Queries only see new data written to the table, since a given commit/compaction. This effectively provides change streams to enable incremental data pipelines. 对该视图的查询只能看到从某个提交/压缩后写入数据集的新数据。该视图有效地提供了更改流，来支持增量数据管道。</p>
+</li>
+<li><p>Read Optimized Queries 读优化查询/读优化视图 : Queries see the latest snapshot of table as of a given commit/compaction action. Exposes only the base/columnar files in latest file slices and guarantees the same columnar query performance compared to a non-hudi columnar table. 在此视图上的查询将查看给定提交或压缩操作中数据集的最新快照。 该视图仅将最新文件切片中的基本/列文件暴露给查询，并保证与非Hudi列式数据集相比，具有相同的列式查询性能。</p>
+</li>
+</ul>
+        
+          <a class="article-more-a" href="/2022/06/29/hudiQueryTypes/#more">more >></a>
+        
+      
+
+      
+	  
+    </div>
+    <div class="article-info article-info-index">
+      
+	   
+		  
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hive</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+		  
+
+	  
+	 
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2022/06/29/hudiQueryTypes/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
     <article id="post-hiveIncrQueryHudi" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -274,380 +658,6 @@
       
         <p class="article-more-link">
           <a class="article-more-a" href="/2022/06/27/hiveIncrQueryHudi/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-hadoopSourceCodeCompilation" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2022/06/22/hadoopSourceCodeCompilation/">Hadoop源码编译打包</a>
-    </h1>
-  
-
-        
-        <a href="/2022/06/22/hadoopSourceCodeCompilation/" class="archive-article-date">
-  	<time datetime="2022-06-21T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2022-06-22</time>
-</a>
-        
-      </header>
-	    
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-      
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>记录总结Hadoop源码编译打包过程，根据源码里的文档，一开始以为不支持在Windows系统上打包，只支持Unix和Mac，所以这里我在自己虚拟机centos7系统上编译，后来在文档后面部分才发现也支持在Windows上编译，不过还需要安装Visual Studio 2010，可能不如还不如在虚拟机上编译简单，如果想尝试在Windows上编译，可以看源码里的文档<code>BUILDING.txt</code>中<code>Building on Windows</code>的部分</p>
-<h2 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h2><p>因之前没有下载过hadoop的源码，所以需要先下载hadoop的源码</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> https://github.com/apache/hadoop.git</span><br></pre></td></tr></table></figure>
-        
-          <a class="article-more-a" href="/2022/06/22/hadoopSourceCodeCompilation/#more">more >></a>
-        
-      
-
-      
-	  
-    </div>
-    <div class="article-info article-info-index">
-      
-	   
-		  
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">Hadoop</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">源码</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-		  
-
-	  
-	 
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2022/06/22/hadoopSourceCodeCompilation/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-hudiDeltaStreamer" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2022/06/12/hudiDeltaStreamer/">Hudi DeltaStreamer使用总结</a>
-    </h1>
-  
-
-        
-        <a href="/2022/06/12/hudiDeltaStreamer/" class="archive-article-date">
-  	<time datetime="2022-06-11T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2022-06-12</time>
-</a>
-        
-      </header>
-	    
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-      
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>总结如何利用Hudi DeltaStreamer工具从外部数据源读取数据并写入新的Hudi表，<code>HoodieDeltaStreamer</code>是hudi-utilities-bundle的一部分，按照<a href="https://dongkelun.com/2022/05/12/hudiIntroduction/#Hudi-%E5%AE%89%E8%A3%85">Apache Hudi 入门学习总结</a>,将hudi-spark-bundle包拷贝至$SPARK_HOME/jars目录下即可。</p>
-<p><code>HoodieDeltaStreamer</code>提供了从DFS或Kafka等不同来源进行摄取的方式，并具有以下功能。</p>
-<ul>
-<li>从Kafka单次摄取新事件，从Sqoop、HiveIncrementalPuller输出或DFS文件夹中的多个文件 增量导入</li>
-<li>支持json、avro或自定义记录类型的传入数据</li>
-<li>管理检查点，回滚和恢复</li>
-<li>利用DFS或Confluent schema注册表的Avro模式。</li>
-<li>支持自定义转换操作</li>
-<li>除了上述官网说的几项，也支持读取Hive表等（历史数据）转化Hudi表，源码里还有其他的工具类，可以自行查阅源码发掘</li>
-</ul>
-        
-          <a class="article-more-a" href="/2022/06/12/hudiDeltaStreamer/#more">more >></a>
-        
-      
-
-      
-	  
-    </div>
-    <div class="article-info article-info-index">
-      
-	   
-		  
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-		  
-
-	  
-	 
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2022/06/12/hudiDeltaStreamer/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-hudiSparkSQL" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2022/05/13/hudiSparkSQL/">Hudi Spark SQL总结</a>
-    </h1>
-  
-
-        
-        <a href="/2022/05/13/hudiSparkSQL/" class="archive-article-date">
-  	<time datetime="2022-05-12T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2022-05-13</time>
-</a>
-        
-      </header>
-	    
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-      
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>总结Hudi Spark SQL的使用，本人仍然以Hudi0.9.0版本为例，也会稍微提及最新版的一些改动。Hudi 从0.9.0版本开始支持Spark SQL，是由阿里的pengzhiwei同学贡献的，pengzhiwei目前已不负责Hudi,改由同事YannByron负责，现在又有ForwardXu贡献了很多功能特性，目前好像主要由ForwardXu负责。<br>三位都是大佬，都是Apache Hudi Committer，膜拜大佬，向大佬学习！！！大佬的github:</p>
-<ul>
-<li>彭志伟（阿里） pengzhiwei  <a href="https://github.com/pengzhiwei2018" target="_blank" rel="noopener">https://github.com/pengzhiwei2018</a></li>
-<li>毕岩（阿里）   YannByron   <a href="https://github.com/YannByron" target="_blank" rel="noopener">https://github.com/YannByron</a></li>
-<li>徐前进（腾讯） ForwardXu   <a href="https://github.com/XuQianJin-Stars" target="_blank" rel="noopener">https://github.com/XuQianJin-Stars</a></li>
-</ul>
-<p>当然还有很多其他大佬，如Apache member/Hudi PMC Raymond Xu/许世彦 <a href="https://github.com/xushiyan" target="_blank" rel="noopener">https://github.com/xushiyan</a>,负责整个Spark模块</p>
-<h2 id="配置参数"><a href="#配置参数" class="headerlink" title="配置参数"></a>配置参数</h2><p>核心参数：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">--conf <span class="string">'spark.serializer=org.apache.spark.serializer.KryoSerializer'</span>  </span><br><span class="line">--conf <span class="string">'spark.sql.extensions=org.apache.spark.sql.hudi.HoodieSparkSessionExtension'</span></span><br></pre></td></tr></table></figure></p>
-<h2 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h2><p>三种方式使用Hudi Spark SQL</p>
-        
-          <a class="article-more-a" href="/2022/05/13/hudiSparkSQL/#more">more >></a>
-        
-      
-
-      
-	  
-    </div>
-    <div class="article-info article-info-index">
-      
-	   
-		  
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-		  
-
-	  
-	 
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2022/05/13/hudiSparkSQL/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-hudiIntroduction" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2022/05/12/hudiIntroduction/">Apache Hudi 入门学习总结</a>
-    </h1>
-  
-
-        
-        <a href="/2022/05/12/hudiIntroduction/" class="archive-article-date">
-  	<time datetime="2022-05-11T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2022-05-12</time>
-</a>
-        
-      </header>
-	    
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-      
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>学习和使用Hudi近一年了，由于之前忙于工作和学习，没时间总结，现在从头开始总结一下，先从入门开始</p>
-<h2 id="Hudi-概念"><a href="#Hudi-概念" class="headerlink" title="Hudi 概念"></a>Hudi 概念</h2><p>Apache Hudi 是一个支持插入、更新、删除的增量数据湖处理框架，有两种表类型：COW和MOR，可以自动合并小文件，Hudi自己管理元数据，元数据目录为<code>.hoodie</code>,<br>具体的概念可以查看官网<a href="https://hudi.apache.org/cn/docs/0.9.0/overview" target="_blank" rel="noopener">https://hudi.apache.org/cn/docs/0.9.0/overview</a></p>
-<h2 id="Hudi-学习"><a href="#Hudi-学习" class="headerlink" title="Hudi 学习"></a>Hudi 学习</h2><ul>
-<li>Hudi 官网 <a href="https://hudi.apache.org/cn/docs/0.9.0/overview/" target="_blank" rel="noopener">https://hudi.apache.org/cn/docs/0.9.0/overview/</a>(因本人最开始学习时Hudi的版本为0.9.0版本，所以这里列的也是0.9.0的连接)</li>
-<li>Hudi 官方公众号号：ApacheHudi （Hudi PMC leesf 运营的）,自己搜索即可，这里不贴二维码了</li>
-<li>Github <a href="https://github.com/leesf/hudi-resources" target="_blank" rel="noopener">https://github.com/leesf/hudi-resources</a> 这个是Hudi PMC leesf整理的公众号上的文章，PC 浏览器上看比较方便</li>
-<li>GitHub 源码 <a href="https://github.com/apache/hudi" target="_blank" rel="noopener">https://github.com/apache/hudi</a> 想要深入学习，还是得看源码并多和社区交流</li>
-</ul>
-        
-          <a class="article-more-a" href="/2022/05/12/hudiIntroduction/#more">more >></a>
-        
-      
-
-      
-	  
-    </div>
-    <div class="article-info article-info-index">
-      
-	   
-		  
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hive</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-		  
-
-	  
-	 
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2022/05/12/hudiIntroduction/">展开全文 >></a>
         </p>
       
 
@@ -877,6 +887,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">mysql</a>
               </li>
              
@@ -885,7 +899,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -897,15 +911,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -917,23 +927,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -945,7 +943,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">hbase</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -961,19 +979,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">hbase</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+                <a href="javascript:void(0)" class="js-tag color3">开源</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -985,7 +999,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">开源</a>
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -998,10 +1012,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Maven</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1021,6 +1031,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">sql</a>
               </li>
              
@@ -1029,15 +1043,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1046,6 +1052,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1061,23 +1071,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1086,6 +1088,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1109,15 +1119,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">压缩文件</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1129,11 +1143,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1141,11 +1151,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1153,11 +1159,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
+                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1166,10 +1180,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">vmware</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1193,7 +1203,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
             
             <div class="clearfix"></div>
