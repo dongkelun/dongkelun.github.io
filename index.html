@@ -235,7 +235,7 @@
 <li>Hudi 0.13.0</li>
 </ul>
 <h2 id="Checkpoint-参数"><a href="#Checkpoint-参数" class="headerlink" title="Checkpoint 参数"></a>Checkpoint 参数</h2><p>一般需要设置的常用参数<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- checkpoint间隔时间，单位毫秒，没有默认值，如果想开启checkpoint，需要将该参数设置一个大于0的数值</span></span><br><span class="line"><span class="comment">-- 如果想提升sink性能，比如写hudi，需要将该值设置大一点，因为间隔时间决定了批次大小</span></span><br><span class="line"><span class="comment">-- checkpoint间隔时间不能设置太短也不能设置太长，太短影响写入性能，太长影响数据及时性。</span></span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.interval=<span class="number">1000</span>;</span><br><span class="line"><span class="comment">-- 保存checkpoint文件的目录</span></span><br><span class="line"><span class="keyword">set</span> state.checkpoints.dir=hdfs:///flink/checkpoints/hudi2mysql;</span><br><span class="line"><span class="comment">-- 任务取消后保留checkpoint,默认值NO_EXTERNALIZED_CHECKPOINTS，</span></span><br><span class="line"><span class="comment">-- 可选值NO_EXTERNALIZED_CHECKPOINTS、DELETE_ON_CANCELLATION、RETAIN_ON_CANCELLATION</span></span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.externalized-checkpoint-<span class="keyword">retention</span>=RETAIN_ON_CANCELLATION;</span><br></pre></td></tr></table></figure></p>
-<h3 id="从checkpoint恢复"><a href="#从checkpoint恢复" class="headerlink" title="从checkpoint恢复"></a>从checkpoint恢复</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> execution.savepoint.path=hdfs:///flink/checkpoints/cdc_mysql2hudi/<span class="number">8</span>c3c91caa067ded7700cfb227c0899a8/chk<span class="number">-155</span>;</span><br></pre></td></tr></table></figure>
+<h3 id="从checkpoint恢复"><a href="#从checkpoint恢复" class="headerlink" title="从checkpoint恢复"></a>从checkpoint恢复</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> execution.savepoint.path=hdfs:///flink/checkpoints/hudi2mysql/<span class="number">255</span>bdd01cee7486113feb1cbe8b45ee0/chk<span class="number">-1314</span>;</span><br></pre></td></tr></table></figure>
 <h3 id="其他参数"><a href="#其他参数" class="headerlink" title="其他参数"></a>其他参数</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- checkpoint模式，默认值EXACTLY_ONCE，可选值：EXACTLY_ONCE、AT_LEAST_ONCE</span></span><br><span class="line"><span class="comment">-- 要想支持EXACTLY_ONCE，需要sink端支持事务</span></span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.mode=EXACTLY_ONCE;</span><br><span class="line"><span class="comment">-- checkpoint超时时间，默认10分钟</span></span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.timeout=<span class="number">600000</span>;</span><br><span class="line"><span class="comment">-- checkpoint文件保留数，默认1</span></span><br><span class="line"><span class="keyword">set</span> state.checkpoints.num-retained=<span class="number">3</span>;</span><br></pre></td></tr></table></figure>
         
           <a class="article-more-a" href="/2023/03/01/flinkSqlCheckpoint/#more">more >></a>
@@ -271,265 +271,6 @@
       
         <p class="article-more-link">
           <a class="article-more-a" href="/2023/03/01/flinkSqlCheckpoint/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-flinkCdcConnectors" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-      
-        <h2 id="MySQL"><a href="#MySQL" class="headerlink" title="MySQL"></a>MySQL</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">'connector' = 'mysql-cdc', <span class="comment">-- required</span></span><br><span class="line">'hostname' = 'localhost', <span class="comment">-- required</span></span><br><span class="line">'port' = '3306', <span class="comment">-- optional</span></span><br><span class="line">'username' = 'root', <span class="comment">-- required</span></span><br><span class="line">'password' = '123456', <span class="comment">-- required</span></span><br><span class="line">'database-name' = 'mydb', <span class="comment">-- required</span></span><br><span class="line">'table-name' = 'orders' <span class="comment">-- required</span></span><br></pre></td></tr></table></figure>
-<h2 id="Oracle"><a href="#Oracle" class="headerlink" title="Oracle"></a>Oracle</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">'connector' = 'oracle-cdc', <span class="comment">-- required</span></span><br><span class="line">'hostname' = 'localhost', <span class="comment">-- optional</span></span><br><span class="line">'port' = '1521', <span class="comment">-- optional</span></span><br><span class="line">'username' = 'flinkuser', <span class="comment">-- required</span></span><br><span class="line">'password' = 'flinkpw', <span class="comment">-- required</span></span><br><span class="line">'database-name' = 'XE', <span class="comment">-- required</span></span><br><span class="line">'schema-name' = 'inventory', <span class="comment">-- required</span></span><br><span class="line">'table-name' = 'products' <span class="comment">-- required</span></span><br></pre></td></tr></table></figure>
-<h2 id="MongoDB"><a href="#MongoDB" class="headerlink" title="MongoDB"></a>MongoDB</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">'connector' = 'mongodb-cdc', <span class="comment">-- required</span></span><br><span class="line">'hosts' = 'localhost:27017,localhost:27018,localhost:27019', <span class="comment">-- required</span></span><br><span class="line">'username' = 'flinkuser', <span class="comment">-- optional</span></span><br><span class="line">'password' = 'flinkpw', <span class="comment">-- optional</span></span><br><span class="line">'database' = 'inventory', <span class="comment">-- optional</span></span><br><span class="line">'collection' = 'products' <span class="comment">-- optional</span></span><br></pre></td></tr></table></figure>
-<h2 id="Postgres"><a href="#Postgres" class="headerlink" title="Postgres"></a>Postgres</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">'connector' = 'postgres-cdc', <span class="comment">-- required</span></span><br><span class="line">'hostname' = 'localhost', <span class="comment">-- required</span></span><br><span class="line">'port' = '5432', <span class="comment">-- optional</span></span><br><span class="line">'username' = 'postgres', <span class="comment">-- required</span></span><br><span class="line">'password' = 'postgres', <span class="comment">-- required</span></span><br><span class="line">'database-name' = 'postgres', <span class="comment">-- required</span></span><br><span class="line">'schema-name' = 'public', <span class="comment">-- required</span></span><br><span class="line">'table-name' = 'shipments' <span class="comment">-- required</span></span><br></pre></td></tr></table></figure>
-<h2 id="OceanBase"><a href="#OceanBase" class="headerlink" title="OceanBase"></a>OceanBase</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">'connector' = 'oceanbase-cdc', <span class="comment">-- required</span></span><br><span class="line">'scan.startup.mode' = 'initial', <span class="comment">-- required</span></span><br><span class="line">'username' = 'user@test_tenant', <span class="comment">-- required</span></span><br><span class="line">'password' = 'pswd', <span class="comment">-- required</span></span><br><span class="line">'tenant-name' = 'test_tenant', <span class="comment">-- required</span></span><br><span class="line">'database-name' = 'test_db', <span class="comment">-- optional</span></span><br><span class="line">'table-name' = 'orders', <span class="comment">-- optional</span></span><br><span class="line">'hostname' = '127.0.0.1', <span class="comment">-- optional</span></span><br><span class="line">'port' = '2881', <span class="comment">-- optional</span></span><br><span class="line">'rootserver-list' = '127.0.0.1:2882:2881',<span class="comment">-- optional</span></span><br><span class="line">'logproxy.host' = '127.0.0.1', <span class="comment">-- optional</span></span><br><span class="line">'logproxy.port' = '2983', <span class="comment">-- optional</span></span><br><span class="line">'working-mode' = 'memory' <span class="comment">-- optional</span></span><br></pre></td></tr></table></figure>
-<h2 id="SQLServer"><a href="#SQLServer" class="headerlink" title="SQLServer"></a>SQLServer</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">'connector' = 'sqlserver-cdc', <span class="comment">-- required</span></span><br><span class="line">'hostname' = 'localhost', <span class="comment">-- required</span></span><br><span class="line">'port' = '1433', <span class="comment">-- optional</span></span><br><span class="line">'username' = 'sa', <span class="comment">-- required</span></span><br><span class="line">'password' = 'Password!', <span class="comment">-- required</span></span><br><span class="line">'database-name' = 'inventory', <span class="comment">-- required</span></span><br><span class="line">'schema-name' = 'dbo', <span class="comment">-- required</span></span><br><span class="line">'table-name' = 'orders' <span class="comment">-- required</span></span><br></pre></td></tr></table></figure>
-<h2 id="TiDB"><a href="#TiDB" class="headerlink" title="TiDB"></a>TiDB</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">'connector' = 'tidb-cdc', <span class="comment">-- required</span></span><br><span class="line">'tikv.grpc.timeout_in_ms' = '20000',  <span class="comment">-- optional</span></span><br><span class="line">'pd-addresses' = 'localhost:2379', <span class="comment">-- required</span></span><br><span class="line">'database-name' = 'mydb', <span class="comment">-- required</span></span><br><span class="line">'table-name' = 'orders' <span class="comment">-- required</span></span><br></pre></td></tr></table></figure>
-<h2 id="Db2"><a href="#Db2" class="headerlink" title="Db2"></a>Db2</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">'connector' = 'db2-cdc', <span class="comment">-- required</span></span><br><span class="line">'hostname' = 'localhost', <span class="comment">-- required</span></span><br><span class="line">'port' = '50000', <span class="comment">-- optional</span></span><br><span class="line">'username' = 'root', <span class="comment">-- required</span></span><br><span class="line">'password' = '123456', <span class="comment">-- required</span></span><br><span class="line">'database-name' = 'mydb', <span class="comment">-- required</span></span><br><span class="line">'schema-name' = 'myschema', <span class="comment">-- required</span></span><br><span class="line">'table-name' = 'products' <span class="comment">-- required</span></span><br></pre></td></tr></table></figure>
-      
-
-      
-	  
-    </div>
-    <div class="article-info article-info-index">
-      
-	   
-		  
-		  
-
-	  
-	 
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2023/02/22/flinkCdcConnectors/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-数据集成flink技术验证" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-      
-        <h2 id="checkpoint"><a href="#checkpoint" class="headerlink" title="checkpoint"></a>checkpoint</h2><blockquote>
-<ul>
-<li>flink sql 读取mysql checkpoint不生效</li>
-<li>checkpoint 一个时间间隔内只有一个批次，这样才能保证eos,时间间隔大小影响写入性能</li>
-<li>对于kafka2hudi的场景，时间间隔如果比较小，会因为时间不够导致第一个批次卡住，等超时（默认10分钟）后才会报错，所以需要间隔时间设置大一点，10s以上即可</li>
-<li>默认情况，只有全部任务running才会生成checkpoint，可以通过参数修改：execution.checkpointing.checkpoints-after-tasks-finish.enabled=true</li>
-</ul>
-</blockquote>
-<h2 id="flink-cdc"><a href="#flink-cdc" class="headerlink" title="flink cdc"></a>flink cdc</h2><blockquote>
-<ul>
-<li>mysql2hudi 验证通过，设置checkpoint可以保证eos,支持全量断点续传</li>
-<li>支持insert、update、delete,对于truncate无效</li>
-<li>要求源表必须有主键</li>
-<li>flink cdc每种connector的参数:<a href="https://note.youdao.com/s/23q9iOXN" target="_blank" rel="noopener">https://note.youdao.com/s/23q9iOXN</a></li>
-</ul>
-</blockquote>
-<h2 id="字段类型转化"><a href="#字段类型转化" class="headerlink" title="字段类型转化"></a>字段类型转化</h2><blockquote>
-<ul>
-<li>flink sql不支持字段类型不一致的转换，比如其他字段类型转string，需要通过cast转换</li>
-</ul>
-</blockquote>
-<h2 id="kafka2hudi"><a href="#kafka2hudi" class="headerlink" title="kafka2hudi"></a>kafka2hudi</h2><blockquote>
-<ul>
-<li>验证通过，可以保证eos,支持json、csv、avro。不支持josn数组；csv类型不支持带列名，不支持换行符；avro不支持带有schema的消息</li>
-</ul>
-</blockquote>
-<h2 id="字段顺序"><a href="#字段顺序" class="headerlink" title="字段顺序"></a>字段顺序</h2><blockquote>
-<ul>
-<li>对于insert sink select * from source, source内存表和sink内存表必须要保证字段顺序和类型一致</li>
-</ul>
-</blockquote>
-<h2 id="并发"><a href="#并发" class="headerlink" title="并发"></a>并发</h2><blockquote>
-<ul>
-<li>对于kafka单分区的情况，只增加flink并行度没有效果，需要将sink端算子重分区以提高并发度，最高增加kafka分区数</li>
-<li>流写hudi必须开启checkpoint</li>
-</ul>
-</blockquote>
-<h2 id="hudi"><a href="#hudi" class="headerlink" title="hudi"></a>hudi</h2><blockquote>
-<p>hive查询flink写hudi的时间字段类型时报错，目前版本还不支持<br>不支持hoodie.datasource.write.keygenerator.class，这样对于单主键的情况无法和JavaHudi兼容，需要修改源码或者修改JavaHudi</p>
-</blockquote>
-<h2 id="flink-sql-分区读"><a href="#flink-sql-分区读" class="headerlink" title="flink sql 分区读"></a>flink sql 分区读</h2><blockquote>
-<ul>
-<li>flink sql支持分区读mysql，可以提升读取性能</li>
-</ul>
-</blockquote>
-<h2 id="checkpoint和写hudi必填项"><a href="#checkpoint和写hudi必填项" class="headerlink" title="checkpoint和写hudi必填项"></a>checkpoint和写hudi必填项</h2><blockquote>
-<ul>
-<li><a href="https://note.youdao.com/s/ID8K28TX" target="_blank" rel="noopener">https://note.youdao.com/s/ID8K28TX</a></li>
-</ul>
-</blockquote>
-
-      
-
-      
-	  
-    </div>
-    <div class="article-info article-info-index">
-      
-	   
-		  
-		  
-
-	  
-	 
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2023/02/22/数据集成flink技术验证/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-cdc_mysql2hudi" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2023/02/22/cdc_mysql2hudi/">Flink CDC MySQL2Hudi</a>
-    </h1>
-  
-
-        
-        <a href="/2023/02/22/cdc_mysql2hudi/" class="archive-article-date">
-  	<time datetime="2023-02-21T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2023-02-22</time>
-</a>
-        
-      </header>
-	    
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-      
-        <h2 id="Hudi-非分区表"><a href="#Hudi-非分区表" class="headerlink" title="Hudi 非分区表"></a>Hudi 非分区表</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> yarn.application.name=cdc_mysql2hudi_nopar;</span><br><span class="line"><span class="comment">-- 示例间隔：10s </span></span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.interval=<span class="number">10000</span>; </span><br><span class="line"><span class="keyword">set</span> state.checkpoints.dir=hdfs:///flink/checkpoints/cdc_mysql2hudi_nopar;</span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.externalized-checkpoint-<span class="keyword">retention</span>= RETAIN_ON_CANCELLATION;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> mysql_cdc_source (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span> PRIMARY <span class="keyword">KEY</span> <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span>, <span class="comment">--主键必填，且要求源表必须有主键，flink主键可以和mysql主键不一致</span></span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="built_in">bigint</span>,</span><br><span class="line">  dt <span class="keyword">string</span></span><br><span class="line">) <span class="keyword">WITH</span> (</span><br><span class="line">    <span class="string">'connector'</span> = <span class="string">'mysql-cdc'</span>,</span><br><span class="line">    <span class="string">'hostname'</span> = <span class="string">'10.110.105.162'</span>,</span><br><span class="line">    <span class="string">'port'</span> = <span class="string">'3306'</span>,</span><br><span class="line">    <span class="string">'username'</span> = <span class="string">'root'</span>,</span><br><span class="line">    <span class="string">'password'</span> = <span class="string">'InDaPl01?'</span>,</span><br><span class="line">    <span class="string">'database-name'</span> = <span class="string">'cdc'</span>,</span><br><span class="line">    <span class="string">'table-name'</span> = <span class="string">'mysql_cdc_source'</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> hudi_cdc_sink_nopar (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span> PRIMARY <span class="keyword">KEY</span> <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span>,</span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="built_in">bigint</span>,</span><br><span class="line">  dt <span class="keyword">string</span></span><br><span class="line">)</span><br><span class="line"><span class="keyword">WITH</span> (</span><br><span class="line">  <span class="string">'connector'</span> = <span class="string">'hudi'</span>,</span><br><span class="line">  <span class="string">'path'</span> = <span class="string">'/tmp/cdc/hudi_cdc_sink_nopar'</span>,</span><br><span class="line">  <span class="string">'write.operation'</span>=<span class="string">'upsert'</span>, <span class="comment">--写类型，可选，需要传参，默认upsert；对于全量+增量的，产品暂时只支持 insert/upsert，后期可能需要支持其他类型。如果是后期做全量同步，还需要支持其他类型，比如bulk_insert</span></span><br><span class="line">  <span class="string">'write.tasks'</span>=<span class="string">'1'</span>, <span class="comment">--并行度，可选,需要传参</span></span><br><span class="line">  <span class="string">'table.type'</span>=<span class="string">'COPY_ON_WRITE'</span>, <span class="comment">--表类型，可选。默认为COPY_ON_WRITE，可选值MERGE_ON_READ，目前产品暂时仅支持COPY_ON_WRITE，后期可能需要支持MERGE_ON_READ</span></span><br><span class="line">  <span class="string">'precombine.field'</span> = <span class="string">'ts'</span>, <span class="comment">--可选，预合并字段和历史比较字段，当新来的数据该字段大于历史值时才会更新,默认为ts（如果有这个ts字段的话），需要传参，没有可不填，建议将该值设置为update_time</span></span><br><span class="line">  <span class="string">'hoodie.datasource.write.recordkey.field'</span> = <span class="string">'id'</span>, <span class="comment">-- 可选，和primary key效果一样，二者至少选一个</span></span><br><span class="line">  <span class="string">'hoodie.datasource.write.keygenerator.class'</span> = <span class="string">'org.apache.hudi.keygen.ComplexAvroKeyGenerator'</span>, <span class="comment">--没有验证通，可能有bug，后期需要社区支持,因为需要和Java和Spark保持一致</span></span><br><span class="line">  <span class="string">'hive_sync.enable'</span> = <span class="string">'true'</span>,</span><br><span class="line">  <span class="string">'hive_sync.mode'</span> = <span class="string">'hms'</span>,</span><br><span class="line">  <span class="string">'hive_sync.conf.dir'</span>=<span class="string">'/usr/hdp/3.1.0.0-78/hive/conf'</span>,</span><br><span class="line">  <span class="string">'hive_sync.db'</span> = <span class="string">'cdc'</span>,</span><br><span class="line">  <span class="string">'hive_sync.table'</span> = <span class="string">'hudi_cdc_sink_nopar'</span>,</span><br><span class="line">  <span class="string">'hoodie.datasource.hive_sync.create_managed_table'</span> = <span class="string">'true'</span> <span class="comment">--是否为内部表，当前版本不支持,只能为外部表；暂时不影响，因为hive表是在数据建模里创建的；后期可以尝试提PR支持，因为Hudi Hive Sync本身支持，只是Flink不支持</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> hudi_cdc_sink_nopar <span class="keyword">select</span> * <span class="keyword">from</span> mysql_cdc_source;</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>注意，要求source表和sink表字段顺序要对应</p>
-</blockquote>
-<h2 id="分区表"><a href="#分区表" class="headerlink" title="分区表"></a>分区表</h2><p>联合主键示例</p>
-<blockquote>
-<p>注意联合主键的写法</p>
-</blockquote>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> yarn.application.name=cdc_mysql2hudi_par;</span><br><span class="line"><span class="comment">-- 示例间隔：10s </span></span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.interval=<span class="number">10000</span>;</span><br><span class="line"><span class="keyword">set</span> state.checkpoints.dir=hdfs:///flink/checkpoints/cdc_mysql2hudi_par;</span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.externalized-checkpoint-<span class="keyword">retention</span>= RETAIN_ON_CANCELLATION;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> mysql_cdc_source (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span> ,</span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="built_in">bigint</span>,</span><br><span class="line">  dt <span class="keyword">string</span>,</span><br><span class="line">  primary <span class="keyword">key</span> (<span class="keyword">id</span>,<span class="keyword">name</span>) <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span> <span class="comment">--主键必填，且要求源表必须有主键，flink主键可以和mysql主键不一致</span></span><br><span class="line">) <span class="keyword">WITH</span> (</span><br><span class="line">    <span class="string">'connector'</span> = <span class="string">'mysql-cdc'</span>,</span><br><span class="line">    <span class="string">'hostname'</span> = <span class="string">'10.110.105.162'</span>,</span><br><span class="line">    <span class="string">'port'</span> = <span class="string">'3306'</span>,</span><br><span class="line">    <span class="string">'username'</span> = <span class="string">'root'</span>,</span><br><span class="line">    <span class="string">'password'</span> = <span class="string">'InDaPl01?'</span>,</span><br><span class="line">    <span class="string">'database-name'</span> = <span class="string">'cdc'</span>,</span><br><span class="line">    <span class="string">'table-name'</span> = <span class="string">'mysql_cdc_source'</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> hudi_cdc_sink_par (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span>,</span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="built_in">bigint</span>,</span><br><span class="line">  dt <span class="keyword">string</span></span><br><span class="line">) </span><br><span class="line">PARTITIONED <span class="keyword">BY</span> (dt)</span><br><span class="line"><span class="keyword">WITH</span> (</span><br><span class="line">  <span class="string">'connector'</span> = <span class="string">'hudi'</span>,</span><br><span class="line">  <span class="string">'path'</span> = <span class="string">'/tmp/cdc/hudi_cdc_sink_par'</span>,</span><br><span class="line">  <span class="string">'write.operation'</span>=<span class="string">'upsert'</span>, <span class="comment">--写类型，可选，需要传参，默认upsert；对于全量+增量的，产品暂时只支持 insert/upsert，后期可能需要支持其他类型。如果是后期做全量同步，还需要支持其他类型，比如bulk_insert</span></span><br><span class="line">  <span class="string">'write.tasks'</span>=<span class="string">'1'</span>, <span class="comment">--并行度，可选,需要传参</span></span><br><span class="line">  <span class="string">'table.type'</span>=<span class="string">'COPY_ON_WRITE'</span>, <span class="comment">--表类型，可选。默认为COPY_ON_WRITE，可选值MERGE_ON_READ，目前产品暂时仅支持COPY_ON_WRITE，后期可能需要支持MERGE_ON_READ</span></span><br><span class="line">  <span class="string">'precombine.field'</span> = <span class="string">'ts'</span>, <span class="comment">--可选，预合并字段和历史比较字段，当新来的数据该字段大于历史值时才会更新,默认为ts（如果有这个ts字段的话），需要传参，没有可不填，建议将该值设置为update_time</span></span><br><span class="line">  <span class="string">'hoodie.datasource.write.recordkey.field'</span> = <span class="string">'id,name'</span>, <span class="comment">-- 可选，和primary key效果一样，二者至少选一个</span></span><br><span class="line">  <span class="string">'hoodie.datasource.write.keygenerator.class'</span> = <span class="string">'org.apache.hudi.keygen.ComplexAvroKeyGenerator'</span>, <span class="comment">--没有验证通，可能有bug，后期需要社区支持,因为需要和Java和Spark保持一致</span></span><br><span class="line">  <span class="string">'hoodie.datasource.write.hive_style_partitioning'</span> = <span class="string">'true'</span>,</span><br><span class="line">  <span class="string">'hive_sync.enable'</span> = <span class="string">'true'</span>,</span><br><span class="line">  <span class="string">'hive_sync.mode'</span> = <span class="string">'hms'</span>,</span><br><span class="line">  <span class="string">'hive_sync.conf.dir'</span>=<span class="string">'/usr/hdp/3.1.0.0-78/hive/conf'</span>,</span><br><span class="line">  <span class="string">'hive_sync.db'</span> = <span class="string">'cdc'</span>,</span><br><span class="line">  <span class="string">'hive_sync.table'</span> = <span class="string">'hudi_cdc_sink_par'</span>,</span><br><span class="line">  <span class="string">'hoodie.datasource.hive_sync.create_managed_table'</span> = <span class="string">'true'</span>, <span class="comment">--是否为内部表，当前版本不支持,只能为外部表；暂时不影响，因为hive表是在数据建模里创建的；后期可以尝试提PR支持，因为Hudi Hive Sync本身支持，只是Flink不支持</span></span><br><span class="line">  <span class="string">'hive_sync.partition_fields'</span> = <span class="string">'dt'</span>,</span><br><span class="line">  <span class="string">'hive_sync.partition_extractor_class'</span> = <span class="string">'org.apache.hudi.hive.HiveStylePartitionValueExtractor'</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> hudi_cdc_sink_par <span class="keyword">select</span> * <span class="keyword">from</span> mysql_cdc_source;</span><br></pre></td></tr></table></figure>
-<h2 id="建议"><a href="#建议" class="headerlink" title="建议"></a>建议</h2><p><code>execution.checkpointing.interval</code> checkpoint间隔时间不能设置太短也不能设置太长，太短影响写入性能，太长影响数据及时性。可以先设置为一分钟，后期可能需要调整，或者动态可配</p>
-<h2 id="并行度"><a href="#并行度" class="headerlink" title="并行度"></a>并行度</h2><h3 id="kafka"><a href="#kafka" class="headerlink" title="kafka"></a>kafka</h3><p>如果kafka单分区，假如flink并行度为n,write.tasks需要设置为n-1，否则并行度设置无效；之前测试的是这种情况，需要再次确认一下（这里的并行度只对写hudi生效）<br>如果kafka分区数为n，那么flink并行度和write.tasks都设置为即可，建议大表对应的kafka需要设置多分区，且并行度和kafka分区数一致</p>
-<h3 id="cdc"><a href="#cdc" class="headerlink" title="cdc"></a>cdc</h3><p>flink并行度和write.tasks设置为一样即可或者不设置（需要测一下n和n-1的性能），write.tasks的默认值和flink并行度一样（这里的并行度只对写hudi生效）</p>
-<h2 id="pipeline-operator-chaining"><a href="#pipeline-operator-chaining" class="headerlink" title="pipeline.operator-chaining"></a>pipeline.operator-chaining</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> pipeline.operator-chaining=<span class="literal">false</span>;</span><br></pre></td></tr></table></figure>
-<p>将该参数设置为false，实现将多个算子拆分，利于观察每个任务的运行情况。<br>官方文档说的是将该参数设置为false后，会影响性能。但是我测试的kafka2hudi的场景是提升了性能，所以不确定要不要加这个参数</p>
-<h2 id="后续可能用到的参数"><a href="#后续可能用到的参数" class="headerlink" title="后续可能用到的参数"></a>后续可能用到的参数</h2><p>仅列举部分<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">write.parquet.max.file.size <span class="comment">--小文件合并相关参数</span></span><br><span class="line">write.precombine            <span class="comment">--是否开启预合并，默认值false，开启会影响性能</span></span><br></pre></td></tr></table></figure></p>
-
-      
-
-      
-	  
-    </div>
-    <div class="article-info article-info-index">
-      
-	   
-		  
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Flink</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-		  
-
-	  
-	 
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2023/02/22/cdc_mysql2hudi/">展开全文 >></a>
         </p>
       
 
@@ -617,6 +358,271 @@
       
         <p class="article-more-link">
           <a class="article-more-a" href="/2022/12/05/hudiFlinkSqlIncrementalQuery/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-hudiSparkSQLIncrementalQuery" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2022/11/30/hudiSparkSQLIncrementalQuery/">Spark SQL增量查询Hudi表</a>
+    </h1>
+  
+
+        
+        <a href="/2022/11/30/hudiSparkSQLIncrementalQuery/" class="archive-article-date">
+  	<time datetime="2022-11-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2022-11-30</time>
+</a>
+        
+      </header>
+	    
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>由于项目上主要用Hive查询Hudi，所以之前总结过一篇:<a href="https://mp.weixin.qq.com/s/OGqSzU62baz9jCeycJ12Kw" target="_blank" rel="noopener">Hive增量查询Hudi表</a>。最近可能会有Spark SQL增量查询Hudi表的需求，并且我发现目前用纯Spark SQL的形式还不能直接增量查询Hudi表，于是进行学习总结一下。</p>
+<h2 id="编程方式（DF-SQL）"><a href="#编程方式（DF-SQL）" class="headerlink" title="编程方式（DF+SQL）"></a>编程方式（DF+SQL）</h2><p>先看一下官方文档上Spark SQL增量查询的方式，地址：<a href="https://hudi.apache.org/cn/docs/quick-start-guide#incremental-query" target="_blank" rel="noopener">https://hudi.apache.org/cn/docs/quick-start-guide#incremental-query</a> 和 <a href="https://hudi.apache.org/cn/docs/querying_data#incremental-query" target="_blank" rel="noopener">https://hudi.apache.org/cn/docs/querying_data#incremental-query</a></p>
+<p>它是先通过spark.read中添加增量参数的形式读Hudi表为DF，然后将DF注册成临时表，最后通过Spark SQL查询临时表的形式，实现增量查询的。</p>
+        
+          <a class="article-more-a" href="/2022/11/30/hudiSparkSQLIncrementalQuery/#more">more >></a>
+        
+      
+
+      
+	  
+    </div>
+    <div class="article-info article-info-index">
+      
+	   
+		  
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+		  
+
+	  
+	 
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2022/11/30/hudiSparkSQLIncrementalQuery/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-hudiSparkSQLCallProcedures" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2022/11/24/hudiSparkSQLCallProcedures/">Hudi Spark SQL Call Procedures学习总结（一）（查询统计表文件信息）</a>
+    </h1>
+  
+
+        
+        <a href="/2022/11/24/hudiSparkSQLCallProcedures/" class="archive-article-date">
+  	<time datetime="2022-11-23T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2022-11-24</time>
+</a>
+        
+      </header>
+	    
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>学习总结Hudi Spark SQL Call Procedures，Call Procedures在<a href="https://hudi.apache.org/cn/docs/procedures" target="_blank" rel="noopener">官网</a>被称作存储过程（Stored Procedures），它是在Hudi 0.11.0版本由腾讯的<code>ForwardXu</code>大佬贡献的，它除了官网提到的几个Procedures外，还支持其他许多Procedures命令。本文先学习其中的几个我觉得比较常用的命令，主要是查询统计表路径下的各种文件信息。</p>
+<h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>Hudi  master 0.13.0-SNAPSHOT<br>Spark 3.1.2 (实际上所有Hudi支持的Spark版本都支持Call Procedures)<br>Kyuubi 1.5.2 (使用Kyuubi是因为返回结果可以展示列名，Spark自带的spark-sql不返回列名)</p>
+<h2 id="参数形式"><a href="#参数形式" class="headerlink" title="参数形式"></a>参数形式</h2><p>按名称传递参数，没有顺序，可以省略可选参数<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CALL</span> system.procedure_name(arg_name_2 =&gt; arg_2, arg_name_1 =&gt; arg_1, ... arg_name_n =&gt; arg_n)</span><br></pre></td></tr></table></figure></p>
+<p>按位置参数传递参数，有顺序，可以省略可选参数<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CALL</span> system.procedure_name(arg_1, arg_2, ... arg_n)</span><br></pre></td></tr></table></figure></p>
+        
+          <a class="article-more-a" href="/2022/11/24/hudiSparkSQLCallProcedures/#more">more >></a>
+        
+      
+
+      
+	  
+    </div>
+    <div class="article-info article-info-index">
+      
+	   
+		  
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+		  
+
+	  
+	 
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2022/11/24/hudiSparkSQLCallProcedures/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-hudiSourceCode-javaInsert2" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2022/11/16/hudiSourceCode-javaInsert2/">Hudi源码 | Insert源码分析总结（二）(WorkloadProfile)</a>
+    </h1>
+  
+
+        
+        <a href="/2022/11/16/hudiSourceCode-javaInsert2/" class="archive-article-date">
+  	<time datetime="2022-11-15T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2022-11-16</time>
+</a>
+        
+      </header>
+	    
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>接上篇文章：<a href="https://mp.weixin.qq.com/s/JF9UfsNHhtKZOawKKZ1LFA" target="_blank" rel="noopener">Hudi源码 | Insert源码分析总结（一）(整体流程)</a>，继续进行Apache Hudi Insert源码分析总结，本文主要分析上文提到的<code>WorkloadProfile</code></p>
+<h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>Hudi 0.9.0</p>
+<h2 id="入口"><a href="#入口" class="headerlink" title="入口"></a>入口</h2><p>入口在上篇文章中讲到的<code>BaseJavaCommitActionExecutor</code>的<code>execute</code></p>
+        
+          <a class="article-more-a" href="/2022/11/16/hudiSourceCode-javaInsert2/#more">more >></a>
+        
+      
+
+      
+	  
+    </div>
+    <div class="article-info article-info-index">
+      
+	   
+		  
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">源码</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+		  
+
+	  
+	 
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2022/11/16/hudiSourceCode-javaInsert2/">展开全文 >></a>
         </p>
       
 
@@ -806,15 +812,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -834,31 +852,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -870,11 +876,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -886,11 +892,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -902,27 +912,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">hbase</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -934,11 +932,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+                <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+                <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -946,15 +948,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">开源</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -986,10 +992,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
@@ -1010,14 +1012,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Python</a>
               </li>
              
@@ -1026,19 +1020,31 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1051,10 +1057,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1086,11 +1088,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1102,19 +1104,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1122,7 +1116,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1130,11 +1124,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1162,7 +1168,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
             
             <div class="clearfix"></div>
