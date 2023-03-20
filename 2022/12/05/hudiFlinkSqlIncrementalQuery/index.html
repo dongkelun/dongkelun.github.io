@@ -17,16 +17,16 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言前面总结了Spark SQL增量查询Hudi表和Hive增量查询Hudi表。最近项目上也有Flink SQL增量查询Hudi表的需求，正好学习总结一下。 官网文档地址：https://hudi.apache.org/cn/docs/querying_data#incremental-query">
 <meta property="og:locale" content="cn">
-<meta property="og:image" content="https://img-blog.csdnimg.cn/c5fa23fa1840414ba3d7073fa70e71ab.png">
-<meta property="og:image" content="https://img-blog.csdnimg.cn/dcef450d21854a2292c41ef1e0dfe300.png">
-<meta property="og:image" content="https://img-blog.csdnimg.cn/a12aa6d9f87a4b8fafa6a565ae544c49.png">
-<meta property="og:image" content="https://img-blog.csdnimg.cn/946f7d6b40d144a288b974065a2a6ebe.png">
-<meta property="og:image" content="https://img-blog.csdnimg.cn/e99bffcb019644d0aec8deb1905bdc23.png">
-<meta property="og:updated_time" content="2022-12-07T08:59:29.152Z">
+<meta property="og:image" content="https://img.dongkelun.com/flink-sql/hudiIncr1.png">
+<meta property="og:image" content="https://img.dongkelun.com/flink-sql/hudiIncr2.png">
+<meta property="og:image" content="https://img.dongkelun.com/flink-sql/hudiIncr3.png">
+<meta property="og:image" content="https://img.dongkelun.com/flink-sql/hudiIncr4.png">
+<meta property="og:image" content="https://img.dongkelun.com/flink-sql/hudiIncr5.png">
+<meta property="og:updated_time" content="2023-03-20T03:16:02.711Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Flink SQL增量查询Hudi表">
 <meta name="twitter:description" content="前言前面总结了Spark SQL增量查询Hudi表和Hive增量查询Hudi表。最近项目上也有Flink SQL增量查询Hudi表的需求，正好学习总结一下。 官网文档地址：https://hudi.apache.org/cn/docs/querying_data#incremental-query">
-<meta name="twitter:image" content="https://img-blog.csdnimg.cn/c5fa23fa1840414ba3d7073fa70e71ab.png">
+<meta name="twitter:image" content="https://img.dongkelun.com/flink-sql/hudiIncr1.png">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -317,17 +317,17 @@
 <p>Flink中创建对应的sink表</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> test_sink (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span>,</span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="built_in">bigint</span>,</span><br><span class="line">  dt <span class="keyword">string</span></span><br><span class="line">) <span class="keyword">with</span> (</span><br><span class="line"> <span class="string">'connector'</span> = <span class="string">'jdbc'</span>,</span><br><span class="line"> <span class="string">'url'</span> = <span class="string">'jdbc:mysql://192.468.44.128:3306/hudi?useSSL=false&amp;useUnicode=true&amp;characterEncoding=UTF-8&amp;characterSetResults=UTF-8'</span>,</span><br><span class="line"> <span class="string">'username'</span> = <span class="string">'root'</span>,</span><br><span class="line"> <span class="string">'password'</span> = <span class="string">'root-123'</span>,</span><br><span class="line"> <span class="string">'table-name'</span> = <span class="string">'test_sink'</span>,</span><br><span class="line"> <span class="string">'sink.buffer-flush.max-rows'</span> = <span class="string">'1'</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
 <p>然后流式增量读取Hudi表Sink Mysql<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test_sink</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> test_flink_incremental </span><br><span class="line"><span class="comment">/*+ </span></span><br><span class="line"><span class="comment">options(</span></span><br><span class="line"><span class="comment">    'read.streaming.enabled'='true',</span></span><br><span class="line"><span class="comment">    'read.streaming.check-interval' = '4',</span></span><br><span class="line"><span class="comment">    'read.start-commit' = '20221205152712'</span></span><br><span class="line"><span class="comment">) </span></span><br><span class="line"><span class="comment">*/</span></span><br></pre></td></tr></table></figure></p>
-<p>这样会起一个长任务，一直处于running状态，我们可以在yarn-session界面上验证这一点<br><img src="https://img-blog.csdnimg.cn/c5fa23fa1840414ba3d7073fa70e71ab.png" alt=""></p>
-<p>然后先在MySQL中验证一下历史数据的准确性<br><img src="https://img-blog.csdnimg.cn/dcef450d21854a2292c41ef1e0dfe300.png" alt=""></p>
+<p>这样会起一个长任务，一直处于running状态，我们可以在yarn-session界面上验证这一点<br><img src="https://img.dongkelun.com/flink-sql/hudiIncr1.png" alt=""></p>
+<p>然后先在MySQL中验证一下历史数据的准确性<br><img src="https://img.dongkelun.com/flink-sql/hudiIncr2.png" alt=""></p>
 <p>再利用Spark SQL往source表插入两条数据<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- Spark SQL</span></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> hudi.test_flink_incremental <span class="keyword">values</span> (<span class="number">5</span>,<span class="string">'a5'</span>, <span class="number">50</span>, <span class="number">5000</span>, <span class="string">'2022-12-07'</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> hudi.test_flink_incremental <span class="keyword">values</span> (<span class="number">6</span>,<span class="string">'a6'</span>, <span class="number">60</span>, <span class="number">6000</span>, <span class="string">'2022-12-07'</span>);</span><br></pre></td></tr></table></figure></p>
-<p>我们增量读取的间隔设置的4s，成功插入数据等待4s后，再在MySQL表中验证一下数据<br><img src="https://img-blog.csdnimg.cn/a12aa6d9f87a4b8fafa6a565ae544c49.png" alt=""><br>发现新增的数据已经成功Sink到MySQL中了，并且数据没有重复</p>
+<p>我们增量读取的间隔设置的4s，成功插入数据等待4s后，再在MySQL表中验证一下数据<br><img src="https://img.dongkelun.com/flink-sql/hudiIncr3.png" alt=""><br>发现新增的数据已经成功Sink到MySQL中了，并且数据没有重复</p>
 <p>最后验证一下更新的增量数据，Spark SQL更新Hudi source表<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- Spark SQL</span></span><br><span class="line"><span class="keyword">update</span> hudi.test_flink_incremental <span class="keyword">set</span> <span class="keyword">name</span>=<span class="string">'hudi5_update'</span> <span class="keyword">where</span> <span class="keyword">id</span> = <span class="number">5</span>;</span><br></pre></td></tr></table></figure></p>
-<p>继续验证结果<br><img src="https://img-blog.csdnimg.cn/946f7d6b40d144a288b974065a2a6ebe.png" alt=""><br>结果是更新的增量数据也会insert到MySQL中的sink表，但是不会更新原来的数据</p>
+<p>继续验证结果<br><img src="https://img.dongkelun.com/flink-sql/hudiIncr4.png" alt=""><br>结果是更新的增量数据也会insert到MySQL中的sink表，但是不会更新原来的数据</p>
 <p>那如果想实现更新的效果呢？我们需要在MySQL和Flink的sink表中加上主键字段，两者缺一不可，如下：</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- MySQL</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> <span class="string">`test_sink`</span> (</span><br><span class="line">  <span class="string">`id`</span> <span class="built_in">int</span>(<span class="number">11</span>),</span><br><span class="line">  <span class="string">`name`</span> <span class="built_in">text</span> <span class="keyword">DEFAULT</span> <span class="literal">NULL</span>,</span><br><span class="line">  <span class="string">`price`</span> <span class="built_in">int</span>(<span class="number">11</span>),</span><br><span class="line">  <span class="string">`ts`</span> <span class="built_in">int</span>(<span class="number">11</span>),</span><br><span class="line">  <span class="string">`dt`</span>  <span class="built_in">text</span> <span class="keyword">DEFAULT</span> <span class="literal">NULL</span>,</span><br><span class="line">   PRIMARY <span class="keyword">KEY</span> (<span class="string">`id`</span>)</span><br><span class="line">) <span class="keyword">ENGINE</span>=<span class="keyword">InnoDB</span> <span class="keyword">DEFAULT</span> <span class="keyword">CHARSET</span>=utf8;</span><br></pre></td></tr></table></figure>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- Flink SQL</span></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> test_sink (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span> PRIMARY <span class="keyword">KEY</span> <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span>,</span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="built_in">bigint</span>,</span><br><span class="line">  dt <span class="keyword">string</span></span><br><span class="line">) <span class="keyword">with</span> (</span><br><span class="line"> <span class="string">'connector'</span> = <span class="string">'jdbc'</span>,</span><br><span class="line"> <span class="string">'url'</span> = <span class="string">'jdbc:mysql://192.468.44.128:3306/hudi?useSSL=false&amp;useUnicode=true&amp;characterEncoding=UTF-8&amp;characterSetResults=UTF-8'</span>,</span><br><span class="line"> <span class="string">'username'</span> = <span class="string">'root'</span>,</span><br><span class="line"> <span class="string">'password'</span> = <span class="string">'root-123'</span>,</span><br><span class="line"> <span class="string">'table-name'</span> = <span class="string">'test_sink'</span>,</span><br><span class="line"> <span class="string">'sink.buffer-flush.max-rows'</span> = <span class="string">'1'</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
 <p>将刚才起的长任务关掉，重新执行刚才的insert语句，先跑一下历史数据，最后再验证一下增量效果<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- Spark SQL</span></span><br><span class="line"><span class="keyword">update</span> hudi.test_flink_incremental <span class="keyword">set</span> <span class="keyword">name</span>=<span class="string">'hudi6_update'</span> <span class="keyword">where</span> <span class="keyword">id</span> = <span class="number">6</span>;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> hudi.test_flink_incremental <span class="keyword">values</span> (<span class="number">7</span>,<span class="string">'a7'</span>, <span class="number">70</span>, <span class="number">7000</span>, <span class="string">'2022-12-07'</span>);</span><br></pre></td></tr></table></figure></p>
-<p>可以看到，达到了预期效果，对于id=6的执行更新操作，对于id=7的执行插入操作。<br><img src="https://img-blog.csdnimg.cn/e99bffcb019644d0aec8deb1905bdc23.png" alt=""></p>
+<p>可以看到，达到了预期效果，对于id=6的执行更新操作，对于id=7的执行插入操作。<br><img src="https://img.dongkelun.com/flink-sql/hudiIncr5.png" alt=""></p>
 <h2 id="相关阅读"><a href="#相关阅读" class="headerlink" title="相关阅读"></a>相关阅读</h2><ul>
 <li><a href="https://mp.weixin.qq.com/s/9cKherIGgeVxBeqY39nL2Q" target="_blank" rel="noopener">Apache Hudi 入门学习总结</a></li>
 <li><a href="https://mp.weixin.qq.com/s/rA3W6SRLZSAzS7IREeznpg" target="_blank" rel="noopener">Flink SQL 客户端查询Hive配置及问题解决</a></li>
@@ -680,26 +680,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">SQL</a>
               </li>
              
@@ -708,7 +688,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -720,14 +716,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
@@ -736,11 +724,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -752,11 +736,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -792,7 +776,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -804,11 +792,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -824,14 +816,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">IDEA</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Maven</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
@@ -840,11 +824,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">IDEA</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Maven</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -852,11 +848,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -868,6 +868,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
@@ -876,23 +880,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -904,11 +896,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color2">Python</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -920,11 +912,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">原理</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -944,7 +944,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">压缩文件</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -960,7 +972,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -972,18 +984,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">压缩文件</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
@@ -992,11 +992,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1004,11 +1000,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
