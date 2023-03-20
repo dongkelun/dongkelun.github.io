@@ -17,23 +17,23 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言学习总结Flink SQL Checkpoint的使用，主要目的是为了验证Flink SQL流式任务挂掉后，重启时还可以继续从上次的运行状态恢复。 验证方式Flink SQL流式增量读取Hudi表然后sink MySQL表，任务启动后处于running状态，先查看sink表有数据，然后将对应的yarn kill掉，再通过设置的checkpoint重启任务，任务重启后验证sink表的数据量。Fl">
 <meta property="og:locale" content="cn">
-<meta property="og:image" content="https://img-blog.csdnimg.cn/e4ccee9e098e461ca820f229ed3730cb.png">
-<meta property="og:image" content="https://img-blog.csdnimg.cn/f203bd122aea408fac8f1480a8266cf0.png">
-<meta property="og:image" content="https://img-blog.csdnimg.cn/73403b2909274240a057521dcd3f231b.png">
-<meta property="og:image" content="https://img-blog.csdnimg.cn/21280abb9a79498a973336ded5f85020.png">
-<meta property="og:image" content="https://img-blog.csdnimg.cn/32b52e325915407c94aee67e794842fb.png">
-<meta property="og:image" content="https://img-blog.csdnimg.cn/2f27d3c195c84c488a8733748677771b.png">
-<meta property="og:image" content="https://img-blog.csdnimg.cn/47f0e166c08e4bb1bb8cdca569f2dcdc.png">
-<meta property="og:updated_time" content="2023-03-03T07:23:51.346Z">
+<meta property="og:image" content="https://img.dongkelun.com/flink-sql/ckp1.png">
+<meta property="og:image" content="https://img.dongkelun.com/flink-sql/ckp2.png">
+<meta property="og:image" content="https://img.dongkelun.com/flink-sql/ckp3.png">
+<meta property="og:image" content="https://img.dongkelun.com/flink-sql/ckp4.png">
+<meta property="og:image" content="https://img.dongkelun.com/flink-sql/ckp5.png">
+<meta property="og:image" content="https://img.dongkelun.com/flink-sql/ckp6.png">
+<meta property="og:image" content="https://img.dongkelun.com/flink-sql/ckp7.png">
+<meta property="og:updated_time" content="2023-03-18T07:19:17.174Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Flink SQL Checkpoint 学习总结">
 <meta name="twitter:description" content="前言学习总结Flink SQL Checkpoint的使用，主要目的是为了验证Flink SQL流式任务挂掉后，重启时还可以继续从上次的运行状态恢复。 验证方式Flink SQL流式增量读取Hudi表然后sink MySQL表，任务启动后处于running状态，先查看sink表有数据，然后将对应的yarn kill掉，再通过设置的checkpoint重启任务，任务重启后验证sink表的数据量。Fl">
-<meta name="twitter:image" content="https://img-blog.csdnimg.cn/e4ccee9e098e461ca820f229ed3730cb.png">
+<meta name="twitter:image" content="https://img.dongkelun.com/flink-sql/ckp1.png">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
   
-    <link rel="icon" href="https://img-blog.csdnimg.cn/0c789a93525847b7b06977b4753b31ff.jpeg">
+    <link rel="icon" href="https://img.dongkelun.com/touxiang.jpg">
   
   <link rel="stylesheet" type="text/css" href="/./main.b04722.css">
   <style type="text/css">
@@ -284,19 +284,19 @@
 <h3 id="流读Hudi写MySQL"><a href="#流读Hudi写MySQL" class="headerlink" title="流读Hudi写MySQL"></a>流读Hudi写MySQL</h3><p><code>hudi2mysql.sql</code><br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> yarn.application.name=hudi2mysql;</span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.interval=<span class="number">1000</span>;</span><br><span class="line"><span class="keyword">set</span> state.checkpoints.dir=hdfs:///flink/checkpoints/hudi2mysql;</span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.externalized-checkpoint-<span class="keyword">retention</span>=RETAIN_ON_CANCELLATION;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> hudi_source_incr (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span> PRIMARY <span class="keyword">KEY</span> <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span>,</span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="built_in">bigint</span>,</span><br><span class="line">  dt <span class="keyword">string</span></span><br><span class="line">)</span><br><span class="line"><span class="keyword">WITH</span> (</span><br><span class="line">  <span class="string">'connector'</span> = <span class="string">'hudi'</span>,</span><br><span class="line">  <span class="string">'path'</span> = <span class="string">'/tmp/hudi_source'</span>,</span><br><span class="line">  <span class="string">'read.streaming.enabled'</span> = <span class="string">'true'</span>, </span><br><span class="line">  <span class="string">'read.start-commit'</span> = <span class="string">'202302'</span>, </span><br><span class="line">  <span class="string">'read.streaming.check-interval'</span> = <span class="string">'4'</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> sink_mysql (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span> PRIMARY <span class="keyword">KEY</span> <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span>,</span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="built_in">bigint</span>,</span><br><span class="line">  dt <span class="keyword">string</span></span><br><span class="line">) <span class="keyword">with</span> (</span><br><span class="line"> <span class="string">'connector'</span> = <span class="string">'jdbc'</span>,</span><br><span class="line"> <span class="string">'url'</span> = <span class="string">'jdbc:mysql://192.168.44.128:3306/cdc?useSSL=false&amp;useUnicode=true&amp;characterEncoding=UTF-8&amp;characterSetResults=UTF-8'</span>,</span><br><span class="line"> <span class="string">'username'</span> = <span class="string">'root'</span>,</span><br><span class="line"> <span class="string">'password'</span> = <span class="string">'password'</span>,</span><br><span class="line"> <span class="string">'table-name'</span> = <span class="string">'sink_mysql'</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> sink_mysql <span class="keyword">select</span> * <span class="keyword">from</span> hudi_source_incr;</span><br></pre></td></tr></table></figure></p>
 <p>执行上面的SQL</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/sql-client.sh -f sql/hudi2mysql.sql</span><br></pre></td></tr></table></figure>
-<p>这样我们启动了一个常任务，在Flink界面上可以看到checkpoint的相关信息，如下图显示了checkpoint具体文件地址<br><img src="https://img-blog.csdnimg.cn/e4ccee9e098e461ca820f229ed3730cb.png" alt=""></p>
+<p>这样我们启动了一个常任务，在Flink界面上可以看到checkpoint的相关信息，如下图显示了checkpoint具体文件地址<br><img src="https://img.dongkelun.com/flink-sql/ckp1.png" alt=""></p>
 <p>可以用hdfs命令看一下checkpoint路径下有哪些文件<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">drwxr-xr-x   - hive hdfs          0 2023-03-01 14:47 hdfs:///flink/checkpoints/hudi2mysql/255bdd01cee7486113feb1cbe8b45ee0/chk-589</span><br><span class="line">drwxr-xr-x   - hive hdfs          0 2023-03-01 14:36 hdfs:///flink/checkpoints/hudi2mysql/255bdd01cee7486113feb1cbe8b45ee0/shared</span><br><span class="line">drwxr-xr-x   - hive hdfs          0 2023-03-01 14:36 hdfs:///flink/checkpoints/hudi2mysql/255bdd01cee7486113feb1cbe8b45ee0/taskowned</span><br></pre></td></tr></table></figure></p>
 <p>其中255bdd01cee7486113feb1cbe8b45ee0为flink的jobid</p>
-<p><img src="https://img-blog.csdnimg.cn/f203bd122aea408fac8f1480a8266cf0.png" alt=""></p>
+<p><img src="https://img.dongkelun.com/flink-sql/ckp2.png" alt=""></p>
 <p>将yarn任务kill<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yarn app -<span class="built_in">kill</span> application_1676855463066_0177</span><br></pre></td></tr></table></figure></p>
 <p>再看一下，发现checkpoint文件还在<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hdfs:///flink/checkpoints/hudi2mysql/255bdd01cee7486113feb1cbe8b45ee0/chk-1314</span><br></pre></td></tr></table></figure></p>
 <h4 id="重启任务验证checkpoint效果"><a href="#重启任务验证checkpoint效果" class="headerlink" title="重启任务验证checkpoint效果"></a>重启任务验证checkpoint效果</h4><p>需要先在hudi2mysql.sql，添加下面的配置<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 从该checkpoint文件对应的状态恢复</span></span><br><span class="line"><span class="keyword">set</span> execution.savepoint.path=hdfs:///flink/checkpoints/hudi2mysql/<span class="number">255</span>bdd01cee7486113feb1cbe8b45ee0/chk<span class="number">-1314</span>;</span><br></pre></td></tr></table></figure></p>
 <p>重启flink sql任务</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/sql-client.sh -f sql/hudi2mysql.sql</span><br></pre></td></tr></table></figure>
-<p>我们可以在新启动的yarn界面上看到，最新的恢复点,和我们设置的一样，这样代表我们设置恢复点生效<br><img src="https://img-blog.csdnimg.cn/73403b2909274240a057521dcd3f231b.png" alt=""></p>
+<p>我们可以在新启动的yarn界面上看到，最新的恢复点,和我们设置的一样，这样代表我们设置恢复点生效<br><img src="https://img.dongkelun.com/flink-sql/ckp3.png" alt=""></p>
 <p>最后再造几条新的增量数据，在MySQL里看验证以下数据量是否一致</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> hudi_source <span class="keyword">values</span>(<span class="number">3</span>,<span class="string">'hudi3'</span>,<span class="number">33.3</span>,<span class="number">1000</span>,<span class="string">'20230301'</span>);</span><br></pre></td></tr></table></figure>
-<p>MySQL数据量一致，且更新时间和插入时间一致，代表id=1、2的数据重启时没有重复消费，达到了预期效果。（也可以对MySQL表不设置主键，直接通过验证数据量验证效果）<br><img src="https://img-blog.csdnimg.cn/21280abb9a79498a973336ded5f85020.png" alt=""></p>
+<p>MySQL数据量一致，且更新时间和插入时间一致，代表id=1、2的数据重启时没有重复消费，达到了预期效果。（也可以对MySQL表不设置主键，直接通过验证数据量验证效果）<br><img src="https://img.dongkelun.com/flink-sql/ckp4.png" alt=""></p>
 <p>这样我们通过一个简单的示例，了解了checkpoint的具体使用。大致过程<br>1、设置开启checkpoint和保存的路径，<br>2、任务运行时会根据设置的时间间隔不断生成新的ckp文件，<br>3、等任务挂掉后，重启任务时先设置<code>execution.savepoint.path</code>为我们最后一次保存的ckp文件<br>这样就达到了任务重启时继续从上次的运行状态恢复。</p>
 <h2 id="Checkpoint和Hudi"><a href="#Checkpoint和Hudi" class="headerlink" title="Checkpoint和Hudi"></a>Checkpoint和Hudi</h2><p>流任务写hudi时，必须设置checkpoint，不然不会生成commit，感觉像是卡住一样，具体表现为只生成<code>.commit.requested</code>和<code>.inflight</code>,然后不写文件、不生成<code>.commit</code>也不报错，对于新手来说很费劲，很难找到解决方法。<br>大概原因是因为写文件、生成commit的动作是在coordinator里面，只有当checkpoint完成后才会调用coordinator，所以不设置checkpoint就不会生成commit，这里的逻辑是在Hudi源码里（具体没看），也就是说checkpoint和生成hudi commit是绑定一起的，这样才能保证流写Hudi的事务性，从而保证checkpoint的EXACTLY_ONCE。</p>
 <h2 id="StateBackend"><a href="#StateBackend" class="headerlink" title="StateBackend"></a>StateBackend</h2><blockquote>
@@ -307,7 +307,7 @@
 <p>从 Flink 1.13 版本开始，社区改进了 state backend 的公开类，进而帮助用户更好理解本地状态存储和 checkpoint 存储的区分。 这个变化并不会影响 state backend 和 checkpointing 过程的运行时实现和机制，仅仅是为了更好地传达设计意图。 用户可以将现有作业迁移到新的 API，同时不会损失原有 state。<br>旧版本的 MemoryStateBackend 等价于使用 HashMapStateBackend 和 JobManagerCheckpointStorage。</p>
 </blockquote>
 <p>新版本的有两个参数<code>state.backend</code>和<code>state.checkpoint-storage</code></p>
-<p><code>state.backend</code>可选参数：hashmap、roksdb，另外也支持filesystem（弃用）和jobmanager（弃用），官方文档并没有说明filesystem和jobmanager已经弃用<br><img src="https://img-blog.csdnimg.cn/32b52e325915407c94aee67e794842fb.png" alt=""><br><img src="https://img-blog.csdnimg.cn/2f27d3c195c84c488a8733748677771b.png" alt=""></p>
+<p><code>state.backend</code>可选参数：hashmap、roksdb，另外也支持filesystem（弃用）和jobmanager（弃用），官方文档并没有说明filesystem和jobmanager已经弃用<br><img src="https://img.dongkelun.com/flink-sql/ckp5.png" alt=""><br><img src="https://img.dongkelun.com/flink-sql/ckp6.png" alt=""></p>
 <p>只设置state.backend：</p>
 <table>
 <thead>
@@ -382,7 +382,7 @@
 <p>总结：对于Checkpoint Storage只有JobManagerCheckpointStorage和FileSystemCheckpointStorage<br>另外，当设置state.checkpoint-storage=filesystem时，必须同时设置state.checkpoints.dir，否则会有异常：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Caused by: org.apache.flink.configuration.IllegalConfigurationException: Cannot create the file system state backend: The configuration does not specify the checkpoint directory <span class="string">'state.checkpoints.dir'</span></span><br></pre></td></tr></table></figure></p>
 <p>其实可以不设置state.checkpoint-storage，当设置了state.checkpoints.dir时Checkpoint Storage 自动使用FileSystemCheckpointStorage，不设置的话就使用默认的JobManagerCheckpointStorage</p>
 <p>一开始对于默认的JobManagerCheckpointStorage、HashMapStateBackend不是很理解，不明白这样的checkpoint有啥用，因为是保存到内存中，不是保存到文件系统中，所以任务挂掉后就没办法恢复。<br>后来发现这种默认保存在内存中的checkpoint可以用于flink作业失败时自动恢复，而不是任务挂掉后手动恢复，另外默认情况下，程序取消时也不保存checkpoint</p>
-<p><img src="https://img-blog.csdnimg.cn/47f0e166c08e4bb1bb8cdca569f2dcdc.png" alt=""></p>
+<p><img src="https://img.dongkelun.com/flink-sql/ckp7.png" alt=""></p>
 <h2 id="其他总结"><a href="#其他总结" class="headerlink" title="其他总结"></a>其他总结</h2><blockquote>
 <ul>
 <li>对于flink sql读取mysql，设置checkpoint恢复不生效（不是flink cdc）</li>
@@ -748,19 +748,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -772,15 +776,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -792,11 +796,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -804,27 +804,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -836,11 +820,35 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -860,6 +868,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
@@ -868,11 +880,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -896,11 +908,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">java</a>
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+                <a href="javascript:void(0)" class="js-tag color5">java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -908,19 +920,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -932,19 +944,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -956,7 +968,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -968,15 +988,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">scala</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -996,43 +1016,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">压缩文件</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1044,7 +1036,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1052,11 +1048,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+                <a href="javascript:void(0)" class="js-tag color5">压缩文件</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1064,11 +1068,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">linux</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1076,11 +1084,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1093,18 +1105,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
             
             <div class="clearfix"></div>
