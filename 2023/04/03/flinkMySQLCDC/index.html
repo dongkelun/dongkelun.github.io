@@ -7,18 +7,20 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="https://dongkelun.com">
-  <title>Archives | 伦少的博客</title>
+  <title>Flink MySQL CDC 使用总结 | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="1412359494@qq.com">
-<meta property="og:type" content="website">
-<meta property="og:title" content="伦少的博客">
-<meta property="og:url" content="https://dongkelun.com/archives/page/4/index.html">
+  <meta name="description" content="前言学习总结Flink MySQL CDC，主要目的是同步MySQL数据至其他数据源如Hudi、MySQL等，本文主要以 MySQL2Hudi、MySQL2MySQL两个场景进行示例验证。 版本   Flink 版本     Flink 1.14.3、1.15.4、1.16.1   Hudi 0.13.0   MYSQL CDC 2.3.0    安装将下面的Jar包拷贝到flink/lib下面">
+<meta name="keywords" content="Flink,Hudi">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Flink MySQL CDC 使用总结">
+<meta property="og:url" content="https://dongkelun.com/2023/04/03/flinkMySQLCDC/index.html">
 <meta property="og:site_name" content="伦少的博客">
-<meta property="og:description" content="1412359494@qq.com">
+<meta property="og:description" content="前言学习总结Flink MySQL CDC，主要目的是同步MySQL数据至其他数据源如Hudi、MySQL等，本文主要以 MySQL2Hudi、MySQL2MySQL两个场景进行示例验证。 版本   Flink 版本     Flink 1.14.3、1.15.4、1.16.1   Hudi 0.13.0   MYSQL CDC 2.3.0    安装将下面的Jar包拷贝到flink/lib下面">
 <meta property="og:locale" content="cn">
+<meta property="og:updated_time" content="2023-04-03T09:15:38.338Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="伦少的博客">
-<meta name="twitter:description" content="1412359494@qq.com">
+<meta name="twitter:title" content="Flink MySQL CDC 使用总结">
+<meta name="twitter:description" content="前言学习总结Flink MySQL CDC，主要目的是同步MySQL数据至其他数据源如Hudi、MySQL等，本文主要以 MySQL2Hudi、MySQL2MySQL两个场景进行示例验证。 版本   Flink 版本     Flink 1.14.3、1.15.4、1.16.1   Hudi 0.13.0   MYSQL CDC 2.3.0    安装将下面的Jar包拷贝到flink/lib下面">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -204,463 +206,276 @@
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            
-  
-  
+            <article id="post-flinkMySQLCDC" class="article article-type-post " itemscope itemprop="blogPost">
+  <div class="article-inner">
     
-    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Flink MySQL CDC 使用总结
+    </h1>
+  
+
+        
+        <a href="/2023/04/03/flinkMySQLCDC/" class="archive-article-date">
+  	<time datetime="2023-04-02T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2023-04-03</time>
+</a>
+        
+      </header>
+	    
+		  <div class="article-info article-info-post">
+			
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Flink</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+			
+
+			<div class="clearfix"></div>
+		  </div>
       
+    
+    <div class="article-entry" itemprop="articleBody">
       
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2022" class="archive-year">2022</a>
+        <p>前些天发现了一个巨牛的人工智能学习网站，通俗易懂，风趣幽默，忍不住给大家分享一下。点击跳转到网站：<a href="https://www.captainai.net/dongkelun" target="_blank" rel="noopener">https://www.captainai.net/dongkelun</a></p>
+        <div style='position: absolute;top:0.83%; right:2%;width: 80px;font-size: 10px'></br>
+          <marquee style='margin-top: 0px;'>
+            <a href="https://mp.weixin.qq.com/s/5raMUByVGDyVYMeAdW-LRw"> <b> <font color="#8A2BE2">欢</font> <font color="#FF0000">迎</font> <font color="#FF7F00">关</font> <font color="#34A853">注</font> <font color="#FF69B4">我</font> <font color="#4169E1">的</font> <font color="#DDA0DD">公</font> <font color="#8A2BE2">众</font> <font color="#FF0000">号</font> <b> </b></b></a> 
+          </marquee>
+            <img src='https://img.dongkelun.com/gongzhonghao.jpg' style='width: 80px;height: 80px;margin-top: -10%'/>
         </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2022/05/13/hudiSparkSQL/" class="archive-article-date">
-  	<time datetime="2022-05-12T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2022-05-13</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2022/05/13/hudiSparkSQL/">Hudi Spark SQL总结</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2022/05/12/hudiIntroduction/" class="archive-article-date">
-  	<time datetime="2022-05-11T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2022-05-12</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2022/05/12/hudiIntroduction/">Apache Hudi 入门学习总结</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hive</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2022/04/19/hudiCleanPolicy/" class="archive-article-date">
-  	<time datetime="2022-04-18T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2022-04-19</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2022/04/19/hudiCleanPolicy/">Hudi Clean Policy 清理策略实现分析</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2022/04/18/hudiClean/" class="archive-article-date">
-  	<time datetime="2022-04-17T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2022-04-18</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2022/04/18/hudiClean/">Hudi Clean 清理文件实现分析</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2022/03/25/kyuubiConf/" class="archive-article-date">
-  	<time datetime="2022-03-24T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2022-03-25</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2022/03/25/kyuubiConf/">Kyuubi 安装配置总结</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">Kyuubi</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2022/02/15/sparkSqlJdbc2Hudi/" class="archive-article-date">
-  	<time datetime="2022-02-14T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2022-02-15</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2022/02/15/sparkSqlJdbc2Hudi/">SparkSQL JDBC 查询Oracle、MySQL 转化为Hudi表</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">SparkSQL</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2022/02/11/sparkThriftServerHA/" class="archive-article-date">
-  	<time datetime="2022-02-10T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2022-02-11</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2022/02/11/sparkThriftServerHA/">Spark Thrift Server HA 解决方案</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
+        
+        
       
-        </div></section>
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>学习总结Flink MySQL CDC，主要目的是同步MySQL数据至其他数据源如Hudi、MySQL等，本文主要以 MySQL2Hudi、MySQL2MySQL两个场景进行示例验证。</p>
+<h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><table>
+<thead>
+<tr>
+<th>Flink</th>
+<th>版本</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Flink</td>
+<td>1.14.3、1.15.4、1.16.1</td>
+</tr>
+<tr>
+<td>Hudi</td>
+<td>0.13.0</td>
+</tr>
+<tr>
+<td>MYSQL CDC</td>
+<td>2.3.0</td>
+</tr>
+</tbody>
+</table>
+<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>将下面的Jar包拷贝到flink/lib下面 （以flink1.15.4为例）</p>
+<ul>
+<li>MySQL CDC（CDC读取MySQL）: flink-sql-connector-mysql-cdc-2.3.0.jar，下载地址： <a href="https://repo1.maven.org/maven2/com/ververica/flink-sql-connector-mysql-cdc/2.3.0/flink-sql-connector-mysql-cdc-2.3.0.jar" target="_blank" rel="noopener">https://repo1.maven.org/maven2/com/ververica/flink-sql-connector-mysql-cdc/2.3.0/flink-sql-connector-mysql-cdc-2.3.0.jar</a></li>
+<li>Hudi (Sink Hudi): hudi-flink1.15-bundle-0.13.0.jar，自己对应版本的打包</li>
+<li>Jdbc (Sink MySQL): flink-connector-jdbc-1.15.4.jar, 下载地址：<a href="https://repo1.maven.org/maven2/org/apache/flink/flink-connector-jdbc/1.15.4/flink-connector-jdbc-1.15.4.jar" target="_blank" rel="noopener">https://repo1.maven.org/maven2/org/apache/flink/flink-connector-jdbc/1.15.4/flink-connector-jdbc-1.15.4.jar</a></li>
+</ul>
+<blockquote>
+<p>Flink CDC,只是对于Source表，比如MySQL CDC，就是抽取MySQL Source表，CDC 官方文档：<a href="https://ververica.github.io/flink-cdc-connectors/master/content/connectors/mysql-cdc.html#" target="_blank" rel="noopener">https://ververica.github.io/flink-cdc-connectors/master/content/connectors/mysql-cdc.html#</a>,可以查看官方文档了解目前Flink CDC支持哪些数据源，每一种数据源都需要下载对应的Jar包</p>
+</blockquote>
+<a id="more"></a>
+<h2 id="MySQL-CDC-参数"><a href="#MySQL-CDC-参数" class="headerlink" title="MySQL CDC 参数"></a>MySQL CDC 参数</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> mysql_cdc_source (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span> PRIMARY <span class="keyword">KEY</span> <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span>, <span class="comment">--主键必填，且要求源表必须有主键，flink主键可以和mysql主键不一致</span></span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="built_in">bigint</span>,</span><br><span class="line">  dt <span class="keyword">string</span></span><br><span class="line">) <span class="keyword">WITH</span> (</span><br><span class="line">    <span class="string">'connector'</span> = <span class="string">'mysql-cdc'</span>,</span><br><span class="line">    <span class="string">'hostname'</span> = <span class="string">'19.168.44.128'</span>,</span><br><span class="line">    <span class="string">'port'</span> = <span class="string">'3306'</span>,</span><br><span class="line">    <span class="string">'username'</span> = <span class="string">'root'</span>,</span><br><span class="line">    <span class="string">'password'</span> = <span class="string">'root-123'</span>,</span><br><span class="line">    <span class="string">'database-name'</span> = <span class="string">'cdc'</span>,</span><br><span class="line">    <span class="string">'table-name'</span> = <span class="string">'mysql_cdc_source'</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<h2 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h2><h3 id="创建MySQL-Source物理表"><a href="#创建MySQL-Source物理表" class="headerlink" title="创建MySQL Source物理表"></a>创建MySQL Source物理表</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql -uroot -proot-123 cdc</span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> <span class="string">`mysql_cdc_source`</span> (</span><br><span class="line">  <span class="string">`id`</span> <span class="built_in">int</span>(<span class="number">11</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  <span class="string">`name`</span> <span class="built_in">text</span>,</span><br><span class="line">  <span class="string">`price`</span> <span class="keyword">double</span> <span class="keyword">DEFAULT</span> <span class="literal">NULL</span>,</span><br><span class="line">  <span class="string">`ts`</span> <span class="built_in">int</span>(<span class="number">11</span>) <span class="keyword">DEFAULT</span> <span class="literal">NULL</span>,</span><br><span class="line">  <span class="string">`dt`</span> <span class="built_in">text</span>,</span><br><span class="line">  <span class="string">`insert_time`</span> <span class="keyword">timestamp</span> <span class="literal">NULL</span> <span class="keyword">DEFAULT</span> <span class="keyword">CURRENT_TIMESTAMP</span> <span class="keyword">COMMENT</span> <span class="string">'创建时间'</span>,</span><br><span class="line">  <span class="string">`update_time`</span> <span class="keyword">timestamp</span> <span class="literal">NULL</span> <span class="keyword">DEFAULT</span> <span class="keyword">CURRENT_TIMESTAMP</span> <span class="keyword">ON</span> <span class="keyword">UPDATE</span> <span class="keyword">CURRENT_TIMESTAMP</span> <span class="keyword">COMMENT</span> <span class="string">'更新时间'</span>,</span><br><span class="line">  PRIMARY <span class="keyword">KEY</span> (<span class="string">`id`</span>)</span><br><span class="line">) <span class="keyword">ENGINE</span>=<span class="keyword">InnoDB</span> <span class="keyword">DEFAULT</span> <span class="keyword">CHARSET</span>=utf8;</span><br></pre></td></tr></table></figure>
+<p>造数<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> mysql_cdc_source(<span class="keyword">id</span>,<span class="keyword">name</span>,price,ts,dt) <span class="keyword">values</span> (<span class="number">1</span>,<span class="string">'hudi1'</span>,<span class="number">1.1</span>,<span class="number">1000</span>,<span class="string">'20230331'</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> mysql_cdc_source(<span class="keyword">id</span>,<span class="keyword">name</span>,price,ts,dt) <span class="keyword">values</span> (<span class="number">2</span>,<span class="string">'hudi2'</span>,<span class="number">2.2</span>,<span class="number">2000</span>,<span class="string">'20230331'</span>);</span><br><span class="line">......</span><br></pre></td></tr></table></figure></p>
+<h3 id="CDC-MySQL2Hudi"><a href="#CDC-MySQL2Hudi" class="headerlink" title="CDC MySQL2Hudi"></a>CDC MySQL2Hudi</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> yarn.application.name=cdc_mysql2hudi;</span><br><span class="line"></span><br><span class="line"><span class="keyword">set</span> parallelism.default=<span class="number">1</span>;</span><br><span class="line"><span class="keyword">set</span> taskmanager.memory.process.size=<span class="number">3</span>g;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.interval=<span class="number">10000</span>; </span><br><span class="line"><span class="keyword">set</span> state.checkpoints.dir=hdfs:///flink/checkpoints/cdc_mysql2hudi;</span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.externalized-checkpoint-<span class="keyword">retention</span>= RETAIN_ON_CANCELLATION;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> mysql_cdc_source (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span> PRIMARY <span class="keyword">KEY</span> <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span>, <span class="comment">--主键必填，且要求源表必须有主键，flink主键可以和mysql主键不一致</span></span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="built_in">bigint</span>,</span><br><span class="line">  dt <span class="keyword">string</span></span><br><span class="line">) <span class="keyword">WITH</span> (</span><br><span class="line">    <span class="string">'connector'</span> = <span class="string">'mysql-cdc'</span>,</span><br><span class="line">    <span class="string">'hostname'</span> = <span class="string">'19.168.44.128'</span>,</span><br><span class="line">    <span class="string">'port'</span> = <span class="string">'3306'</span>,</span><br><span class="line">    <span class="string">'username'</span> = <span class="string">'root'</span>,</span><br><span class="line">    <span class="string">'password'</span> = <span class="string">'root-123'</span>,</span><br><span class="line">    <span class="string">'database-name'</span> = <span class="string">'cdc'</span>,</span><br><span class="line">    <span class="string">'table-name'</span> = <span class="string">'mysql_cdc_source'</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> hudi_cdc_sink (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span> PRIMARY <span class="keyword">KEY</span> <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span>,</span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="built_in">bigint</span>,</span><br><span class="line">  dt <span class="keyword">string</span></span><br><span class="line">)</span><br><span class="line"><span class="keyword">WITH</span> (</span><br><span class="line">  <span class="string">'connector'</span> = <span class="string">'hudi'</span>,</span><br><span class="line">  <span class="string">'path'</span> = <span class="string">'/tmp/cdc/hudi_cdc_sink'</span>,</span><br><span class="line">  <span class="string">'write.operation'</span>=<span class="string">'upsert'</span>, <span class="comment">--写类型，可选</span></span><br><span class="line">  <span class="string">'write.tasks'</span>=<span class="string">'1'</span>, <span class="comment">--并行度，可选,需要传参</span></span><br><span class="line">  <span class="string">'table.type'</span>=<span class="string">'COPY_ON_WRITE'</span>, <span class="comment">--表类型，可选</span></span><br><span class="line">  <span class="string">'precombine.field'</span> = <span class="string">'ts'</span>, <span class="comment">--可选，预合并字段和历史比较字段，当新来的数据该字段大于历史值时才会更新,默认为ts（如果有这个ts字段的话），需要传参，没有可不填，建议将该值设置为update_time</span></span><br><span class="line">  <span class="string">'hoodie.datasource.write.recordkey.field'</span> = <span class="string">'id'</span>, <span class="comment">-- 可选，和primary key效果一样，二者至少选一个</span></span><br><span class="line">  <span class="string">'hoodie.datasource.write.keygenerator.class'</span> = <span class="string">'org.apache.hudi.keygen.ComplexAvroKeyGenerator'</span>, <span class="comment">--该参数目前版本有bug</span></span><br><span class="line">  <span class="string">'index.type'</span> =  <span class="string">'BUCKET'</span>, <span class="comment">-- flink只支持两种index，默认state index,默认state index对于数据量比较大的情况会因为tm内存不足导致GC OOM</span></span><br><span class="line">  <span class="string">'hoodie.bucket.index.num.buckets'</span> = <span class="string">'16'</span>, <span class="comment">-- 桶数</span></span><br><span class="line">  <span class="string">'hive_sync.enable'</span> = <span class="string">'true'</span>,</span><br><span class="line">  <span class="string">'hive_sync.mode'</span> = <span class="string">'hms'</span>,</span><br><span class="line">  <span class="string">'hive_sync.conf.dir'</span>=<span class="string">'/usr/hdp/3.1.0.0-78/hive/conf'</span>,</span><br><span class="line">  <span class="string">'hive_sync.db'</span> = <span class="string">'cdc'</span>,</span><br><span class="line">  <span class="string">'hive_sync.table'</span> = <span class="string">'hudi_cdc_sink'</span>,</span><br><span class="line">  <span class="string">'hoodie.datasource.hive_sync.create_managed_table'</span> = <span class="string">'true'</span> <span class="comment">--是否为内部表，0.13.0版本开始支持</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> hudi_cdc_sink <span class="keyword">select</span> * <span class="keyword">from</span> mysql_cdc_source;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意，要求source表和sink表字段顺序要对应</p>
+</blockquote>
+<h3 id="CDC-MySQL2Mysql"><a href="#CDC-MySQL2Mysql" class="headerlink" title="CDC MySQL2Mysql"></a>CDC MySQL2Mysql</h3><h4 id="创建MySQL-Sink物理表"><a href="#创建MySQL-Sink物理表" class="headerlink" title="创建MySQL Sink物理表"></a>创建MySQL Sink物理表</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> <span class="string">`test_sink_mysql`</span> (</span><br><span class="line">  <span class="string">`id`</span> <span class="built_in">int</span>(<span class="number">11</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  <span class="string">`name`</span> <span class="built_in">text</span>,</span><br><span class="line">  <span class="string">`price`</span> <span class="keyword">double</span> <span class="keyword">DEFAULT</span> <span class="literal">NULL</span>,</span><br><span class="line">  <span class="string">`ts`</span> <span class="built_in">int</span>(<span class="number">11</span>) <span class="keyword">DEFAULT</span> <span class="literal">NULL</span>,</span><br><span class="line">  <span class="string">`dt`</span> <span class="built_in">text</span>,</span><br><span class="line">  <span class="string">`insert_time`</span> <span class="keyword">timestamp</span> <span class="literal">NULL</span> <span class="keyword">DEFAULT</span> <span class="keyword">CURRENT_TIMESTAMP</span> <span class="keyword">COMMENT</span> <span class="string">'创建时间'</span>,</span><br><span class="line">  <span class="string">`update_time`</span> <span class="keyword">timestamp</span> <span class="literal">NULL</span> <span class="keyword">DEFAULT</span> <span class="keyword">CURRENT_TIMESTAMP</span> <span class="keyword">ON</span> <span class="keyword">UPDATE</span> <span class="keyword">CURRENT_TIMESTAMP</span> <span class="keyword">COMMENT</span> <span class="string">'更新时间'</span>,</span><br><span class="line">  PRIMARY <span class="keyword">KEY</span> (<span class="string">`id`</span>)</span><br><span class="line">) <span class="keyword">ENGINE</span>=<span class="keyword">InnoDB</span> <span class="keyword">DEFAULT</span> <span class="keyword">CHARSET</span>=utf8;</span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> yarn.application.name=cdc_mysql2mysql;</span><br><span class="line"></span><br><span class="line"><span class="keyword">set</span> parallelism.default=<span class="number">1</span>;</span><br><span class="line"><span class="keyword">set</span> taskmanager.memory.process.size=<span class="number">3</span>g;</span><br><span class="line"></span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.interval=<span class="number">10000</span>; </span><br><span class="line"><span class="keyword">set</span> state.checkpoints.dir=hdfs:///flink/checkpoints/cdc_mysql2mysql;</span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.externalized-checkpoint-<span class="keyword">retention</span>= RETAIN_ON_CANCELLATION;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> mysql_cdc_source (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span> PRIMARY <span class="keyword">KEY</span> <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span>, <span class="comment">--主键必填，且要求源表必须有主键，flink主键可以和mysql主键不一致</span></span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="built_in">bigint</span>,</span><br><span class="line">  dt <span class="keyword">string</span></span><br><span class="line">) <span class="keyword">WITH</span> (</span><br><span class="line">    <span class="string">'connector'</span> = <span class="string">'mysql-cdc'</span>,</span><br><span class="line">    <span class="string">'hostname'</span> = <span class="string">'19.168.44.128'</span>,</span><br><span class="line">    <span class="string">'port'</span> = <span class="string">'3306'</span>,</span><br><span class="line">    <span class="string">'username'</span> = <span class="string">'root'</span>,</span><br><span class="line">    <span class="string">'password'</span> = <span class="string">'root-123'</span>,</span><br><span class="line">    <span class="string">'database-name'</span> = <span class="string">'cdc'</span>,</span><br><span class="line">    <span class="string">'table-name'</span> = <span class="string">'mysql_cdc_source'</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> test_sink_mysql (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span> PRIMARY <span class="keyword">KEY</span> <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span>,</span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="built_in">bigint</span>,</span><br><span class="line">  dt <span class="keyword">string</span></span><br><span class="line">) <span class="keyword">with</span> (</span><br><span class="line"> <span class="string">'connector'</span> = <span class="string">'jdbc'</span>,</span><br><span class="line"> <span class="string">'url'</span> = <span class="string">'jdbc:mysql://19.168.44.128:3306/cdc?useSSL=false&amp;useUnicode=true&amp;characterEncoding=UTF-8&amp;characterSetResults=UTF-8&amp;rewriteBatchedStatements=true'</span>,</span><br><span class="line"> <span class="string">'username'</span> = <span class="string">'root'</span>,</span><br><span class="line"> <span class="string">'password'</span> = <span class="string">'root-123'</span>,</span><br><span class="line"> <span class="string">'table-name'</span> = <span class="string">'test_sink_mysql'</span>,</span><br><span class="line"> <span class="string">'sink.buffer-flush.max-rows'</span> = <span class="string">'1000000'</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test_sink_mysql(<span class="keyword">id</span>,<span class="keyword">name</span>,price,ts,dt) <span class="keyword">select</span> * <span class="keyword">from</span> mysql_cdc_source;</span><br></pre></td></tr></table></figure>
+<h2 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h2><p>对源表mysql_cdc_source执行insert/update/delete操作，查看目标表数据同步情况，发现数据一致<br>对源表执行truncate操作，目标表数据不会同步truncate</p>
+<h2 id="相关阅读"><a href="#相关阅读" class="headerlink" title="相关阅读"></a>相关阅读</h2><ul>
+<li><a href="https://mp.weixin.qq.com/s/1-7yh3Qr2pOVZ9UiicJM9Q" target="_blank" rel="noopener">Flink SQL Checkpoint 学习总结</a></li>
+<li><a href="https://mp.weixin.qq.com/s/N_SnkJDEEvka2rvtV2RWJg" target="_blank" rel="noopener">Flink SQL操作Hudi并同步Hive使用总结</a></li>
+</ul>
+
       
+
       
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2021" class="archive-year">2021</a>
+        <div class="page-reward">
+          <a href="javascript:;" class="page-reward-btn tooltip-top">
+            <div class="tooltip tooltip-east">
+            <span class="tooltip-item">
+              赏
+            </span>
+            <span class="tooltip-content">
+              <span class="tooltip-text">
+                <span class="tooltip-inner">
+                  <p class="reward-p"><i class="icon icon-quo-left"></i>感谢您的支持!<i class="icon icon-quo-right"></i></p>
+                  <div class="reward-box">
+                    
+                    <div class="reward-box-item">
+                      <img class="reward-img" src="/img/alipay.png">
+                      <span class="reward-type">支付宝</span>
+                    </div>
+                    
+                    
+                    <div class="reward-box-item">
+                      <img class="reward-img" src="/img/weixin.png">
+                      <span class="reward-type">微信</span>
+                    </div>
+                    
+                  </div>
+                </span>
+              </span>
+            </span>
+          </div>
+          </a>
         </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2021/12/23/prestoHudiException/" class="archive-article-date">
-  	<time datetime="2021-12-22T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-12-23</time>
-</a>
+      
+	  
+		<div class="article-footer-copyright">
+
+ <p>本文由&nbsp;<b>董可伦</b>&nbsp;发表于&nbsp<a href="http://dongkelun.com">伦少的博客</a>&nbsp,采用<a href="http://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh">署名-非商业性使用-禁止演绎 3.0</a>进行许可。</p>
+
+ <p>非商业转载请注明作者及出处。商业转载请联系作者本人。</p>
+
+
+ <p>本文标题：<a href="https://dongkelun.com/2023/04/03/flinkMySQLCDC/">Flink MySQL CDC 使用总结</a> </p>
+
+ <p>本文链接：<a href="https://dongkelun.com/2023/04/03/flinkMySQLCDC/">https://dongkelun.com/2023/04/03/flinkMySQLCDC/</a></p>
+ <p>欢迎关注我的公众号</p>
+ <img src='https://img.dongkelun.com/gongzhonghao.jpg' style='margin:10px'/>
+  <p>作者联系方式：</p>
+  <p>QQ：1412359494</p>
+  <p>微信：dongkelun</p>
+</div>
+
+	  
+    </div>
+    <div class="article-info article-info-index">
+      
+	   
+	 
+      
+
+      
+        
+<div class="share-btn share-icons tooltip-left">
+  <div class="tooltip tooltip-east">
+    <span class="tooltip-item">
+      <a href="javascript:;" class="share-sns share-outer">
+        <i class="icon icon-share"></i>
+      </a>
+    </span>
+    <span class="tooltip-content">
+      <div class="share-wrap">
+        <div class="share-icons">
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="icon icon-weibo"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="icon icon-weixin"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="icon icon-qq"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="icon icon-douban"></i>
+          </a>
+          <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a>
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="icon icon-facebook"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="icon icon-twitter"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="icon icon-google"></i>
+          </a>
         </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2021/12/23/prestoHudiException/">Presto查询Hudi异常解决</a>
-    </h1>
-  
+      </div>
+    </span>
+  </div>
+</div>
 
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">异常</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">Presto</a>
-        		</li>
-      		
-		</ul>
-	</div>
+<div class="page-modal wx-share js-wx-box">
+    <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="http://qr.liantu.com/api.php?text=https://dongkelun.com/2023/04/03/flinkMySQLCDC/" alt="微信分享二维码">
+    </div>
+</div>
 
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
+<div class="mask js-mask"></div>
+      
+      <div class="clearfix"></div>
+    </div>
   </div>
 </article>
+
   
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2021/12/02/submarinSparkRanger/" class="archive-article-date">
-  	<time datetime="2021-12-01T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-12-02</time>
-</a>
+<nav id="article-nav">
+  
+  
+    <a href="/2023/03/01/flinkSqlCheckpoint/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Flink SQL Checkpoint 学习总结</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
         </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2021/12/02/submarinSparkRanger/">利用Submarin集成Spark-Ranger</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">Submarin</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">Ranger</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-
+        
+        
+        <div class="toc-container tooltip-left">
+            <i class="icon-font icon-category"></i>
+            <div class="tooltip tooltip-east">
+                <span class="tooltip-item">
+                </span>
+                <span class="tooltip-content">
+                    <div class="toc-article">
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#版本"><span class="toc-number">2.</span> <span class="toc-text">版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#安装"><span class="toc-number">3.</span> <span class="toc-text">安装</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#MySQL-CDC-参数"><span class="toc-number">4.</span> <span class="toc-text">MySQL CDC 参数</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#示例"><span class="toc-number">5.</span> <span class="toc-text">示例</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#创建MySQL-Source物理表"><span class="toc-number">5.1.</span> <span class="toc-text">创建MySQL Source物理表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#CDC-MySQL2Hudi"><span class="toc-number">5.2.</span> <span class="toc-text">CDC MySQL2Hudi</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#CDC-MySQL2Mysql"><span class="toc-number">5.3.</span> <span class="toc-text">CDC MySQL2Mysql</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#创建MySQL-Sink物理表"><span class="toc-number">5.3.1.</span> <span class="toc-text">创建MySQL Sink物理表</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#验证"><span class="toc-number">6.</span> <span class="toc-text">验证</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#相关阅读"><span class="toc-number">7.</span> <span class="toc-text">相关阅读</span></a></li></ol>
+                    </div>
+                </span>
+            </div>
         </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
+        
+    </div>
+</aside>
+
+
+
   
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2021/11/30/hudiPreCombineField2/" class="archive-article-date">
-  	<time datetime="2021-11-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-11-30</time>
-</a>
-        </div>
-    	 
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2021/11/30/hudiPreCombineField2/">Hudi preCombinedField 总结(二)-源码分析</a>
-    </h1>
   
 
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-  
-    </div></section>
   
 
-    
-    <nav id="page-nav">
-      <a class="extend prev" rel="prev" href="/archives/page/3/">&laquo; Prev</a><a class="page-number" href="/archives/">1</a><a class="page-number" href="/archives/page/2/">2</a><a class="page-number" href="/archives/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/archives/page/5/">5</a><a class="page-number" href="/archives/page/6/">6</a><span class="space">&hellip;</span><a class="page-number" href="/archives/page/15/">15</a><a class="extend next" rel="next" href="/archives/page/5/">Next &raquo;</a>
-    </nav>
+  
+
   
 
 
@@ -706,8 +521,8 @@
 	var yiliaConfig = {
 		mathjax: true,
 		isHome: false,
-		isPost: false,
-		isArchive: true,
+		isPost: true,
+		isArchive: false,
 		isTag: false,
 		isCategory: false,
 		open_in_new: false,
