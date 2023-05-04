@@ -17,15 +17,15 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言上一篇文章Hudi Spark源码学习总结-spark.read.format(“hudi”).load分析了load方法直接查询Hudi表路径的源码逻辑，那么Spark SQL select 表名的方式和load最终走的逻辑是一样的吗？本文带着这个疑问来分析一下select查询Hudi表的源码逻辑 版本Spark 2.4.4Hudi master 0.12.0-SNAPSHOT 最新代码（可">
 <meta property="og:locale" content="cn">
-<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/596b382b42433a6ec7d4c0d9f11fdb6e.jpeg">
-<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/6f516710a4572e70937a8ca625eec9ac.jpeg">
-<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/160fca3597e9e7c72385d902c94be64b.jpeg">
-<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/b36a1abb00bf27c8fe51103d2e10386f.jpeg">
-<meta property="og:updated_time" content="2023-01-13T06:17:44.672Z">
+<meta property="og:image" content="https://img.dongkelun.com/spark-sql/sqlSourceCode1.png">
+<meta property="og:image" content="https://img.dongkelun.com/spark-sql/sqlSourceCode2.png">
+<meta property="og:image" content="https://img.dongkelun.com/spark-sql/sqlSourceCode3.png">
+<meta property="og:image" content="https://img.dongkelun.com/spark-sql/sqlSourceCode4.png">
+<meta property="og:updated_time" content="2023-05-04T07:24:27.430Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Hudi Spark SQL源码学习总结-select（查询）">
 <meta name="twitter:description" content="前言上一篇文章Hudi Spark源码学习总结-spark.read.format(“hudi”).load分析了load方法直接查询Hudi表路径的源码逻辑，那么Spark SQL select 表名的方式和load最终走的逻辑是一样的吗？本文带着这个疑问来分析一下select查询Hudi表的源码逻辑 版本Spark 2.4.4Hudi master 0.12.0-SNAPSHOT 最新代码（可">
-<meta name="twitter:image" content="https://img-blog.csdnimg.cn/img_convert/596b382b42433a6ec7d4c0d9f11fdb6e.jpeg">
+<meta name="twitter:image" content="https://img.dongkelun.com/spark-sql/sqlSourceCode1.png">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -282,12 +282,12 @@
 <h2 id="parsing"><a href="#parsing" class="headerlink" title="parsing"></a>parsing</h2><h3 id="singleStatement"><a href="#singleStatement" class="headerlink" title="singleStatement"></a>singleStatement</h3><p>根据文章<a href="https://dongkelun.com/2022/07/20/hudiSparkSqlSourceCodeLearning/">Hudi Spark SQL源码学习总结-Create Table</a>的逻辑，可知select对应Spark源码里的<code>SqlBase.g4</code>(即Hudi g4文件中没有重写select)，那么<code>parsePlan</code>方法最终走到<code>AbstractSqlParser.parsePlan</code></p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">override def <span class="title">parsePlan</span><span class="params">(sqlText: String)</span>: LogicalPlan </span>= parse(sqlText) &#123; parser =&gt;</span><br><span class="line">  astBuilder.visitSingleStatement(parser.singleStatement()) match &#123;</span><br><span class="line">    <span class="keyword">case</span> plan: LogicalPlan =&gt; plan</span><br><span class="line">    <span class="keyword">case</span> _ =&gt;</span><br><span class="line">      val position = Origin(None, None)</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> ParseException(Option(sqlText), <span class="string">"Unsupported SQL statement"</span>, position, position)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function">override def <span class="title">visitSingleStatement</span><span class="params">(ctx: SingleStatementContext)</span>: LogicalPlan </span>= withOrigin(ctx) &#123;</span><br><span class="line">  visit(ctx.statement).asInstanceOf[LogicalPlan]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>因为select 对应的嵌套逻辑比较复杂，我们可以利用IDEA里的ANTLR插件测试一下<code>singleStatement</code>对应的规则,我们只需要输入对应的sql，就可以得到它的parse tree</p>
-<h4 id="安装插件"><a href="#安装插件" class="headerlink" title="安装插件"></a>安装插件</h4><p><img src="https://img-blog.csdnimg.cn/img_convert/596b382b42433a6ec7d4c0d9f11fdb6e.jpeg" alt=""></p>
-<h4 id="Test-Rule-singleStatement"><a href="#Test-Rule-singleStatement" class="headerlink" title="Test Rule singleStatement"></a>Test Rule singleStatement</h4><p>将鼠标放到<code>singleStatement</code>处，右键点击 Test Rule singleStatement<br><img src="https://img-blog.csdnimg.cn/img_convert/6f516710a4572e70937a8ca625eec9ac.jpeg" alt=""></p>
-<h4 id="输入sql"><a href="#输入sql" class="headerlink" title="输入sql"></a>输入sql</h4><p>输入sql<code>SELECT  ID, NAME, PRICE, TS, DT FROM H0</code>，这里需要大写才能识别<br><img src="https://img-blog.csdnimg.cn/img_convert/160fca3597e9e7c72385d902c94be64b.jpeg" alt=""></p>
+<h4 id="安装插件"><a href="#安装插件" class="headerlink" title="安装插件"></a>安装插件</h4><p><img src="https://img.dongkelun.com/spark-sql/sqlSourceCode1.png" alt=""></p>
+<h4 id="Test-Rule-singleStatement"><a href="#Test-Rule-singleStatement" class="headerlink" title="Test Rule singleStatement"></a>Test Rule singleStatement</h4><p>将鼠标放到<code>singleStatement</code>处，右键点击 Test Rule singleStatement<br><img src="https://img.dongkelun.com/spark-sql/sqlSourceCode2.png" alt=""></p>
+<h4 id="输入sql"><a href="#输入sql" class="headerlink" title="输入sql"></a>输入sql</h4><p>输入sql<code>SELECT  ID, NAME, PRICE, TS, DT FROM H0</code>，这里需要大写才能识别<br><img src="https://img.dongkelun.com/spark-sql/sqlSourceCode3.png" alt=""></p>
 <p>根据得到的parseTree，我们就知道g4文件中对应的大概逻辑了</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line">singleStatement</span><br><span class="line">    : statement EOF</span><br><span class="line">    ;</span><br><span class="line">statement</span><br><span class="line">    : query                                                            #statementDefault</span><br><span class="line">    | USE db=identifier                                                #use</span><br><span class="line">query</span><br><span class="line">    : ctes? queryNoWith</span><br><span class="line">    ;</span><br><span class="line">queryNoWith</span><br><span class="line">    : insertInto? queryTerm queryOrganization                                              #singleInsertQuery</span><br><span class="line">    | fromClause multiInsertQueryBody+                                                     #multiInsertQuery</span><br><span class="line">    ;</span><br><span class="line">queryTerm</span><br><span class="line">    : queryPrimary                                                                       #queryTermDefault</span><br><span class="line">queryPrimary</span><br><span class="line">    : querySpecification                                                    #queryPrimaryDefault</span><br><span class="line">querySpecification</span><br><span class="line">    : (((SELECT kind=TRANSFORM <span class="string">'('</span> namedExpressionSeq <span class="string">')'</span></span><br><span class="line">        | kind=MAP namedExpressionSeq</span><br><span class="line">        | kind=REDUCE namedExpressionSeq))</span><br><span class="line">       inRowFormat=rowFormat?</span><br><span class="line">       (RECORDWRITER recordWriter=STRING)?</span><br><span class="line">       USING script=STRING</span><br><span class="line">       (AS (identifierSeq | colTypeList | (<span class="string">'('</span> (identifierSeq | colTypeList) <span class="string">')'</span>)))?</span><br><span class="line">       outRowFormat=rowFormat?</span><br><span class="line">       (RECORDREADER recordReader=STRING)?</span><br><span class="line">       fromClause?</span><br><span class="line">       (WHERE where=booleanExpression)?)</span><br><span class="line">    | ((kind=SELECT (hints+=hint)* setQuantifier? namedExpressionSeq fromClause?</span><br><span class="line">       | fromClause (kind=SELECT setQuantifier? namedExpressionSeq)?)</span><br><span class="line">       lateralView*</span><br><span class="line">       (WHERE where=booleanExpression)?</span><br><span class="line">       aggregation?</span><br><span class="line">       (HAVING having=booleanExpression)?</span><br><span class="line">       windows?)</span><br><span class="line">    ;</span><br><span class="line">namedExpressionSeq</span><br><span class="line">    : namedExpression (<span class="string">','</span> namedExpression)*</span><br><span class="line">    ;</span><br><span class="line">namedExpression</span><br><span class="line">    : expression (AS? (identifier | identifierList))?</span><br><span class="line">    ;</span><br><span class="line">expression</span><br><span class="line">    : booleanExpression</span><br><span class="line">    ;</span><br><span class="line">......</span><br></pre></td></tr></table></figure>
-<p>但是逻辑还是比较复杂,我可以在IDEA了调试一下，看看ctx.statement的值<br><img src="https://img-blog.csdnimg.cn/img_convert/b36a1abb00bf27c8fe51103d2e10386f.jpeg" alt=""></p>
+<p>但是逻辑还是比较复杂,我可以在IDEA了调试一下，看看ctx.statement的值<br><img src="https://img.dongkelun.com/spark-sql/sqlSourceCode4.png" alt=""></p>
 <h4 id="主要代码"><a href="#主要代码" class="headerlink" title="主要代码"></a>主要代码</h4><p>对应的主要代码为：</p>
 <p><code>StatementDefaultContext</code></p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> &lt;T&gt; <span class="function">T <span class="title">accept</span><span class="params">(ParseTreeVisitor&lt;? extends T&gt; visitor)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">if</span> ( visitor <span class="keyword">instanceof</span> SqlBaseVisitor ) <span class="keyword">return</span> ((SqlBaseVisitor&lt;? extends T&gt;)visitor).visitStatementDefault(<span class="keyword">this</span>);</span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">return</span> visitor.visitChildren(<span class="keyword">this</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">  <span class="function">Override <span class="keyword">public</span> T <span class="title">visitStatementDefault</span><span class="params">(SqlBaseParser.StatementDefaultContext ctx)</span> </span>&#123; <span class="keyword">return</span> visitChildren(ctx); &#125;</span><br><span class="line">  <span class="function">override def <span class="title">visitChildren</span><span class="params">(node: RuleNode)</span>: AnyRef </span>= &#123;</span><br><span class="line">    <span class="keyword">if</span> (node.getChildCount == <span class="number">1</span>) &#123;</span><br><span class="line">      node.getChild(<span class="number">0</span>).accept(<span class="keyword">this</span>)</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">null</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
@@ -667,7 +667,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -687,31 +699,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -723,6 +711,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
@@ -731,11 +723,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -747,6 +739,14 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
@@ -755,11 +755,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -779,15 +779,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -827,11 +827,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -839,11 +839,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -855,10 +855,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
@@ -867,11 +863,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -891,15 +891,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">scala</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -939,14 +939,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
@@ -959,15 +951,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">面试题</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -975,15 +967,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -991,7 +983,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1000,10 +1000,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1016,6 +1012,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
             
             <div class="clearfix"></div>
