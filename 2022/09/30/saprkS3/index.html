@@ -17,15 +17,15 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言首先安装好Ceph,可以参考我上篇文章Ceph分布式集群安装配置 版本spark: 2.4.5hadoop: hdp版本 3.1.1.3.1.0.0-78 spark-shell读写S3jar包配置1234567hadoop-aws-3.1.1.3.1.0.0-78.jar 注意版本要和hadoop版本对应aws-java-sdk-s3-1.12.22.jaraws-java-sdk-core">
 <meta property="og:locale" content="cn">
-<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/bc94aabad94a8c7313aa1e1f084e0607.jpeg">
-<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/569ff4b065cc9b2cde2e8e1d26d2ff54.jpeg">
-<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/6f4949a21a241a6d2c33f54ad86dbd6c.jpeg">
-<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/dc22fd5260b20ce0075475c8c63d35dd.jpeg">
-<meta property="og:updated_time" content="2023-01-12T09:59:54.918Z">
+<meta property="og:image" content="https://img.dongkelun.com/s3/spark1.png">
+<meta property="og:image" content="https://img.dongkelun.com/s3/spark2.png">
+<meta property="og:image" content="https://img.dongkelun.com/s3/spark3.png">
+<meta property="og:image" content="https://img.dongkelun.com/s3/spark4.png">
+<meta property="og:updated_time" content="2023-05-04T05:49:59.121Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Spark 读写 Ceph S3入门学习总结">
 <meta name="twitter:description" content="前言首先安装好Ceph,可以参考我上篇文章Ceph分布式集群安装配置 版本spark: 2.4.5hadoop: hdp版本 3.1.1.3.1.0.0-78 spark-shell读写S3jar包配置1234567hadoop-aws-3.1.1.3.1.0.0-78.jar 注意版本要和hadoop版本对应aws-java-sdk-s3-1.12.22.jaraws-java-sdk-core">
-<meta name="twitter:image" content="https://img-blog.csdnimg.cn/img_convert/bc94aabad94a8c7313aa1e1f084e0607.jpeg">
+<meta name="twitter:image" content="https://img.dongkelun.com/s3/spark1.png">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -277,17 +277,17 @@
 <p>将test.txt上传到s3://txt<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">s3cmd put test.txt s3://txt</span><br><span class="line">upload: <span class="string">'test.txt'</span> -&gt; <span class="string">'s3://txt/test.txt'</span>  [1 of 1]</span><br><span class="line"> 8 of 8   100% <span class="keyword">in</span>    0s    45.82 B/s  <span class="keyword">done</span></span><br></pre></td></tr></table></figure></p>
 <h4 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h4><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">spark.sparkContext.hadoopConfiguration.set(<span class="string">"fs.s3a.access.key"</span>, <span class="string">"access_key"</span>)</span><br><span class="line">spark.sparkContext.hadoopConfiguration.set(<span class="string">"fs.s3a.secret.key"</span>, <span class="string">"secret_key"</span>)</span><br><span class="line">spark.sparkContext.hadoopConfiguration.set(<span class="string">"fs.s3a.endpoint"</span>, <span class="string">"ip:7480"</span>)</span><br><span class="line">spark.sparkContext.hadoopConfiguration.set(<span class="string">"fs.s3a.connection.ssl.enabled"</span>, <span class="string">"false"</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> rdd = spark.read.text(<span class="string">"s3a://txt/test.txt"</span>)</span><br><span class="line">rdd.count</span><br><span class="line">rdd.foreach(println(_))</span><br></pre></td></tr></table></figure>
 <h4 id="结果"><a href="#结果" class="headerlink" title="结果"></a>结果</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">scala&gt; rdd.count</span><br><span class="line">res4: Long = <span class="number">4</span></span><br><span class="line"></span><br><span class="line">scala&gt; rdd.foreach(println(_))</span><br><span class="line">[<span class="number">1</span>]</span><br><span class="line">[<span class="number">2</span>]</span><br><span class="line">[<span class="number">3</span>]</span><br><span class="line">[<span class="number">4</span>]</span><br></pre></td></tr></table></figure>
-<p><img src="https://img-blog.csdnimg.cn/img_convert/bc94aabad94a8c7313aa1e1f084e0607.jpeg" alt=""></p>
+<p><img src="https://img.dongkelun.com/s3/spark1.png" alt=""></p>
 <h3 id="spark-shell写"><a href="#spark-shell写" class="headerlink" title="spark-shell写"></a>spark-shell写</h3><h4 id="s3cmd创建用于写的Bucket"><a href="#s3cmd创建用于写的Bucket" class="headerlink" title="s3cmd创建用于写的Bucket"></a>s3cmd创建用于写的Bucket</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">s3cmd mb s3://<span class="built_in">test</span>-s3-write</span><br><span class="line">Bucket <span class="string">'s3://test-s3-write/'</span> created</span><br></pre></td></tr></table></figure>
 <h4 id="代码-1"><a href="#代码-1" class="headerlink" title="代码"></a>代码</h4><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">spark.sparkContext.hadoopConfiguration.set(<span class="string">"fs.s3a.access.key"</span>, <span class="string">"access_key"</span>)</span><br><span class="line">spark.sparkContext.hadoopConfiguration.set(<span class="string">"fs.s3a.secret.key"</span>, <span class="string">"secret_key"</span>)</span><br><span class="line">spark.sparkContext.hadoopConfiguration.set(<span class="string">"fs.s3a.endpoint"</span>, <span class="string">"ip:7480"</span>)</span><br><span class="line">spark.sparkContext.hadoopConfiguration.set(<span class="string">"fs.s3a.connection.ssl.enabled"</span>, <span class="string">"false"</span>)</span><br><span class="line"><span class="keyword">import</span> spark.implicits._</span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> df = <span class="type">Seq</span>((<span class="number">1</span>, <span class="string">"a1"</span>, <span class="number">10</span>, <span class="number">1000</span>, <span class="string">"2022-09-27"</span>)).toDF(<span class="string">"id"</span>, <span class="string">"name"</span>, <span class="string">"value"</span>, <span class="string">"ts"</span>, <span class="string">"dt"</span>)</span><br><span class="line">df.write.mode(<span class="string">"overwrite"</span>).parquet(<span class="string">"s3a://test-s3-write/test_df"</span>)</span><br><span class="line"></span><br><span class="line">spark.read.parquet(<span class="string">"s3a://test-s3-write/test_df"</span>).show</span><br></pre></td></tr></table></figure>
-<p><img src="https://img-blog.csdnimg.cn/img_convert/569ff4b065cc9b2cde2e8e1d26d2ff54.jpeg" alt=""></p>
+<p><img src="https://img.dongkelun.com/s3/spark2.png" alt=""></p>
 <h4 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h4><p>我们在上面的代码里已经通过读来验证了一次<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">spark.read.parquet(<span class="string">"s3a://test-s3-write/test_df"</span>).show</span><br><span class="line">+---+----+-----+----+----------+</span><br><span class="line">| id|name|value|  ts|        dt|</span><br><span class="line">+---+----+-----+----+----------+</span><br><span class="line">|  <span class="number">1</span>|  a1|   <span class="number">10</span>|<span class="number">1000</span>|<span class="number">2022</span>-<span class="number">09</span>-<span class="number">27</span>|</span><br><span class="line">+---+----+-----+----+----------+</span><br></pre></td></tr></table></figure></p>
 <p>接下来再用s3cmd命令验证对应的s3路径下是否有对应的我们用代码写的parquet文件</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">s3cmd ls s3://<span class="built_in">test</span>-s3-write/test_df/</span><br><span class="line">2022-09-28 07:35            0  s3://<span class="built_in">test</span>-s3-write/test_df/_SUCCESS</span><br><span class="line">2022-09-28 07:35         1222  s3://<span class="built_in">test</span>-s3-write/test_df/part-00000-f1f23a4e-bb07-424c-853e-59281af2920c-c000.snappy.parquet</span><br></pre></td></tr></table></figure>
-<p><img src="https://img-blog.csdnimg.cn/img_convert/6f4949a21a241a6d2c33f54ad86dbd6c.jpeg" alt=""></p>
+<p><img src="https://img.dongkelun.com/s3/spark3.png" alt=""></p>
 <h2 id="IDEA-Spark代码读写S3"><a href="#IDEA-Spark代码读写S3" class="headerlink" title="IDEA Spark代码读写S3"></a>IDEA Spark代码读写S3</h2><h3 id="pom依赖"><a href="#pom依赖" class="headerlink" title="pom依赖"></a>pom依赖</h3><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.hadoop<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>hadoop-aws<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.1.1.3.1.0.0-78<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.amazonaws<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>aws-java-sdk-core<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.12.22<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.amazonaws<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>aws-java-sdk-s3<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.12.22<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.amazonaws<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>aws-java-sdk-dynamodb<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.12.22<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
 <h3 id="代码-2"><a href="#代码-2" class="headerlink" title="代码"></a>代码</h3><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SparkSession</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">SparkS3Demo</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> spark = <span class="type">SparkSession</span>.builder().</span><br><span class="line">      master(<span class="string">"local[*]"</span>).</span><br><span class="line">      appName(<span class="string">"SparkS3Demo"</span>).</span><br><span class="line">      getOrCreate()</span><br><span class="line">    spark.sparkContext.hadoopConfiguration.set(<span class="string">"fs.s3a.access.key"</span>, <span class="string">"access_key"</span>)</span><br><span class="line">    spark.sparkContext.hadoopConfiguration.set(<span class="string">"fs.s3a.secret.key"</span>, <span class="string">"secret_key"</span>)</span><br><span class="line">    spark.sparkContext.hadoopConfiguration.set(<span class="string">"fs.s3a.endpoint"</span>, <span class="string">"ip:7480"</span>)</span><br><span class="line">    spark.sparkContext.hadoopConfiguration.set(<span class="string">"fs.s3a.connection.ssl.enabled"</span>, <span class="string">"false"</span>)</span><br><span class="line"></span><br><span class="line">    testReadTxt(spark)</span><br><span class="line">    testWriteAndReadParquet(spark)</span><br><span class="line"></span><br><span class="line">    spark.stop()</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * 测试Spark读S3txt</span></span><br><span class="line"><span class="comment">   * 需要先创建Bucket s3cmd mb s3://txt</span></span><br><span class="line"><span class="comment">   * 再上传test.txt s3cmd put test.txt s3://txt</span></span><br><span class="line"><span class="comment">   * 最后用Spark读</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">testReadTxt</span></span>(spark: <span class="type">SparkSession</span>) = &#123;</span><br><span class="line">    <span class="keyword">val</span> rdd = spark.read.text(<span class="string">"s3a://txt/test.txt"</span>)</span><br><span class="line">    println(rdd.count)</span><br><span class="line">    rdd.foreach(println(_))</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * s3cmd mb s3://test-s3-write</span></span><br><span class="line"><span class="comment">   * 需要先创建Bucket</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">testWriteAndReadParquet</span></span>(spark: <span class="type">SparkSession</span>) = &#123;</span><br><span class="line">    <span class="keyword">import</span> spark.implicits._</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> df = <span class="type">Seq</span>((<span class="number">1</span>, <span class="string">"a1"</span>, <span class="number">10</span>, <span class="number">1000</span>, <span class="string">"2022-09-27"</span>)).toDF(<span class="string">"id"</span>, <span class="string">"name"</span>, <span class="string">"value"</span>, <span class="string">"ts"</span>, <span class="string">"dt"</span>)</span><br><span class="line">    df.write.mode(<span class="string">"overwrite"</span>).parquet(<span class="string">"s3a://test-s3-write/test_df"</span>)</span><br><span class="line"></span><br><span class="line">    spark.read.parquet(<span class="string">"s3a://test-s3-write/test_df"</span>).show</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><img src="https://img-blog.csdnimg.cn/img_convert/dc22fd5260b20ce0075475c8c63d35dd.jpeg" alt=""></p>
+<p><img src="https://img.dongkelun.com/s3/spark4.png" alt=""></p>
 <h3 id="完整代码"><a href="#完整代码" class="headerlink" title="完整代码"></a>完整代码</h3><p>完整代码已上传到GitHub，有需要的同学可自行下载：<a href="https://github.com/dongkelun/S3_Demo" target="_blank" rel="noopener">https://github.com/dongkelun/S3_Demo</a></p>
 <h2 id="s3，s3a，s3n-的区别"><a href="#s3，s3a，s3n-的区别" class="headerlink" title="s3，s3a，s3n 的区别"></a>s3，s3a，s3n 的区别</h2><p>引用自<a href="https://m.imooc.com/wenda/detail/606708" target="_blank" rel="noopener">https://m.imooc.com/wenda/detail/606708</a></p>
 <ul>
@@ -648,7 +648,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -660,14 +672,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">SQL</a>
               </li>
              
@@ -676,7 +680,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -692,11 +700,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -708,14 +712,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
               </li>
              
@@ -724,7 +720,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -736,19 +740,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -760,15 +752,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Scala</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -788,6 +784,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">开源</a>
               </li>
              
@@ -797,10 +797,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Java</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -816,6 +812,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
               </li>
              
@@ -828,11 +828,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -844,19 +844,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">excel</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -868,11 +864,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -884,19 +892,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">原理</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -928,14 +932,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
               </li>
              
@@ -944,11 +940,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -956,11 +952,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -972,19 +972,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">vue</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">git</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">git-page</a>
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1000,11 +996,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+                <a href="javascript:void(0)" class="js-tag color4">vue</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color4">git</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">git-page</a>
               </li>
             
             <div class="clearfix"></div>
