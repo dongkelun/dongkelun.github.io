@@ -206,6 +206,90 @@
           <div id="js-content" class="content-ll">
             
   
+    <article id="post-hudiCleanPolicy" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2022/04/19/hudiCleanPolicy/">Hudi Clean Policy 清理策略实现分析</a>
+    </h1>
+  
+
+        
+        <a href="/2022/04/19/hudiCleanPolicy/" class="archive-article-date">
+  	<time datetime="2022-04-18T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2022-04-19</time>
+</a>
+        
+      </header>
+	    
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>总结Hudi Clean Policy清理策略,从源码层面分析如何实现，上一篇文章<a href="https://dongkelun.com/2022/04/18/hudiClean/">Hudi Clean 清理文件实现分析</a>从源码层面分析总结了Hudi Clean的整体流程，但是对于和策略有关的<a href="https://dongkelun.com/2022/04/18/hudiClean/#%E8%8E%B7%E5%8F%96%E8%A6%81%E5%88%A0%E9%99%A4%E7%9A%84%E6%96%87%E4%BB%B6%E5%88%97%E8%A1%A8">获取要删除的文件列表</a>部分没有深入分析，这一篇详细分析<code>KEEP_LATEST_COMMITS</code>策略是如何实现的。</p>
+<h2 id="getEarliestCommitToRetain"><a href="#getEarliestCommitToRetain" class="headerlink" title="getEarliestCommitToRetain"></a>getEarliestCommitToRetain</h2><p>获取最早需要保留的commit<br><code>KEEP_LATEST_FILE_VERSIONS</code>: 返回空<br><code>KEEP_LATEST_COMMITS</code>：如果目前完成状态的commit数小于等于<code>hoodie.cleaner.commits.retained</code>，则返回空，否则，返回倒数第<code>hoodie.cleaner.commits.retained</code>(默认10)个<code>.commit</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Returns earliest commit to retain based on cleaning policy.</span></span><br><span class="line"><span class="comment"> * 根据清理策略返回最早的需要保留的commit</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Option&lt;HoodieInstant&gt; <span class="title">getEarliestCommitToRetain</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  Option&lt;HoodieInstant&gt; earliestCommitToRetain = Option.empty();</span><br><span class="line">  <span class="comment">// 获取最大保留commit次数，默认值10，配置参数为`hoodie.cleaner.commits.retained`</span></span><br><span class="line">  <span class="keyword">int</span> commitsRetained = config.getCleanerCommitsRetained();</span><br><span class="line">  <span class="keyword">if</span> (config.getCleanerPolicy() == HoodieCleaningPolicy.KEEP_LATEST_COMMITS</span><br><span class="line">      &amp;&amp; commitTimeline.countInstants() &gt; commitsRetained) &#123;</span><br><span class="line">    <span class="comment">// 如果清理策略为KEEP_LATEST_COMMITS,且commit的总数大于commitsRetained</span></span><br><span class="line">    <span class="comment">// 那么最早需要保留的commit为最新的第10个commit,也就倒数第10个</span></span><br><span class="line">    <span class="comment">// commitTimeline.instants是按照时间从小到大排序的，具体实现在`HoodieTableMetaClient.scanHoodieInstantsFromFileSystem`</span></span><br><span class="line">    <span class="comment">// 假如commit为1、2、3...11,那么`commitTimeline.countInstants() - commitsRetained`等于1，</span></span><br><span class="line">    <span class="comment">// 也就是返回commitTimeline.instants.get(1),返回`commit 2`(下标从0开始)，也就是倒数第10个</span></span><br><span class="line">    <span class="comment">// 当策略为KEEP_LATEST_FILE_VERSIONS，直接返回空</span></span><br><span class="line">    earliestCommitToRetain = commitTimeline.nthInstant(commitTimeline.countInstants() - commitsRetained);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> earliestCommitToRetain;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+        
+          <a class="article-more-a" href="/2022/04/19/hudiCleanPolicy/#more">more >></a>
+        
+      
+
+      
+	  
+    </div>
+    <div class="article-info article-info-index">
+      
+	   
+		  
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+		  
+
+	  
+	 
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2022/04/19/hudiCleanPolicy/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
     <article id="post-hudiClean" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -572,100 +656,9 @@
 
 
   
-    <article id="post-prestoHudiException" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2021/12/23/prestoHudiException/">Presto查询Hudi异常解决</a>
-    </h1>
-  
-
-        
-        <a href="/2021/12/23/prestoHudiException/" class="archive-article-date">
-  	<time datetime="2021-12-22T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-12-23</time>
-</a>
-        
-      </header>
-	    
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-      
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>记录一个Presto查询Hudi的异常的解决办法，本人目前对Presto还不是很熟，只是在使用过程中遇到了问题，记录一下异常解决方法以及过程</p>
-<h2 id="异常"><a href="#异常" class="headerlink" title="异常"></a>异常</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">2021</span>-<span class="number">12</span>-<span class="number">22</span>T17:<span class="number">29</span>:<span class="number">55.440</span>+<span class="number">0800</span>    ERROR   SplitRunner-<span class="number">101</span>-<span class="number">126</span>     com.facebook.presto.execution.executor.TaskExecutor     Error processing Split <span class="number">20211222_092954_00047_8</span>xk77.1.0.0-<span class="number">0</span> &#123;path=hdfs:<span class="comment">//cluster1/warehouse/tablespace/managed/hive/test_dkl.db/test_hudi_1/069eddc2-f3bf-4efc-911b-3cb3aa523a8e-0_0-0-0_20211222172800.parquet, start=0, length=435116, fileSize=435116, fileModifiedTime=1640165281695, hosts=[], database=test_dkl, table=test_hudi_1, nodeSelectionStrategy=NO_PREFERENCE, partitionName=&lt;UNPARTITIONED&gt;, s3SelectPushdownEnabled=false, cacheQuotaRequirement=CacheQuotaRequirement&#123;cacheQuotaScope=GLOBAL, quota=Optional.empty&#125;&#125; (start = 9.271133085962032E9, wall = 49 ms, cpu = 0 ms, wait = 0 ms, calls = 1)</span></span><br><span class="line">org.apache.parquet.io.ParquetDecodingException: Can not read value at <span class="number">0</span> in block -<span class="number">1</span> in file hdfs:<span class="comment">//cluster1/warehouse/tablespace/managed/hive/test_dkl.db/test_hudi_1/069eddc2-f3bf-4efc-911b-3cb3aa523a8e-0_0-0-0_20211222172800.parquet</span></span><br><span class="line">        at org.apache.parquet.hadoop.InternalParquetRecordReader.nextKeyValue(InternalParquetRecordReader.java:<span class="number">251</span>)</span><br><span class="line">        at org.apache.parquet.hadoop.ParquetRecordReader.nextKeyValue(ParquetRecordReader.java:<span class="number">207</span>)</span><br><span class="line">        at org.apache.hadoop.hive.ql.io.parquet.read.ParquetRecordReaderWrapper.&lt;init&gt;(ParquetRecordReaderWrapper.java:<span class="number">98</span>)</span><br><span class="line">        at org.apache.hadoop.hive.ql.io.parquet.read.ParquetRecordReaderWrapper.&lt;init&gt;(ParquetRecordReaderWrapper.java:<span class="number">60</span>)</span><br><span class="line">        at org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat.getRecordReader(MapredParquetInputFormat.java:<span class="number">92</span>)</span><br><span class="line">        at org.apache.hudi.hadoop.HoodieParquetInputFormat.getRecordReader(HoodieParquetInputFormat.java:<span class="number">216</span>)</span><br><span class="line">        at com.facebook.presto.hive.HiveUtil.createRecordReader(HiveUtil.java:<span class="number">266</span>)</span><br><span class="line">        at com.facebook.presto.hive.GenericHiveRecordCursorProvider.lambda$createRecordCursor$<span class="number">0</span>(GenericHiveRecordCursorProvider.java:<span class="number">74</span>)</span><br><span class="line">        at com.facebook.presto.hive.authentication.UserGroupInformationUtils.lambda$executeActionInDoAs$<span class="number">0</span>(UserGroupInformationUtils.java:<span class="number">29</span>)</span><br><span class="line">        at java.security.AccessController.doPrivileged(Native Method)</span><br><span class="line">        at javax.security.auth.Subject.doAs(Subject.java:<span class="number">360</span>)</span><br><span class="line">        at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:<span class="number">1726</span>)</span><br><span class="line">        at com.facebook.presto.hive.authentication.UserGroupInformationUtils.executeActionInDoAs(UserGroupInformationUtils.java:<span class="number">27</span>)</span><br><span class="line">        at com.facebook.presto.hive.authentication.DirectHdfsAuthentication.doAs(DirectHdfsAuthentication.java:<span class="number">38</span>)</span><br><span class="line">        at com.facebook.presto.hive.HdfsEnvironment.doAs(HdfsEnvironment.java:<span class="number">81</span>)</span><br><span class="line">        at com.facebook.presto.hive.GenericHiveRecordCursorProvider.createRecordCursor(GenericHiveRecordCursorProvider.java:<span class="number">73</span>)</span><br><span class="line">        at com.facebook.presto.hive.HivePageSourceProvider.createHivePageSource(HivePageSourceProvider.java:<span class="number">478</span>)</span><br><span class="line">        at com.facebook.presto.hive.HivePageSourceProvider.createPageSource(HivePageSourceProvider.java:<span class="number">184</span>)</span><br><span class="line">        at com.facebook.presto.spi.connector.classloader.ClassLoaderSafeConnectorPageSourceProvider.createPageSource(ClassLoaderSafeConnectorPageSourceProvider.java:<span class="number">63</span>)</span><br><span class="line">        at com.facebook.presto.split.PageSourceManager.createPageSource(PageSourceManager.java:<span class="number">80</span>)</span><br><span class="line">        at com.facebook.presto.operator.TableScanOperator.getOutput(TableScanOperator.java:<span class="number">249</span>)</span><br><span class="line">        at com.facebook.presto.operator.Driver.processInternal(Driver.java:<span class="number">424</span>)</span><br><span class="line">        at com.facebook.presto.operator.Driver.lambda$processFor$<span class="number">9</span>(Driver.java:<span class="number">307</span>)</span><br><span class="line">        at com.facebook.presto.operator.Driver.tryWithLock(Driver.java:<span class="number">728</span>)</span><br><span class="line">        at com.facebook.presto.operator.Driver.processFor(Driver.java:<span class="number">300</span>)</span><br><span class="line">        at com.facebook.presto.execution.SqlTaskExecution$DriverSplitRunner.processFor(SqlTaskExecution.java:<span class="number">1077</span>)</span><br><span class="line">        at com.facebook.presto.execution.executor.PrioritizedSplitRunner.process(PrioritizedSplitRunner.java:<span class="number">162</span>)</span><br><span class="line">        at com.facebook.presto.execution.executor.TaskExecutor$TaskRunner.run(TaskExecutor.java:<span class="number">599</span>)</span><br><span class="line">        at com.facebook.presto.$gen.Presto_0_265_1_ad1fce6____20211222_010139_1.run(Unknown Source)</span><br><span class="line">        at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:<span class="number">1149</span>)</span><br><span class="line">        at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:<span class="number">624</span>)</span><br><span class="line">        at java.lang.Thread.run(Thread.java:<span class="number">748</span>)</span><br><span class="line">Caused by: java.lang.UnsupportedOperationException: readDirect unsupported in RemoteBlockReader</span><br><span class="line">        at org.apache.hadoop.hdfs.RemoteBlockReader.read(RemoteBlockReader.java:<span class="number">492</span>)</span><br><span class="line">        at org.apache.hadoop.hdfs.DFSInputStream$ByteBufferStrategy.doRead(DFSInputStream.java:<span class="number">789</span>)</span><br><span class="line">        at org.apache.hadoop.hdfs.DFSInputStream.readBuffer(DFSInputStream.java:<span class="number">823</span>)</span><br><span class="line">        at org.apache.hadoop.hdfs.DFSInputStream.readWithStrategy(DFSInputStream.java:<span class="number">883</span>)</span><br><span class="line">        at org.apache.hadoop.hdfs.DFSInputStream.read(DFSInputStream.java:<span class="number">938</span>)</span><br><span class="line">        at org.apache.hadoop.fs.FSDataInputStream.read(FSDataInputStream.java:<span class="number">143</span>)</span><br><span class="line">        at org.apache.parquet.hadoop.util.H2SeekableInputStream$H2Reader.read(H2SeekableInputStream.java:<span class="number">81</span>)</span><br><span class="line">        at org.apache.parquet.hadoop.util.H2SeekableInputStream.readFully(H2SeekableInputStream.java:<span class="number">90</span>)</span><br><span class="line">        at org.apache.parquet.hadoop.util.H2SeekableInputStream.readFully(H2SeekableInputStream.java:<span class="number">75</span>)</span><br><span class="line">        at org.apache.parquet.hadoop.ParquetFileReader$ConsecutiveChunkList.readAll(ParquetFileReader.java:<span class="number">1174</span>)</span><br><span class="line">        at org.apache.parquet.hadoop.ParquetFileReader.readNextRowGroup(ParquetFileReader.java:<span class="number">805</span>)</span><br><span class="line">        at org.apache.parquet.hadoop.InternalParquetRecordReader.checkRead(InternalParquetRecordReader.java:<span class="number">127</span>)</span><br><span class="line">        at org.apache.parquet.hadoop.InternalParquetRecordReader.nextKeyValue(InternalParquetRecordReader.java:<span class="number">222</span>)</span><br></pre></td></tr></table></figure>
-        
-          <a class="article-more-a" href="/2021/12/23/prestoHudiException/#more">more >></a>
-        
-      
-
-      
-	  
-    </div>
-    <div class="article-info article-info-index">
-      
-	   
-		  
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">异常</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">Presto</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-		  
-
-	  
-	 
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2021/12/23/prestoHudiException/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
   
     <nav id="page-nav">
-      <a class="extend prev" rel="prev" href="/page/7/">&laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="page-number" href="/page/7/">7</a><span class="page-number current">8</span><a class="page-number" href="/page/9/">9</a><a class="page-number" href="/page/10/">10</a><span class="space">&hellip;</span><a class="page-number" href="/page/30/">30</a><a class="extend next" rel="next" href="/page/9/">Next &raquo;</a>
+      <a class="extend prev" rel="prev" href="/page/7/">&laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="page-number" href="/page/7/">7</a><span class="page-number current">8</span><a class="page-number" href="/page/9/">9</a><a class="page-number" href="/page/10/">10</a><span class="space">&hellip;</span><a class="page-number" href="/page/31/">31</a><a class="extend next" rel="next" href="/page/9/">Next &raquo;</a>
     </nav>
   
 
@@ -823,14 +816,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -843,11 +828,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">算法</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -859,10 +856,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">mysql</a>
               </li>
              
@@ -871,19 +864,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -903,15 +892,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -923,23 +916,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">hbase</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -951,7 +936,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+                <a href="javascript:void(0)" class="js-tag color1">hbase</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -959,11 +948,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -971,15 +956,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">异常</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">IDEA</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Maven</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -991,15 +972,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">IDEA</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Maven</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Linux</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1011,19 +1004,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1036,14 +1029,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1060,6 +1045,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1107,15 +1100,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1131,11 +1124,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
+                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1143,11 +1136,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1155,7 +1144,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
