@@ -17,16 +17,16 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言本文讲解如何通过数据库客户端界面工具DBeaver连接远程Kerberos环境下的Hive。  因为在远程服务器上的命令行里写SQL查询Hive表，如果数据量和表字段比较多，命令行界面不利于分析表数据，所以需要客户端工具如DBeave远程连接Hive查询数据，但是DBeaver默认的不能访问Kerberos下的Hive，需要一些配置才可以访问，这里记录一下。  1、DBeaver连接Hive关">
 <meta property="og:locale" content="cn">
-<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/1364e2e9c0ef3dcaa0131a37ff027f20.png">
-<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/4b61a4f9e85912d780c46eb90ac1f46e.png">
-<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/11d555b91f42d13180427e0cacfeb02d.png">
-<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/75809944ada716a0b6d57d57a45a061e.png">
-<meta property="og:image" content="https://img-blog.csdnimg.cn/img_convert/b8b54523563deee5bc56e6f3a9c7d3c8.png">
-<meta property="og:updated_time" content="2023-01-16T01:06:23.739Z">
+<meta property="og:image" content="https://img.dongkelun.com/kerberos/k1.png">
+<meta property="og:image" content="https://img.dongkelun.com/kerberos/k2.png">
+<meta property="og:image" content="https://img.dongkelun.com/kerberos/k3.png">
+<meta property="og:image" content="https://img.dongkelun.com/kerberos/k4.png">
+<meta property="og:image" content="https://img.dongkelun.com/kerberos/k5.png">
+<meta property="og:updated_time" content="2023-06-08T11:35:28.389Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="通过DBeaver本地访问远程Kerberos环境下的Hive">
 <meta name="twitter:description" content="前言本文讲解如何通过数据库客户端界面工具DBeaver连接远程Kerberos环境下的Hive。  因为在远程服务器上的命令行里写SQL查询Hive表，如果数据量和表字段比较多，命令行界面不利于分析表数据，所以需要客户端工具如DBeave远程连接Hive查询数据，但是DBeaver默认的不能访问Kerberos下的Hive，需要一些配置才可以访问，这里记录一下。  1、DBeaver连接Hive关">
-<meta name="twitter:image" content="https://img-blog.csdnimg.cn/img_convert/1364e2e9c0ef3dcaa0131a37ff027f20.png">
+<meta name="twitter:image" content="https://img.dongkelun.com/kerberos/k1.png">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -288,20 +288,20 @@
 <p>一开始很奇怪，因为kinit命令就是这么用的，为啥会报参数过多呢，网上查资料发现，原来是jdk也自带了一个kinit命令，这里用的是jdk自带的kinit命令，需要再配置一下环境变量，在path里添加D:\program\company\kerberos\bin，需要注意的是要加在java的环境变量（%JAVA_HOME%\jre\bin）的前面。然后重试上面的命令，发现不报错了，用klist验证</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">klist</span><br><span class="line">Ticket cache: FILE:D:\tmp\krb5cache</span><br><span class="line">Default principal: hive/indata-192.168.44.128.indata.com@INDATA.COM</span><br><span class="line"></span><br><span class="line">Valid starting     Expires            Service principal</span><br><span class="line">06/03/21 15:43:03  06/04/21 15:43:02  krbtgt/INDATA.COM@INDATA.COM</span><br><span class="line">        renew until 06/10/21 15:43:02</span><br></pre></td></tr></table></figure>
 <p>也可以在kerberos界面上查看，如下图：</p>
-<p><img src="https://img-blog.csdnimg.cn/img_convert/1364e2e9c0ef3dcaa0131a37ff027f20.png" alt=""></p>
+<p><img src="https://img.dongkelun.com/kerberos/k1.png" alt=""></p>
 <blockquote>
 <p>注意：后面的用DBeaver连接Hive时，首先用kinit 命令进行缓存票据</p>
-<h2 id="6、配置DBeaver"><a href="#6、配置DBeaver" class="headerlink" title="6、配置DBeaver"></a>6、配置DBeaver</h2><p>在配置文件D:\program\company\dbeaver\dbeaver.ini最后添加<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">-Djavax.security.auth.useSubjectCredsOnly=false</span><br><span class="line">-Djava.security.krb5.conf=D:\program\company\kerberos\krb5.ini</span><br><span class="line">-Dsun.security.krb5.debug=true</span><br></pre></td></tr></table></figure></p>
 </blockquote>
+<h2 id="6、配置DBeaver"><a href="#6、配置DBeaver" class="headerlink" title="6、配置DBeaver"></a>6、配置DBeaver</h2><p>在配置文件D:\program\company\dbeaver\dbeaver.ini最后添加<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">-Djavax.security.auth.useSubjectCredsOnly=false</span><br><span class="line">-Djava.security.krb5.conf=D:\program\company\kerberos\krb5.ini</span><br><span class="line">-Dsun.security.krb5.debug=true</span><br></pre></td></tr></table></figure></p>
 <p>注意-Djava.security.krb5.conf对应的值不要加引号””,网上很多教程都是加””，这样会导致DBeaver识别不到krb5.ini的配置文件，从而导致对kerberos的认证失败。这里坑了我很长时间，一直搞不清为啥认证失败。。。</p>
 <h2 id="7、连接Spark-Thrift-Server"><a href="#7、连接Spark-Thrift-Server" class="headerlink" title="7、连接Spark Thrift Server"></a>7、连接Spark Thrift Server</h2><p>首先启动Spark Thrift Server,关于怎么启动，参考<a href="https://dongkelun.com/2021/02/19/javaSparkThriftServer/">https://dongkelun.com/2021/02/19/javaSparkThriftServer/</a></p>
 <p>然后在Dbeaver里:新建-&gt;数据库连接-&gt;选择Hadoop-Spark Hive-&gt;输入主机IP、端口、数据库-&gt;然后编辑驱动设置，删除原来的驱动，添加这个项目的jar包<a href="https://github.com/dongkelun/java-spark-thrift-server-demo" target="_blank" rel="noopener">https://github.com/dongkelun/java-spark-thrift-server-demo</a></p>
-<p>其中这里的数据库为default;principal=HTTP/indata-192.168.44.128.indata.com@INDATA.COM?hive.server2.transport.mode=http;hive.server2.thrift.http.path=cliservice<br><img src="https://img-blog.csdnimg.cn/img_convert/4b61a4f9e85912d780c46eb90ac1f46e.png" alt=""></p>
-<p>然后测试连接<br><img src="https://img-blog.csdnimg.cn/img_convert/11d555b91f42d13180427e0cacfeb02d.png" alt=""><br>如果不成功，检查一下上述的配置</p>
+<p>其中这里的数据库为default;principal=HTTP/indata-192.168.44.128.indata.com@INDATA.COM?hive.server2.transport.mode=http;hive.server2.thrift.http.path=cliservice<br><img src="https://img.dongkelun.com/kerberos/k2.png" alt=""></p>
+<p>然后测试连接<br><img src="https://img.dongkelun.com/kerberos/k3.png" alt=""><br>如果不成功，检查一下上述的配置</p>
 <h2 id="8、连接Hive-Server"><a href="#8、连接Hive-Server" class="headerlink" title="8、连接Hive Server"></a>8、连接Hive Server</h2><p>测试连接前先启动hive相关的服务,然后在Dbeaver里:新建-&gt;数据库连接-&gt;选择Hadoop-Spark Hive-&gt;输入主机IP、端口、数据库-&gt;然后编辑驱动设置，删除原来的驱动，添加这个项目的jar包<a href="https://github.com/dongkelun/java-spark-thrift-server-demo" target="_blank" rel="noopener">https://github.com/dongkelun/java-spark-thrift-server-demo</a></p>
 <p>其中这里的数据库为default;principal=hive/indata-192.168.44.128.indata.com@INDATA.COM</p>
-<p><img src="https://img-blog.csdnimg.cn/img_convert/75809944ada716a0b6d57d57a45a061e.png" alt=""></p>
-<p>然后测试连接<br><img src="https://img-blog.csdnimg.cn/img_convert/b8b54523563deee5bc56e6f3a9c7d3c8.png" alt=""></p>
+<p><img src="https://img.dongkelun.com/kerberos/k4.png" alt=""></p>
+<p>然后测试连接<br><img src="https://img.dongkelun.com/kerberos/k5.png" alt=""></p>
 <h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
 <li><a href="https://zhuanlan.zhihu.com/p/63154589" target="_blank" rel="noopener">使用DBeaver访问Kerberos环境下的Hive</a></li>
 <li><a href="https://www.aboutyun.com/thread-26425-1-1.html" target="_blank" rel="noopener">DBeaver实战之访问Kerberos环境下的Hive</a></li>
@@ -646,6 +646,14 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -658,11 +666,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -678,30 +686,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
@@ -710,19 +694,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -734,15 +714,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -758,7 +746,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -774,11 +770,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">开源</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">开源</a>
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -806,19 +806,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -826,11 +814,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -842,47 +834,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">scala</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">日期</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -891,6 +847,42 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">scala</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">日期</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -914,27 +906,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -950,11 +930,39 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -966,15 +974,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -983,10 +987,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Vue</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1002,7 +1002,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
               </li>
             
             <div class="clearfix"></div>
