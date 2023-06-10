@@ -17,16 +17,16 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言因为公司的测试环境带有kerberos，而我经常需要本地连接测试集群上的hive，以进行源码调试。而本地认证远程集群的kerberos，并访问hive，和在服务器上提交Spark程序代码有些不同，所以专门研究了一下并进行总结。 服务器上在服务器上提交Spark程序认证kerberos比较简单，有两种方法：  使用kinit 缓存票据 kinit -kt /etc/security/keytab">
 <meta property="og:locale" content="cn">
-<meta property="og:image" content="https://tva2.sinaimg.cn/large/e44344dcly1gqnkih5bxdj21bj0pc41w.jpg">
-<meta property="og:image" content="https://wx3.sinaimg.cn/large/e44344dcly1gqnlgsmlnoj217t0iljsg.jpg">
-<meta property="og:image" content="https://tva2.sinaimg.cn/large/e44344dcly1gqnlgywz3ij21bc0medh8.jpg">
-<meta property="og:image" content="https://tva2.sinaimg.cn/large/e44344dcly1gqnlh5gk5nj218r0himyh.jpg">
-<meta property="og:image" content="https://tva2.sinaimg.cn/large/e44344dcly1gqnlhbx7slj219v0gndgv.jpg">
-<meta property="og:updated_time" content="2021-06-17T03:45:45.458Z">
+<meta property="og:image" content="https://img.dongkelun.com/spark-hive/hive34.png">
+<meta property="og:image" content="https://img.dongkelun.com/spark-hive/hive35.png">
+<meta property="og:image" content="https://img.dongkelun.com/spark-hive/hive36.png">
+<meta property="og:image" content="https://img.dongkelun.com/spark-hive/hive37.png">
+<meta property="og:image" content="https://img.dongkelun.com/spark-hive/hive38.png">
+<meta property="og:updated_time" content="2023-06-10T03:08:04.271Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Spark 本地连接远程服务器上带有kerberos认证的Hive">
 <meta name="twitter:description" content="前言因为公司的测试环境带有kerberos，而我经常需要本地连接测试集群上的hive，以进行源码调试。而本地认证远程集群的kerberos，并访问hive，和在服务器上提交Spark程序代码有些不同，所以专门研究了一下并进行总结。 服务器上在服务器上提交Spark程序认证kerberos比较简单，有两种方法：  使用kinit 缓存票据 kinit -kt /etc/security/keytab">
-<meta name="twitter:image" content="https://tva2.sinaimg.cn/large/e44344dcly1gqnkih5bxdj21bj0pc41w.jpg">
+<meta name="twitter:image" content="https://img.dongkelun.com/spark-hive/hive34.png">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -280,14 +280,14 @@
 <a id="more"></a>
 <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.dkl.blog.spark.hive</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.conf.<span class="type">Configuration</span></span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.security.<span class="type">UserGroupInformation</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SparkSession</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Created by dongkelun on 2021/5/18 19:29</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Spark 本地连接远程服务器上带有kerberos认证的Hive</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">LocalSparkHiveWithKerberos</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line"></span><br><span class="line">      <span class="comment">//等同于把krb5.conf放在$JAVA_HOME\jre\lib\security，一般写代码即可</span></span><br><span class="line">      <span class="type">System</span>.setProperty(<span class="string">"java.security.krb5.conf"</span>, <span class="string">"D:\\conf\\inspur\\krb5.conf"</span>)</span><br><span class="line"></span><br><span class="line">      <span class="comment">//下面的conf可以注释掉是因为在core-site.xml里有相关的配置，如果没有相关的配置，则下面的代码是必须的</span></span><br><span class="line">      <span class="comment">//      val conf = new Configuration</span></span><br><span class="line">      <span class="comment">//      conf.set("hadoop.security.authentication", "kerberos")</span></span><br><span class="line">      <span class="comment">//      UserGroupInformation.setConfiguration(conf)</span></span><br><span class="line">      <span class="type">UserGroupInformation</span>.loginUserFromKeytab(<span class="string">"hive/indata-192-168-44-128.indata.com@INDATA.COM"</span>, <span class="string">"D:\\conf\\inspur\\hive.service.keytab"</span>)</span><br><span class="line">      println(<span class="type">UserGroupInformation</span>.getCurrentUser, <span class="type">UserGroupInformation</span>.getLoginUser)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    &#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">      <span class="keyword">case</span> e: <span class="type">Exception</span> =&gt;</span><br><span class="line">        e.printStackTrace()</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> spark = <span class="type">SparkSession</span>.builder()</span><br><span class="line">      .master(<span class="string">"local[*]"</span>)</span><br><span class="line">      .appName(<span class="string">"LocalSparkHiveWithKerberos"</span>)</span><br><span class="line">      <span class="comment">//      .config("spark.kerberos.keytab", "hive/indata-192-168-44-128.indata.com@INDATA.COM")</span></span><br><span class="line">      <span class="comment">//      .config("spark.kerberos.principal", "D:\\conf\\inspur\\hive.service.keytab")</span></span><br><span class="line">      .enableHiveSupport()</span><br><span class="line">      .getOrCreate()</span><br><span class="line"></span><br><span class="line">    spark.table(<span class="string">"sjtt.trafficbase_cljbxx"</span>).show()</span><br><span class="line"></span><br><span class="line">    spark.stop()</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>代码已提交到<a href="https://github.com/dongkelun/spark-scala/blob/master/src/main/scala/com/dkl/blog/spark/hive/LocalSparkHiveWithKerberos.scala" target="_blank" rel="noopener">github</a></p>
-<h3 id="运行结果"><a href="#运行结果" class="headerlink" title="运行结果"></a>运行结果</h3><p><img src="https://tva2.sinaimg.cn/large/e44344dcly1gqnkih5bxdj21bj0pc41w.jpg" alt=""></p>
+<h3 id="运行结果"><a href="#运行结果" class="headerlink" title="运行结果"></a>运行结果</h3><p><img src="https://img.dongkelun.com/spark-hive/hive34.png" alt=""></p>
 <h2 id="异常解决"><a href="#异常解决" class="headerlink" title="异常解决"></a>异常解决</h2><h3 id="异常信息"><a href="#异常信息" class="headerlink" title="异常信息"></a>异常信息</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">org.apache.hadoop.security.AccessControlException: SIMPLE authentication is not enabled.  Available:[TOKEN, KERBEROS]</span><br></pre></td></tr></table></figure>
-<h3 id="异常解决过程"><a href="#异常解决过程" class="headerlink" title="异常解决过程"></a>异常解决过程</h3><p>异常再现是将core-site.xml删除，然后将代码中注释的conf打开。<br>这样从打印的UserGroupInformation.getCurrentUser信息可以发现kerberos认证是成功的，而且代码中设置了hadoop.security.authentication为kerberos，但是依旧报authentication为SIMPLE的异常，网上查资料查了很久都没解决，只能自己进行研究，在本地的Spark UI 界面的environment中查看Spark的环境配置信息发现，虽然在Spark的代码中配置了.config(“spark.kerberos.keytab”, “hive/indata-192-168-44-128.indata.com@INDATA.COM”)、.config(“spark.kerberos.principal”, “D:\conf\inspur\hive.service.keytab”)，且在ui界面中也显示相同的配置，如下图<br><img src="https://wx3.sinaimg.cn/large/e44344dcly1gqnlgsmlnoj217t0iljsg.jpg" alt=""></p>
+<h3 id="异常解决过程"><a href="#异常解决过程" class="headerlink" title="异常解决过程"></a>异常解决过程</h3><p>异常再现是将core-site.xml删除，然后将代码中注释的conf打开。<br>这样从打印的UserGroupInformation.getCurrentUser信息可以发现kerberos认证是成功的，而且代码中设置了hadoop.security.authentication为kerberos，但是依旧报authentication为SIMPLE的异常，网上查资料查了很久都没解决，只能自己进行研究，在本地的Spark UI 界面的environment中查看Spark的环境配置信息发现，虽然在Spark的代码中配置了.config(“spark.kerberos.keytab”, “hive/indata-192-168-44-128.indata.com@INDATA.COM”)、.config(“spark.kerberos.principal”, “D:\conf\inspur\hive.service.keytab”)，且在ui界面中也显示相同的配置，如下图<br><img src="https://img.dongkelun.com/spark-hive/hive35.png" alt=""></p>
 <p>但是依旧报同样的异常信息，后来在界面上发现，除了Spark Properties还有Hadoop Properties，代码中的配置只是改变了Spark Properties，没有改变Hadoop Properties，而Hadoop Properties中的hadoop.security.authentication依旧为simple，这有可能是导致异常的原因。</p>
-<p><img src="https://tva2.sinaimg.cn/large/e44344dcly1gqnlgywz3ij21bc0medh8.jpg" alt=""><br><img src="https://tva2.sinaimg.cn/large/e44344dcly1gqnlh5gk5nj218r0himyh.jpg" alt=""></p>
+<p><img src="https://img.dongkelun.com/spark-hive/hive36.png" alt=""><br><img src="https://img.dongkelun.com/spark-hive/hive37.png" alt=""></p>
 <p>那么如何改变Hadoop Properties，在Spark源码搜索发现如下文档</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"># Custom Hadoop/Hive Configuration</span><br><span class="line"></span><br><span class="line">If your Spark application is interacting with Hadoop, Hive, or both, there are probably Hadoop/Hive</span><br><span class="line">configuration files in Spark&apos;s classpath.</span><br><span class="line"></span><br><span class="line">Multiple running applications might require different Hadoop/Hive client side configurations.</span><br><span class="line">You can copy and modify `hdfs-site.xml`, `core-site.xml`, `yarn-site.xml`, `hive-site.xml` in</span><br><span class="line">Spark&apos;s classpath for each application. In a Spark cluster running on YARN, these configuration</span><br><span class="line">files are set cluster-wide, and cannot safely be changed by the application.</span><br><span class="line"></span><br><span class="line">The better choice is to use spark hadoop properties in the form of `spark.hadoop.*`, and use</span><br><span class="line">spark hive properties in the form of `spark.hive.*`.</span><br><span class="line">For example, adding configuration &quot;spark.hadoop.abc.def=xyz&quot; represents adding hadoop property &quot;abc.def=xyz&quot;,</span><br><span class="line">and adding configuration &quot;spark.hive.abc=xyz&quot; represents adding hive property &quot;hive.abc=xyz&quot;.</span><br><span class="line">They can be considered as same as normal spark properties which can be set in `$SPARK_HOME/conf/spark-defaults.conf`</span><br></pre></td></tr></table></figure>
-<p>文档说最好的选择是在代码中设置Spark.hadoop.*,即.config(“Spark.hadoop.security.authentication”, “kerberos”)，然后尝试了一下，发现这样仅仅是改变的Spark Properties,依旧是同样的异常，也可能是我理解的有问题。<br><img src="https://tva2.sinaimg.cn/large/e44344dcly1gqnlhbx7slj219v0gndgv.jpg" alt=""></p>
+<p>文档说最好的选择是在代码中设置Spark.hadoop.*,即.config(“Spark.hadoop.security.authentication”, “kerberos”)，然后尝试了一下，发现这样仅仅是改变的Spark Properties,依旧是同样的异常，也可能是我理解的有问题。<br><img src="https://img.dongkelun.com/spark-hive/hive38.png" alt=""></p>
 <h3 id="异常解决方案"><a href="#异常解决方案" class="headerlink" title="异常解决方案"></a>异常解决方案</h3><p>最后的解决方案是按文档上的将core-site.xml和hdfs-site.xml拷贝到Spark的classpath下，即上面提到的src/main/resources,但是这样依旧可能没效果，原因是，配置文件没有同步到target/classes，这里需要在idea里点Build-Rebuild Project，然后确认一下target/classes是否有了core-site.xml文件就可以了</p>
 <h2 id="相关阅读"><a href="#相关阅读" class="headerlink" title="相关阅读"></a>相关阅读</h2><ul>
 <li><a href="https://dongkelun.com/2018/03/25/sparkHive/">Spark连接Hive（spark-shell和Eclipse两种方式）</a></li>
@@ -622,14 +622,6 @@ var _hmt = _hmt || [];
           <ul class="article-tag-list" q-show="showTags">
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">english</a>
               </li>
              
@@ -646,7 +638,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -658,11 +654,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -674,6 +666,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
@@ -682,19 +678,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -714,6 +698,14 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
@@ -726,15 +718,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -754,10 +754,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
@@ -766,11 +762,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">开源</a>
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color3">开源</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -778,11 +774,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">java</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -794,11 +786,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+                <a href="javascript:void(0)" class="js-tag color5">java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -806,7 +802,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -842,15 +842,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Python</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -866,7 +866,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -882,18 +890,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
               </li>
              
@@ -903,6 +899,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -918,19 +922,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">yarn</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -942,15 +938,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -958,7 +946,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -966,7 +966,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -982,7 +982,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
               </li>
             
             <div class="clearfix"></div>
