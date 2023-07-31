@@ -18,7 +18,7 @@
 <meta property="og:description" content="前言本着学习hudi-flink源码的目的，利用之前总结的文章Hudi Flink SQL代码示例及本地调试中的代码进行调试,记录调试学习过程中主要的步骤及对应源码片段。 版本 Flink 1.15.4 Hudi 0.13.0  目标在文章Hudi Flink SQL代码示例及本地调试中提到：我们发现Table API的入口和DataStream API的入口差不多，DataStream API的">
 <meta property="og:locale" content="cn">
 <meta property="og:image" content="https://img.dongkelun.com/hudi/flinkSqlCodeDebug7.png">
-<meta property="og:updated_time" content="2023-07-31T11:56:25.541Z">
+<meta property="og:updated_time" content="2023-07-31T12:03:03.415Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Hudi Flink SQL源码调试学习（1）">
 <meta name="twitter:description" content="前言本着学习hudi-flink源码的目的，利用之前总结的文章Hudi Flink SQL代码示例及本地调试中的代码进行调试,记录调试学习过程中主要的步骤及对应源码片段。 版本 Flink 1.15.4 Hudi 0.13.0  目标在文章Hudi Flink SQL代码示例及本地调试中提到：我们发现Table API的入口和DataStream API的入口差不多，DataStream API的">
@@ -266,7 +266,7 @@
 <li>Flink 1.15.4</li>
 <li>Hudi 0.13.0</li>
 </ul>
-<h2 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h2><p>在文章<a href="https://mp.weixin.qq.com/s/aC5xoJVT53xAFTlNIA5NLw" target="_blank" rel="noopener">Hudi Flink SQL代码示例及本地调试</a>中提到：我们发现Table API的入口和DataStream API的入口差不多，DataStream API的入口是在<code>HoodiePipeline</code>的<code>sink</code>和<code>source</code>方法里，而这两个方法也是分别调用了<code>HoodieTableFactory</code>的<code>createDynamicTableSink</code>和<code>createDynamicTableSource</code>。那么Table API的代码怎么一步一步走到<code>createDynamicTableSink</code>和<code>createDynamicTableSource</code>的呢？返回<code>HoodieTableSink</code>之后又是怎么写数据的？因为我发现Hudi写数据的主要逻辑入口好像是<code>在HoodieTableSink.getSinkRuntimeProvider</code>的方法体里，这些问题之前都没有搞清楚，所以这次的目标就是要搞清楚：1、Table API 的入口到<code>createDynamicTableSink</code>返回<code>HoodieTableSink</code>的主要代码步骤； 2、在哪里调用的<code>HoodieTableSink</code>的<code>getSinkRuntimeProvider</code>的方法体进行后面的写Hudi逻辑的</p>
+<h2 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h2><p>在文章<a href="https://mp.weixin.qq.com/s/aC5xoJVT53xAFTlNIA5NLw" target="_blank" rel="noopener">Hudi Flink SQL代码示例及本地调试</a>中提到：我们发现Table API的入口和DataStream API的入口差不多，DataStream API的入口是在<code>HoodiePipeline</code>的<code>sink</code>和<code>source</code>方法里，而这两个方法也是分别调用了<code>HoodieTableFactory</code>的<code>createDynamicTableSink</code>和<code>createDynamicTableSource</code>。那么Table API的代码怎么一步一步走到<code>createDynamicTableSink</code>和<code>createDynamicTableSource</code>的呢？返回<code>HoodieTableSink</code>之后又是怎么写数据的？因为我发现Hudi写数据的主要逻辑入口好像是<code>在HoodieTableSink.getSinkRuntimeProvider</code>的方法体里，这些问题之前都没有搞清楚，所以这次的目标就是要搞清楚：1、Table API 的入口到<code>createDynamicTableSink</code>返回<code>HoodieTableSink</code>的主要代码步骤； 2、在哪里调用<code>HoodieTableSink.getSinkRuntimeProvider</code>的方法体进行后面的写Hudi逻辑的</p>
 <a id="more"></a>
 <p>相关类：</p>
 <ul>
@@ -339,7 +339,7 @@
 <p>它会调用<code>HoodieTableSink.getSinkRuntimeProvider</code>中的方法体（Lambda 表达式）执行后面的写hudi逻辑<br>第二个问题解决</p>
 </blockquote>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">default</span> DataStreamSink&lt;?&gt; consumeDataStream(ProviderContext providerContext, DataStream&lt;RowData&gt; dataStream) &#123;</span><br><span class="line">  <span class="keyword">return</span> consumeDataStream(dataStream);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>本文主要简单记录了自己调试 Hudi Flink SQL 源码的过程，并没有对源码进行深入的分析（自己水平也不够）。主要目的是为了弄清楚从<code>Table API</code> 的入口到<code>createDynamicTableSink</code>返回<code>HoodieTableSink</code>的主要代码步骤以及在哪里调用的<code>HoodieTableSink</code>的<code>getSinkRuntimeProvider</code>的方法体以进行后面的写Hudi逻辑，这样便于后面对Hudi源码的分析和学习。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>本文主要简单记录了自己调试 Hudi Flink SQL 源码的过程，并没有对源码进行深入的分析（自己水平也不够）。主要目的是为了弄清楚从<code>Table API</code> 的入口到<code>createDynamicTableSink</code>返回<code>HoodieTableSink</code>的主要代码步骤以及在哪里调用<code>HoodieTableSink.getSinkRuntimeProvider</code>的方法体以进行后面的写Hudi逻辑，这样便于后面对Hudi源码的分析和学习。</p>
 <blockquote>
 <p>本文新学习知识点：函数式接口以及对应的 Lambda 表达式的实现</p>
 </blockquote>
@@ -676,10 +676,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -689,14 +685,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -712,11 +700,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -728,26 +728,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
               </li>
              
@@ -756,11 +736,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -772,11 +752,31 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -796,11 +796,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -812,11 +812,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -840,11 +840,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -852,7 +852,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -868,10 +872,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
@@ -884,10 +884,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Python</a>
               </li>
              
@@ -896,15 +892,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -916,11 +912,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">原理</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -940,11 +940,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+                <a href="javascript:void(0)" class="js-tag color5">压缩文件</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+                <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -956,7 +960,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -964,15 +968,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">yarn</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">压缩文件</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -996,11 +996,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1009,6 +1009,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1021,10 +1025,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
               </li>
             
             <div class="clearfix"></div>
