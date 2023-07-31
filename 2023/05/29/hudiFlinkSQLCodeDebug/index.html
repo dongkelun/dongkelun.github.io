@@ -22,7 +22,7 @@
 <meta property="og:image" content="https://img.dongkelun.com/hudi/flinkSqlCodeDebug3.png">
 <meta property="og:image" content="https://img.dongkelun.com/hudi/flinkSqlCodeDebug4.png">
 <meta property="og:image" content="https://img.dongkelun.com/hudi/flinkSqlCodeDebug6.png">
-<meta property="og:updated_time" content="2023-05-29T12:02:40.840Z">
+<meta property="og:updated_time" content="2023-07-31T11:39:08.906Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Hudi Flink SQL代码示例及本地调试">
 <meta name="twitter:description" content="前言之前在Flink Hudi DataStream API代码示例中总结了Hudi Flink DataStream API的代码及本地调试，并且在文中提到其实大家用Table API更多一些，但是我感觉Table API调试源码可能会比较难一点，因为可能会涉及到SQL解析，不清楚Table API的入口在哪里。但是在我总结的上篇文章Flink用户自定义连接器（Table API Connect">
@@ -283,7 +283,7 @@
 <h3 id="调试"><a href="#调试" class="headerlink" title="调试"></a>调试</h3><p>我们根据开头提到的文章<a href="https://mp.weixin.qq.com/s/ogEurXSHW-iiejzoB5oFBQ" target="_blank" rel="noopener">Flink用户自定义连接器（Table API Connectors）学习总结</a>可知入口为<code>HoodieTableFactory</code>，其中sink的入口为<code>createDynamicTableSink</code>,source的入口为<code>createDynamicTableSource</code></p>
 <p><img src="https://img.dongkelun.com/hudi/flinkSqlCodeDebug2.png" alt=""><br><img src="https://img.dongkelun.com/hudi/flinkSqlCodeDebug3.png" alt=""><br>本地调试源码的时候可能会遇到在Idea中源码下载不下来的情况，我们可以直接去官网下载对应的源码jar包，然后放到自己本地的仓库中，方便我们调试的时候阅读源码。比如hudi-flink对应的源码的下载地址：<a href="https://repo1.maven.org/maven2/org/apache/hudi/hudi-flink/0.13.0/hudi-flink-0.13.0-sources.jar" target="_blank" rel="noopener">https://repo1.maven.org/maven2/org/apache/hudi/hudi-flink/0.13.0/hudi-flink-0.13.0-sources.jar</a>,然后将hudi-flink-0.13.0-sources.jar放到路径 m2\repository\org\apache\hudi\hudi-flink\0.13.0 中就可以了</p>
 <blockquote>
-<p>我们发现Table API的入口和DataStream API的入口差不多，DataStream API的入口是在<code>HoodiePipeline</code>的<code>sink</code>和<code>source</code>方法里，而这两个方法也是也是分别调用了<code>HoodieTableFactory</code>的<code>createDynamicTableSink</code>和<code>createDynamicTableSource</code></p>
+<p>我们发现Table API的入口和DataStream API的入口差不多，DataStream API的入口是在<code>HoodiePipeline</code>的<code>sink</code>和<code>source</code>方法里，而这两个方法也是分别调用了<code>HoodieTableFactory</code>的<code>createDynamicTableSink</code>和<code>createDynamicTableSource</code></p>
 </blockquote>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Returns the data stream sink with given catalog table.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> input        The input datastream</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> tablePath    The table path to the hoodie table in the catalog</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> catalogTable The hoodie catalog table</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> isBounded    A flag indicating whether the input data stream is bounded</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> DataStreamSink&lt;?&gt; sink(DataStream&lt;RowData&gt; input, ObjectIdentifier tablePath, ResolvedCatalogTable catalogTable, <span class="keyword">boolean</span> isBounded) &#123;</span><br><span class="line">  FactoryUtil.DefaultDynamicTableContext context = Utils.getTableContext(tablePath, catalogTable, Configuration.fromMap(catalogTable.getOptions()));</span><br><span class="line">  HoodieTableFactory hoodieTableFactory = <span class="keyword">new</span> HoodieTableFactory();</span><br><span class="line">  <span class="keyword">return</span> ((DataStreamSinkProvider) hoodieTableFactory.createDynamicTableSink(context)</span><br><span class="line">      .getSinkRuntimeProvider(<span class="keyword">new</span> SinkRuntimeProviderContext(isBounded)))</span><br><span class="line">      .consumeDataStream(input);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Returns the data stream source with given catalog table.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> execEnv      The execution environment</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> tablePath    The table path to the hoodie table in the catalog</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> catalogTable The hoodie catalog table</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">  <span class="function"><span class="keyword">private</span> <span class="keyword">static</span> DataStream&lt;RowData&gt; <span class="title">source</span><span class="params">(StreamExecutionEnvironment execEnv, ObjectIdentifier tablePath, ResolvedCatalogTable catalogTable)</span> </span>&#123;</span><br><span class="line">  FactoryUtil.DefaultDynamicTableContext context = Utils.getTableContext(tablePath, catalogTable, Configuration.fromMap(catalogTable.getOptions()));</span><br><span class="line">  HoodieTableFactory hoodieTableFactory = <span class="keyword">new</span> HoodieTableFactory();</span><br><span class="line">  DataStreamScanProvider dataStreamScanProvider = (DataStreamScanProvider) ((ScanTableSource) hoodieTableFactory</span><br><span class="line">      .createDynamicTableSource(context))</span><br><span class="line">      .getScanRuntimeProvider(<span class="keyword">new</span> ScanRuntimeProviderContext());</span><br><span class="line">  <span class="keyword">return</span> dataStreamScanProvider.produceDataStream(execEnv);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h2 id="源码调试"><a href="#源码调试" class="headerlink" title="源码调试"></a>源码调试</h2><p>我们还可以直接在源码里进行调试，这样方便我们直接看到修改源码后的效果。直接在源码里进行调试可能配置环境会比较麻烦一点，每个版本也不太一样。比如我在hudi 0.13.0源码中模块<code>hudi-examples-flink</code>里进行调试，需要做如下修改:<br><img src="https://img.dongkelun.com/hudi/flinkSqlCodeDebug4.png" alt=""><br>详细的pom修改可以看我提到github上的commit:<a href="https://github.com/dongkelun/hudi/commit/558910d4cab189d0cbfa9c69332f3e4e74e56b41" target="_blank" rel="noopener">https://github.com/dongkelun/hudi/commit/558910d4cab189d0cbfa9c69332f3e4e74e56b41</a></p>
@@ -633,31 +633,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -669,11 +649,47 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -689,19 +705,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -709,19 +717,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -733,7 +729,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -753,11 +753,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -765,7 +765,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color3">开源</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -773,7 +773,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">开源</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -801,15 +801,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -821,27 +821,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -850,6 +842,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">excel</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -873,6 +873,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
@@ -890,14 +894,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">压缩文件</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -929,6 +925,14 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">压缩文件</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
               </li>
              
@@ -937,15 +941,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">linux</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -978,10 +982,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
             
             <div class="clearfix"></div>
