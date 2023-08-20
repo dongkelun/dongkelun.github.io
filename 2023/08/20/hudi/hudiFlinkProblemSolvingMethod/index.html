@@ -7,22 +7,23 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="https://dongkelun.com">
-  <title>Hudi Flink SQL源码调试学习（1） | 伦少的博客</title>
+  <title>记录几个Hudi Flink使用问题及解决方法 | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="前言本着学习hudi-flink源码的目的，利用之前总结的文章Hudi Flink SQL代码示例及本地调试中的代码进行调试,记录调试学习过程中主要的步骤及对应源码片段。 版本 Flink 1.15.4 Hudi 0.13.0  目标在文章Hudi Flink SQL代码示例及本地调试中提到：我们发现Table API的入口和DataStream API的入口差不多，DataStream API的">
+  <meta name="description" content="前言如题，记录几个Hudi Flink使用问题，学习和使用Hudi Flink有一段时间，虽然目前用的还不够深入，但是目前也遇到了几个问题，现在将遇到的这几个问题以及解决方式记录一下 版本 Flink 1.15.4 Hudi 0.13.0  流写流写Hudi,必须要开启Checkpoint，这个我在之前的文章:Flink SQL Checkpoint 学习总结提到过。  如果不设置Checkpoi">
 <meta name="keywords" content="Flink,Hudi">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Hudi Flink SQL源码调试学习（1）">
-<meta property="og:url" content="https://dongkelun.com/2023/07/31/hudi/hudiFlinkSQLSourceCodeDebug2/index.html">
+<meta property="og:title" content="记录几个Hudi Flink使用问题及解决方法">
+<meta property="og:url" content="https://dongkelun.com/2023/08/20/hudi/hudiFlinkProblemSolvingMethod/index.html">
 <meta property="og:site_name" content="伦少的博客">
-<meta property="og:description" content="前言本着学习hudi-flink源码的目的，利用之前总结的文章Hudi Flink SQL代码示例及本地调试中的代码进行调试,记录调试学习过程中主要的步骤及对应源码片段。 版本 Flink 1.15.4 Hudi 0.13.0  目标在文章Hudi Flink SQL代码示例及本地调试中提到：我们发现Table API的入口和DataStream API的入口差不多，DataStream API的">
+<meta property="og:description" content="前言如题，记录几个Hudi Flink使用问题，学习和使用Hudi Flink有一段时间，虽然目前用的还不够深入，但是目前也遇到了几个问题，现在将遇到的这几个问题以及解决方式记录一下 版本 Flink 1.15.4 Hudi 0.13.0  流写流写Hudi,必须要开启Checkpoint，这个我在之前的文章:Flink SQL Checkpoint 学习总结提到过。  如果不设置Checkpoi">
 <meta property="og:locale" content="cn">
-<meta property="og:image" content="https://img.dongkelun.com/hudi/flinkSqlCodeDebug7.png">
-<meta property="og:updated_time" content="2023-07-31T12:03:03.415Z">
+<meta property="og:image" content="https://img.dongkelun.com/hudi/flink_state1.png">
+<meta property="og:image" content="https://img.dongkelun.com/hudi/flink_state2.png">
+<meta property="og:updated_time" content="2023-08-20T13:51:32.033Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Hudi Flink SQL源码调试学习（1）">
-<meta name="twitter:description" content="前言本着学习hudi-flink源码的目的，利用之前总结的文章Hudi Flink SQL代码示例及本地调试中的代码进行调试,记录调试学习过程中主要的步骤及对应源码片段。 版本 Flink 1.15.4 Hudi 0.13.0  目标在文章Hudi Flink SQL代码示例及本地调试中提到：我们发现Table API的入口和DataStream API的入口差不多，DataStream API的">
-<meta name="twitter:image" content="https://img.dongkelun.com/hudi/flinkSqlCodeDebug7.png">
+<meta name="twitter:title" content="记录几个Hudi Flink使用问题及解决方法">
+<meta name="twitter:description" content="前言如题，记录几个Hudi Flink使用问题，学习和使用Hudi Flink有一段时间，虽然目前用的还不够深入，但是目前也遇到了几个问题，现在将遇到的这几个问题以及解决方式记录一下 版本 Flink 1.15.4 Hudi 0.13.0  流写流写Hudi,必须要开启Checkpoint，这个我在之前的文章:Flink SQL Checkpoint 学习总结提到过。  如果不设置Checkpoi">
+<meta name="twitter:image" content="https://img.dongkelun.com/hudi/flink_state1.png">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -208,20 +209,20 @@
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            <article id="post-hudi/hudiFlinkSQLSourceCodeDebug2" class="article article-type-post " itemscope itemprop="blogPost">
+            <article id="post-hudi/hudiFlinkProblemSolvingMethod" class="article article-type-post " itemscope itemprop="blogPost">
   <div class="article-inner">
     
       <header class="article-header">
         
   
     <h1 class="article-title" itemprop="name">
-      Hudi Flink SQL源码调试学习（1）
+      记录几个Hudi Flink使用问题及解决方法
     </h1>
   
 
         
-        <a href="/2023/07/31/hudi/hudiFlinkSQLSourceCodeDebug2/" class="archive-article-date">
-  	<time datetime="2023-07-30T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2023-07-31</time>
+        <a href="/2023/08/20/hudi/hudiFlinkProblemSolvingMethod/" class="archive-article-date">
+  	<time datetime="2023-08-19T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2023-08-20</time>
 </a>
         
       </header>
@@ -261,88 +262,71 @@
         
         
       
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>本着学习hudi-flink源码的目的，利用之前总结的文章<a href="https://mp.weixin.qq.com/s/aC5xoJVT53xAFTlNIA5NLw" target="_blank" rel="noopener">Hudi Flink SQL代码示例及本地调试</a>中的代码进行调试,记录调试学习过程中主要的步骤及对应源码片段。</p>
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>如题，记录几个Hudi Flink使用问题，学习和使用Hudi Flink有一段时间，虽然目前用的还不够深入，但是目前也遇到了几个问题，现在将遇到的这几个问题以及解决方式记录一下</p>
 <h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><ul>
 <li>Flink 1.15.4</li>
 <li>Hudi 0.13.0</li>
 </ul>
-<h2 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h2><p>在文章<a href="https://mp.weixin.qq.com/s/aC5xoJVT53xAFTlNIA5NLw" target="_blank" rel="noopener">Hudi Flink SQL代码示例及本地调试</a>中提到：我们发现Table API的入口和DataStream API的入口差不多，DataStream API的入口是在<code>HoodiePipeline</code>的<code>sink</code>和<code>source</code>方法里，而这两个方法也是分别调用了<code>HoodieTableFactory</code>的<code>createDynamicTableSink</code>和<code>createDynamicTableSource</code>。那么Table API的代码怎么一步一步走到<code>createDynamicTableSink</code>和<code>createDynamicTableSource</code>的呢？返回<code>HoodieTableSink</code>之后又是怎么写数据的？因为我发现Hudi写数据的主要逻辑入口好像是<code>在HoodieTableSink.getSinkRuntimeProvider</code>的方法体里，这些问题之前都没有搞清楚，所以这次的目标就是要搞清楚：1、Table API 的入口到<code>createDynamicTableSink</code>返回<code>HoodieTableSink</code>的主要代码步骤； 2、在哪里调用<code>HoodieTableSink.getSinkRuntimeProvider</code>的方法体进行后面的写Hudi逻辑的</p>
+<h2 id="流写"><a href="#流写" class="headerlink" title="流写"></a>流写</h2><p>流写Hudi,必须要开启Checkpoint，这个我在之前的文章:<a href="https://mp.weixin.qq.com/s/1-7yh3Qr2pOVZ9UiicJM9Q" target="_blank" rel="noopener">Flink SQL Checkpoint 学习总结</a>提到过。</p>
+<blockquote>
+<p>如果不设置Checkpoint，不会生成commit，感觉像是卡住一样，具体表现为只生成.commit.requested和.inflight,然后不写文件、不生成.commit也不报错，对于新手来说很费劲，很难找到解决方法。</p>
+</blockquote>
 <a id="more"></a>
-<p>相关类：</p>
-<ul>
-<li><code>HoodiePipeline</code> （DataStream API）</li>
-<li><code>HoodieTableFactory</code></li>
-<li><code>HoodieTableSink</code></li>
-<li><code>DataStreamSinkProviderAdapter</code> （函数式接口）</li>
-<li><code>TableEnvironmentImpl</code> </li>
-<li><code>BatchPlanner</code> </li>
-<li><code>PlannerBase</code> </li>
-<li><code>FactoryUtil</code> </li>
-<li><code>BatchExecSink</code> </li>
-<li><code>CommonExecSink</code> </li>
+<h2 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h2><p>hudi-flink 仅支持两种索引：<code>FLINK_STATE</code>和<code>BUCKET</code>，默认<code>FLINK_STATE</code>。</p>
+<blockquote>
+<p>最开始使用hudi是用的spark,hudi-spark支持<code>BLOOM</code>索引,hudi java client也支持<code>BLOOM</code>索引,所以认为hudi-flink也支持<code>BLOOM</code>索引，但其实不支持，而且官网并没有相关的文档说明，可以从下面这段代码中看出来</p>
+</blockquote>
+<p><code>Pipelines.hoodieStreamWrite</code><br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> DataStream&lt;Object&gt; <span class="title">hoodieStreamWrite</span><span class="params">(Configuration conf, DataStream&lt;HoodieRecord&gt; dataStream)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 如果是`BUCKET`索引</span></span><br><span class="line">    <span class="keyword">if</span> (OptionsResolver.isBucketIndexType(conf)) &#123;</span><br><span class="line">      WriteOperatorFactory&lt;HoodieRecord&gt; operatorFactory = BucketStreamWriteOperator.getFactory(conf);</span><br><span class="line">      <span class="keyword">int</span> bucketNum = conf.getInteger(FlinkOptions.BUCKET_INDEX_NUM_BUCKETS);</span><br><span class="line">      String indexKeyFields = conf.getString(FlinkOptions.INDEX_KEY_FIELD);</span><br><span class="line">      BucketIndexPartitioner&lt;HoodieKey&gt; partitioner = <span class="keyword">new</span> BucketIndexPartitioner&lt;&gt;(bucketNum, indexKeyFields);</span><br><span class="line">      <span class="keyword">return</span> dataStream.partitionCustom(partitioner, HoodieRecord::getKey)</span><br><span class="line">          .transform(opName(<span class="string">"bucket_write"</span>, conf), TypeInformation.of(Object.class), operatorFactory)</span><br><span class="line">          .uid(opUID(<span class="string">"bucket_write"</span>, conf))</span><br><span class="line">          .setParallelism(conf.getInteger(FlinkOptions.WRITE_TASKS));</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">// 否则按`FLINK_STATE`索引的逻辑</span></span><br><span class="line">      WriteOperatorFactory&lt;HoodieRecord&gt; operatorFactory = StreamWriteOperator.getFactory(conf);</span><br><span class="line">      <span class="keyword">return</span> dataStream</span><br><span class="line">          <span class="comment">// Key-by record key, to avoid multiple subtasks write to a bucket at the same time</span></span><br><span class="line">          .keyBy(HoodieRecord::getRecordKey)</span><br><span class="line">          .transform(</span><br><span class="line">              <span class="string">"bucket_assigner"</span>,</span><br><span class="line">              TypeInformation.of(HoodieRecord.class),</span><br><span class="line">              <span class="keyword">new</span> KeyedProcessOperator&lt;&gt;(<span class="keyword">new</span> BucketAssignFunction&lt;&gt;(conf)))</span><br><span class="line">          .uid(opUID(<span class="string">"bucket_assigner"</span>, conf))</span><br><span class="line">          .setParallelism(conf.getInteger(FlinkOptions.BUCKET_ASSIGN_TASKS))</span><br><span class="line">          <span class="comment">// shuffle by fileId(bucket id)</span></span><br><span class="line">          .keyBy(record -&gt; record.getCurrentLocation().getFileId())</span><br><span class="line">          .transform(opName(<span class="string">"stream_write"</span>, conf), TypeInformation.of(Object.class), operatorFactory)</span><br><span class="line">          .uid(opUID(<span class="string">"stream_write"</span>, conf))</span><br><span class="line">          .setParallelism(conf.getInteger(FlinkOptions.WRITE_TASKS));</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="FLINK-STATE-重复问题"><a href="#FLINK-STATE-重复问题" class="headerlink" title="FLINK_STATE 重复问题"></a>FLINK_STATE 重复问题</h2><p>如果使用默认的<code>FLINK_STATE</code>索引，在upsert时可能会有重复问题。（之前使用<code>BLOOM</code>索引时不会有这个问题）</p>
+<h3 id="问题复现"><a href="#问题复现" class="headerlink" title="问题复现"></a>问题复现</h3><p>先写一部分数据作为历史数据到Hudi表，然后再写相同的数据到这个表，最后count表发现数据量变多，也就是有重复数据。<br>主要参数:<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> parallelism.default=<span class="number">12</span>;</span><br><span class="line"><span class="keyword">set</span> taskmanager.numberOfTaskSlots=<span class="number">2</span>;</span><br><span class="line"></span><br><span class="line">'write.operation'='upsert',</span><br><span class="line">'write.tasks'='11', </span><br><span class="line">'table.type'='COPY_ON_WRITE',</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>场景为kafka2hudi，kafka数据量200w,没有重复，设置并发的主要目的是为了将数据打散分布在不同的文件里，这样更容易复现问题。（因为如果只有一个历史文件时，很难复现）</p>
+</blockquote>
+<p>第一次任务跑完表数据量为200w,第二次跑完表数据量大于200w，证明数据重复。</p>
+<h3 id="重复原因"><a href="#重复原因" class="headerlink" title="重复原因"></a>重复原因</h3><blockquote>
+<p><code>index state</code>:保存在state中的主键和文件ID的对应关系<br>重复的原因为<code>FLINK_STATE</code>将主键和文件ID的对应关系保存在state中，当新启动一个任务时，<code>index state</code>需要重新建立，而默认情况下不会包含历史文件的<code>index state</code>，只会建立新数据的<code>index state</code>，所以对于没有历史文件的新表是不会有重复问题的。（对于有历史文件的表，如果从checkpoint恢复也不会有重复问题，因为从checkpoint恢复时，也恢复了之前历史文件的<code>index state</code>）</p>
+</blockquote>
+<h3 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h3><p>通过参数<code>index.bootstrap.enabled</code>解决，默认为false，当为true时，写hudi任务启动时会先引导（加载）历史文件的<code>index state</code><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">'index.bootstrap.enabled'</span>=<span class="string">'true'</span></span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>除了重复问题，<code>FLINK_STATE</code>因为将index保存在state中，所以随着数据量的增加，state越来越大。这样对于数据量特别大的表，对内存的要求也会很高，所以会遇到内存不足OOM的问题。 所以建议对于大表，还是选择使用<code>BUCKET</code>索引。</p>
+</blockquote>
+<p>增量数据,’index.bootstrap.enabled’=’false’时的checkpoint记录，checkpoint大小开始很小，然后逐渐增加</p>
+<p><img src="https://img.dongkelun.com/hudi/flink_state1.png" alt=""></p>
+<p>增量数据,’index.bootstrap.enabled’=’true’时的checkpoint记录，checkpoint大小开始和结束差不多大</p>
+<p><img src="https://img.dongkelun.com/hudi/flink_state2.png" alt=""></p>
+<h2 id="BUCKET-INDEX"><a href="#BUCKET-INDEX" class="headerlink" title="BUCKET INDEX"></a>BUCKET INDEX</h2><p><code>BUCKET</code>索引需要根据表数据量大小设定好桶数(<code>hoodie.bucket.index.num.buckets</code>),但是默认情况下不能动态调整<code>bucket</code>数量。</p>
+<p>另外可以通过参数<code>hoodie.index.bucket.engine</code>将其值设为<code>CONSISTENT_HASHING</code>,通过一致性哈希实现动态调整<code>bucket</code>数量，但是仅支持<code>MOR</code>表，我还没有试过这个功能，大家可以通过官网：<a href="https://hudi.apache.org/docs/configurations/" target="_blank" rel="noopener">https://hudi.apache.org/docs/configurations/</a>了解相关参数自行测试。</p>
+<blockquote>
+<p><a href="#hoodieindexbucketengine">hoodie.index.bucket.engine</a>                                    | SIMPLE (Optional)              | org.apache.hudi.index.HoodieIndex$BucketIndexEngineType: Determines the type of bucketing or hashing to use when <code>hoodie.index.type</code> is set to <code>BUCKET</code>.     SIMPLE(default): Uses a fixed number of buckets for file groups which cannot shrink or expand. This works for both COW and MOR tables.     CONSISTENT_HASHING: Supports dynamic number of buckets with bucket resizing to properly size each bucket. This solves potential data skew problem where one bucket can be significantly larger than others in SIMPLE engine type. This only works with MOR tables.<br><br><code>Config Param: BUCKET_INDEX_ENGINE_TYPE</code><br><code>Since Version: 0.11.0</code></p>
+</blockquote>
+<p><code>BUCKET</code>索引主要参数：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">'index.type' =  'BUCKET', <span class="comment">-- flink只支持两种index，默认FLINK_STATE index,FLINK_STATE index对于数据量比较大的情况会因为tm内存不足导致GC OOM</span></span><br><span class="line">'hoodie.bucket.index.num.buckets' = '16', <span class="comment">-- 桶数</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意，<code>index.type</code>是flink客户端独有的，和公共的不一样（使用公共参数不生效），没有前缀<code>hoodie.</code>,而桶数配置项是hudi公共参数，对于flink客户端哪些用公共参数哪些用flink独有的参数，官方文档并没有提供，需要自己在类<code>org.apache.hudi.configuration.FlinkOptions</code>查看，该类中的参数为flink重写的独有参数，没有的话则需要使用公共参数</p>
+</blockquote>
+<h3 id="insert转upsert问题"><a href="#insert转upsert问题" class="headerlink" title="insert转upsert问题"></a>insert转upsert问题</h3><p>对于<code>BUCKET</code>如果先insert一部分历史数据，再upsert增量数据时，默认参数配置会抛出如下异常：<br>(复现此问题只需要批写一条数据即可)</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">Caused by: java.lang.NumberFormatException: For input string: <span class="string">"4ff32a41"</span></span><br><span class="line">	at java.lang.NumberFormatException.forInputString(NumberFormatException.java:<span class="number">65</span>)</span><br><span class="line">	at java.lang.Integer.parseInt(Integer.java:<span class="number">580</span>)</span><br><span class="line">	at java.lang.Integer.parseInt(Integer.java:<span class="number">615</span>)</span><br><span class="line">	at org.apache.hudi.index.bucket.BucketIdentifier.bucketIdFromFileId(BucketIdentifier.java:<span class="number">79</span>)</span><br><span class="line">	at org.apache.hudi.sink.bucket.BucketStreamWriteFunction.lambda$bootstrapIndexIfNeed$<span class="number">1</span>(BucketStreamWriteFunction.java:<span class="number">162</span>)</span><br><span class="line">	at java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:<span class="number">184</span>)</span><br><span class="line">	at java.util.stream.ReferencePipeline$<span class="number">3</span>$<span class="number">1</span>.accept(ReferencePipeline.java:<span class="number">193</span>)</span><br><span class="line">	at java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:<span class="number">1382</span>)</span><br><span class="line">	at java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:<span class="number">481</span>)</span><br><span class="line">	at java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:<span class="number">471</span>)</span><br><span class="line">	at java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:<span class="number">151</span>)</span><br><span class="line">	at java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:<span class="number">174</span>)</span><br><span class="line">	at java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:<span class="number">234</span>)</span><br><span class="line">	at java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:<span class="number">418</span>)</span><br><span class="line">	at org.apache.hudi.sink.bucket.BucketStreamWriteFunction.bootstrapIndexIfNeed(BucketStreamWriteFunction.java:<span class="number">160</span>)</span><br><span class="line">	at org.apache.hudi.sink.bucket.BucketStreamWriteFunction.processElement(BucketStreamWriteFunction.java:<span class="number">112</span>)</span><br><span class="line">	at org.apache.flink.streaming.api.operators.ProcessOperator.processElement(ProcessOperator.java:<span class="number">66</span>)</span><br><span class="line">	at org.apache.flink.streaming.runtime.tasks.OneInputStreamTask$StreamTaskNetworkOutput.emitRecord(OneInputStreamTask.java:<span class="number">233</span>)</span><br></pre></td></tr></table></figure>
+<p>原因是：默认参数下，insert时没有按照<code>bucket</code>索引的逻辑写文件，而<code>upsert</code>是按照<code>bucket</code>逻辑写文件的，<code>bucket</code>索引写的文件名前缀都带有桶号，不是<code>bucket</code>索引写的文件名没有桶号，所以upsert时会尝试解析insert写的历史文件的桶号，导致解析失败。</p>
+<p>非<code>bucket</code>索引逻辑写的文件<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/tmp/cdc/hudi_sink_insert/4ff32a41-4232-4f47-855a-6364eb1d6ce8-0_0-1-0_20230820210751280.parquet</span><br></pre></td></tr></table></figure></p>
+<p><code>bucket</code>索引逻辑写的文件<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/tmp/cdc/hudi_sink_insert/00000000-82f4-48a5-85e9-2c4bb9679360_0-1-0_20230820211542006.parquet</span><br></pre></td></tr></table></figure></p>
+<h4 id="解决方法-1"><a href="#解决方法-1" class="headerlink" title="解决方法"></a>解决方法</h4><p>对于实际应用场景是有这种先insert在upsert的需求的，解决方法就是尝试通过配置参数使insert也按照<code>bucket</code>索引的逻辑写数据<br>主要参数：<code>&#39;write.insert.cluster&#39;=&#39;true&#39;</code><br>相关参数：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">'write.operation'='<span class="keyword">insert</span><span class="string">', </span></span><br><span class="line"><span class="string">'</span>table.type<span class="string">'='</span>COPY_ON_WRITE<span class="string">',</span></span><br><span class="line"><span class="string">'</span>write.insert.cluster<span class="string">'='</span><span class="literal">true</span><span class="string">',</span></span><br><span class="line"><span class="string">'</span>index.type<span class="string">' =  '</span>BUCKET<span class="string">',</span></span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>我是通过阅读源码发现这个参数可以使insert按照<code>bucket</code>逻辑写数据的<br>对应的源码在<code>HoodieTableSink.getSinkRuntimeProvider</code>,我在上篇文章<a href="https://mp.weixin.qq.com/s/frLvLOBc1B8VhBOwcGkBaA" target="_blank" rel="noopener">Hudi Flink SQL源码调试学习（一）</a>中分析了写hudi时是如何调用到这个方法的，感兴趣得可以看一下。</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> SinkRuntimeProvider <span class="title">getSinkRuntimeProvider</span><span class="params">(Context context)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> (DataStreamSinkProviderAdapter) dataStream -&gt; &#123;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// setup configuration</span></span><br><span class="line">      <span class="keyword">long</span> ckpTimeout = dataStream.getExecutionEnvironment()</span><br><span class="line">          .getCheckpointConfig().getCheckpointTimeout();</span><br><span class="line">      conf.setLong(FlinkOptions.WRITE_COMMIT_ACK_TIMEOUT, ckpTimeout);</span><br><span class="line">      <span class="comment">// set up default parallelism</span></span><br><span class="line">      OptionsInference.setupSinkTasks(conf, dataStream.getExecutionConfig().getParallelism());</span><br><span class="line"></span><br><span class="line">      RowType rowType = (RowType) schema.toSinkRowDataType().notNull().getLogicalType();</span><br><span class="line"></span><br><span class="line">      <span class="comment">// bulk_insert mode</span></span><br><span class="line">      <span class="keyword">final</span> String writeOperation = <span class="keyword">this</span>.conf.get(FlinkOptions.OPERATION);</span><br><span class="line">      <span class="keyword">if</span> (WriteOperationType.fromValue(writeOperation) == WriteOperationType.BULK_INSERT) &#123;</span><br><span class="line">        <span class="keyword">return</span> Pipelines.bulkInsert(conf, rowType, dataStream);</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// Append mode</span></span><br><span class="line">      <span class="keyword">if</span> (OptionsResolver.isAppendMode(conf)) &#123;</span><br><span class="line">        DataStream&lt;Object&gt; pipeline = Pipelines.append(conf, rowType, dataStream, context.isBounded());</span><br><span class="line">        <span class="keyword">if</span> (OptionsResolver.needsAsyncClustering(conf)) &#123;</span><br><span class="line">          <span class="keyword">return</span> Pipelines.cluster(conf, rowType, pipeline);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">          <span class="keyword">return</span> Pipelines.dummySink(pipeline);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      DataStream&lt;Object&gt; pipeline;</span><br><span class="line">      <span class="comment">// bootstrap</span></span><br><span class="line">      <span class="keyword">final</span> DataStream&lt;HoodieRecord&gt; hoodieRecordDataStream =</span><br><span class="line">          Pipelines.bootstrap(conf, rowType, dataStream, context.isBounded(), overwrite);</span><br><span class="line">      <span class="comment">// write pipeline</span></span><br><span class="line">      pipeline = Pipelines.hoodieStreamWrite(conf, hoodieRecordDataStream);</span><br><span class="line">      <span class="comment">// compaction</span></span><br><span class="line">      <span class="keyword">if</span> (OptionsResolver.needsAsyncCompaction(conf)) &#123;</span><br><span class="line">        <span class="comment">// use synchronous compaction for bounded source.</span></span><br><span class="line">        <span class="keyword">if</span> (context.isBounded()) &#123;</span><br><span class="line">          conf.setBoolean(FlinkOptions.COMPACTION_ASYNC_ENABLED, <span class="keyword">false</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> Pipelines.compact(conf, pipeline);</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> Pipelines.clean(conf, pipeline);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<p>我们在上面的代码中可以发现，当是append模式时会走单独的写逻辑，不是append模式时，才会走下面的<code>Pipelines.hoodieStreamWrite</code>,那么就需要看一下append模式的判断逻辑</p>
+<p><code>OptionsResolver.isAppendMode(conf)</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">isAppendMode</span><span class="params">(Configuration conf)</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 1. inline clustering is supported for COW table;</span></span><br><span class="line">  <span class="comment">// 2. async clustering is supported for both COW and MOR table</span></span><br><span class="line">  <span class="keyword">return</span> isCowTable(conf) &amp;&amp; isInsertOperation(conf) &amp;&amp; !conf.getBoolean(FlinkOptions.INSERT_CLUSTER)</span><br><span class="line">      || needsScheduleClustering(conf);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>对于cow表insert时，默认参数的情况<code>needsScheduleClustering(conf)</code>返回false，而<code>!conf.getBoolean(FlinkOptions.INSERT_CLUSTER)</code>返回true，所以只需要让<code>!conf.getBoolean(FlinkOptions.INSERT_CLUSTER)</code>返回false就可以跳过append模式的逻辑了，也就是上面的 <code>&#39;write.insert.cluster&#39;=&#39;true&#39;</code></p>
+<h2 id="Hive查询异常"><a href="#Hive查询异常" class="headerlink" title="Hive查询异常"></a>Hive查询异常</h2><p>记录一个Hive SQL查询Hudi表的异常</p>
+<h3 id="异常信息"><a href="#异常信息" class="headerlink" title="异常信息"></a>异常信息</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Caused by: java.lang.ClassCastException: org.apache.hadoop.io.ArrayWritable cannot be cast to org.apache.hadoop.hive.ql.exec.vector.VectorizedRowBatch</span><br><span class="line">    at org.apache.hadoop.hive.ql.exec.vector.VectorMapOperator.deliverVectorizedRowBatch(VectorMapOperator.java:<span class="number">803</span>)</span><br><span class="line">    at org.apache.hadoop.hive.ql.exec.vector.VectorMapOperator.process(VectorMapOperator.java:<span class="number">845</span>)</span><br><span class="line">    ... <span class="number">20</span> more</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">java.lang.ClassCastException: org.apache.hadoop.hive.ql.exec.vector.VectorizedRowBatch cannot be cast to org.apache.hadoop.io.ArrayWritable</span><br><span class="line"></span><br><span class="line">java.lang.ClassCastException: org.apache.hadoop.hive.ql.exec.vector.VectorizedRowBatch cannot be cast to org.apache.hadoop.io.ArrayWritable</span><br></pre></td></tr></table></figure>
+<h3 id="异常复现"><a href="#异常复现" class="headerlink" title="异常复现"></a>异常复现</h3><p>找一个<code>hudi mor</code>表的<code>rt</code>表，执行count语句(有人反馈聚合函数也会出现此异常)</p>
+<h3 id="解决方法-2"><a href="#解决方法-2" class="headerlink" title="解决方法"></a>解决方法</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> hive.vectorized.execution.enabled=<span class="literal">false</span>; (我验证的这一个参数就可以了)</span><br><span class="line"><span class="keyword">set</span> hive.vectorized.execution.reduce.enabled=<span class="literal">false</span>;（不确定此参数是否必须）</span><br></pre></td></tr></table></figure>
+<h2 id="相关阅读"><a href="#相关阅读" class="headerlink" title="相关阅读"></a>相关阅读</h2><ul>
+<li><a href="https://mp.weixin.qq.com/s/1-7yh3Qr2pOVZ9UiicJM9Q" target="_blank" rel="noopener">Flink SQL Checkpoint 学习总结</a></li>
+<li><a href="https://mp.weixin.qq.com/s/frLvLOBc1B8VhBOwcGkBaA" target="_blank" rel="noopener">Hudi Flink SQL源码调试学习（一）</a></li>
+<li><a href="https://mp.weixin.qq.com/s/N_SnkJDEEvka2rvtV2RWJg" target="_blank" rel="noopener">Flink SQL操作Hudi并同步Hive使用总结</a></li>
 </ul>
-<h2 id="DataStream-API"><a href="#DataStream-API" class="headerlink" title="DataStream API"></a>DataStream API</h2><p>其实上面的问题在DataStream API代码里很容易看出来，我们先看一下DataStream API写Hudi的代码，详细代码在文章：<a href="https://mp.weixin.qq.com/s/83lMpbLCM3Mlb3fg_rEddw" target="_blank" rel="noopener">Flink Hudi DataStream API代码示例</a><br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">DataStream&lt;RowData&gt; dataStream = env.fromElements(</span><br><span class="line">        GenericRowData.of(<span class="number">1</span>, StringData.fromString(<span class="string">"hudi1"</span>), <span class="number">1.1</span>, <span class="number">1000L</span>, StringData.fromString(<span class="string">"2023-04-07"</span>)),</span><br><span class="line">        GenericRowData.of(<span class="number">2</span>, StringData.fromString(<span class="string">"hudi2"</span>), <span class="number">2.2</span>, <span class="number">2000L</span>, StringData.fromString(<span class="string">"2023-04-08"</span>))</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line">HoodiePipeline.Builder builder = HoodiePipeline.builder(targetTable)</span><br><span class="line">        .column(<span class="string">"id int"</span>)</span><br><span class="line">        .column(<span class="string">"name string"</span>)</span><br><span class="line">        .column(<span class="string">"price double"</span>)</span><br><span class="line">        .column(<span class="string">"ts bigint"</span>)</span><br><span class="line">        .column(<span class="string">"dt string"</span>)</span><br><span class="line">        .pk(<span class="string">"id"</span>)</span><br><span class="line">        .partition(<span class="string">"dt"</span>)</span><br><span class="line">        .options(options);</span><br><span class="line"></span><br><span class="line">builder.sink(dataStream, <span class="keyword">false</span>);</span><br></pre></td></tr></table></figure></p>
-<p><code>HoodiePipeline.Builder.sink</code><br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> DataStreamSink&lt;?&gt; sink(DataStream&lt;RowData&gt; input, <span class="keyword">boolean</span> bounded) &#123;</span><br><span class="line">  TableDescriptor tableDescriptor = getTableDescriptor();</span><br><span class="line">  <span class="keyword">return</span> HoodiePipeline.sink(input, tableDescriptor.getTableId(), tableDescriptor.getResolvedCatalogTable(), bounded);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p><code>HoodiePipeline.sink</code><br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> DataStreamSink&lt;?&gt; sink(DataStream&lt;RowData&gt; input, ObjectIdentifier tablePath, ResolvedCatalogTable catalogTable, <span class="keyword">boolean</span> isBounded) &#123;</span><br><span class="line">  FactoryUtil.DefaultDynamicTableContext context = Utils.getTableContext(tablePath, catalogTable, Configuration.fromMap(catalogTable.getOptions()));</span><br><span class="line">  HoodieTableFactory hoodieTableFactory = <span class="keyword">new</span> HoodieTableFactory();</span><br><span class="line">  <span class="keyword">return</span> ((DataStreamSinkProvider) hoodieTableFactory.createDynamicTableSink(context)</span><br><span class="line">      .getSinkRuntimeProvider(<span class="keyword">new</span> SinkRuntimeProviderContext(isBounded)))</span><br><span class="line">      .consumeDataStream(input);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>在<code>HoodiePipeline.sink</code>就可以找到答案：<br>1、<code>HoodieTableFactory</code>.<code>createDynamicTableSink</code> 返回<code>HoodieTableSink</code><br>2、<code>HoodieTableSink</code>.<code>getSinkRuntimeProvider</code> 返回<code>DataStreamSinkProviderAdapter</code><br>3、<code>DataStreamSinkProviderAdapter</code>.<code>consumeDataStream</code>调用<code>HoodieTableSink</code>.<code>getSinkRuntimeProvider</code>中的方法体执行后面的写Hudi逻辑。这里的dataStream为我们最开始在程序里创建的<code>DataStream&lt;RowData&gt;</code></p>
-<p><code>HoodieTableSink</code>.<code>getSinkRuntimeProvider</code></p>
-<blockquote>
-<p><code>getSinkRuntimeProvider</code>返回<code>DataStreamSinkProviderAdapter</code>,其中Lambda 表达式<code>dataStream -&gt; {}</code>为<code>DataStreamSinkProviderAdapter</code>.<code>consumeDataStream(dataStream)</code>的具体实现</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> SinkRuntimeProvider <span class="title">getSinkRuntimeProvider</span><span class="params">(Context context)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> (DataStreamSinkProviderAdapter) dataStream -&gt; &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// setup configuration</span></span><br><span class="line">    <span class="keyword">long</span> ckpTimeout = dataStream.getExecutionEnvironment()</span><br><span class="line">        .getCheckpointConfig().getCheckpointTimeout();</span><br><span class="line">    conf.setLong(FlinkOptions.WRITE_COMMIT_ACK_TIMEOUT, ckpTimeout);</span><br><span class="line">    <span class="comment">// set up default parallelism</span></span><br><span class="line">    OptionsInference.setupSinkTasks(conf, dataStream.getExecutionConfig().getParallelism());</span><br><span class="line"></span><br><span class="line">    RowType rowType = (RowType) schema.toSinkRowDataType().notNull().getLogicalType();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// bulk_insert mode</span></span><br><span class="line">    <span class="keyword">final</span> String writeOperation = <span class="keyword">this</span>.conf.get(FlinkOptions.OPERATION);</span><br><span class="line">    <span class="keyword">if</span> (WriteOperationType.fromValue(writeOperation) == WriteOperationType.BULK_INSERT) &#123;</span><br><span class="line">      <span class="keyword">return</span> Pipelines.bulkInsert(conf, rowType, dataStream);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Append mode</span></span><br><span class="line">    <span class="keyword">if</span> (OptionsResolver.isAppendMode(conf)) &#123;</span><br><span class="line">      DataStream&lt;Object&gt; pipeline = Pipelines.append(conf, rowType, dataStream, context.isBounded());</span><br><span class="line">      <span class="keyword">if</span> (OptionsResolver.needsAsyncClustering(conf)) &#123;</span><br><span class="line">        <span class="keyword">return</span> Pipelines.cluster(conf, rowType, pipeline);</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> Pipelines.dummySink(pipeline);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    DataStream&lt;Object&gt; pipeline;</span><br><span class="line">    <span class="comment">// bootstrap</span></span><br><span class="line">    <span class="keyword">final</span> DataStream&lt;HoodieRecord&gt; hoodieRecordDataStream =</span><br><span class="line">        Pipelines.bootstrap(conf, rowType, dataStream, context.isBounded(), overwrite);</span><br><span class="line">    <span class="comment">// write pipeline</span></span><br><span class="line">    pipeline = Pipelines.hoodieStreamWrite(conf, hoodieRecordDataStream);</span><br><span class="line">    <span class="comment">// compaction</span></span><br><span class="line">    <span class="keyword">if</span> (OptionsResolver.needsAsyncCompaction(conf)) &#123;</span><br><span class="line">      <span class="comment">// use synchronous compaction for bounded source.</span></span><br><span class="line">      <span class="keyword">if</span> (context.isBounded()) &#123;</span><br><span class="line">        conf.setBoolean(FlinkOptions.COMPACTION_ASYNC_ENABLED, <span class="keyword">false</span>);</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">return</span> Pipelines.compact(conf, pipeline);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> Pipelines.clean(conf, pipeline);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><code>DataStreamSinkProviderAdapter</code>其实是一个函数式接口，它是一种只包含一个抽象方法的接口。Lambda 表达式可以被赋值给一个函数式接口，从而实现接口的实例化</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">DataStreamSinkProviderAdapter</span> <span class="keyword">extends</span> <span class="title">DataStreamSinkProvider</span> </span>&#123;</span><br><span class="line">  DataStreamSink&lt;?&gt; consumeDataStream(DataStream&lt;RowData&gt; dataStream);</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="keyword">default</span> DataStreamSink&lt;?&gt; consumeDataStream(ProviderContext providerContext, DataStream&lt;RowData&gt; dataStream) &#123;</span><br><span class="line">    <span class="keyword">return</span> consumeDataStream(dataStream);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>函数式接口和Lambda 表达式参考下面两篇文章：<br><a href="https://it.sohu.com/a/682888110_100123073" target="_blank" rel="noopener">https://it.sohu.com/a/682888110_100123073</a><br><a href="https://blog.csdn.net/Speechless_/article/details/123746047" target="_blank" rel="noopener">https://blog.csdn.net/Speechless_/article/details/123746047</a></p>
-<p><img src="https://img.dongkelun.com/hudi/flinkSqlCodeDebug7.png" alt=""></p>
-<h2 id="Table-API"><a href="#Table-API" class="headerlink" title="Table API"></a>Table API</h2><p>知道了 DataStream API 调用步骤后，来对比看一下 Table API 的大致调用步骤，调试代码入口。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tableEnv.executeSql(String.format(<span class="string">"insert into %s values (1,'hudi',10,100,'2023-05-28')"</span>, tableName));</span><br></pre></td></tr></table></figure>
-<h3 id="整体调用流程"><a href="#整体调用流程" class="headerlink" title="整体调用流程"></a>整体调用流程</h3><p>1、<code>tableEnv.executeSql</code>-&gt;<code>TableEnvironmentImpl.executeSql</code>-&gt;<code>executeInternal(Operation operation)</code>-&gt;<code>executeInternal(List&lt;ModifyOperation&gt; operations)</code>-&gt;<code>this.translate</code>-&gt;<code>(PlannerBase)this.planner.translate</code></p>
-<p>2.1、<code>PlannerBase.translate</code>-&gt;<code>PlannerBase.translateToRel</code>-&gt;<code>getTableSink(catalogSink.getContextResolvedTable, dynamicOptions)</code>-&gt;<code>FactoryUtil.createDynamicTableSink</code>-&gt;<code>HoodieTableFactory.createDynamicTableSink</code></p>
-<p>2.2、<code>PlannerBase.translate</code>-&gt;<code>(BatchPlanner)translateToPlan(execGraph)</code>-&gt;<code>(ExecNodeBase)node.translateToPlan</code>-&gt;<code>(BatchExecSink)translateToPlanInternal</code>-&gt;<code>(CommonExecSink)createSinkTransformation</code>-&gt;<code>(HoodieTableSink)getSinkRuntimeProvider</code>-&gt;<code>(CommonExecSink)applySinkProvider</code>-&gt;<code>provider.consumeDataStream</code></p>
-<h3 id="具体代码"><a href="#具体代码" class="headerlink" title="具体代码"></a>具体代码</h3><h4 id="TableEnvironmentImpl"><a href="#TableEnvironmentImpl" class="headerlink" title="TableEnvironmentImpl"></a>TableEnvironmentImpl</h4><p>(TableEnvironmentImpl)<code>executeSql</code><br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> TableResult <span class="title">executeSql</span><span class="params">(String statement)</span> </span>&#123;</span><br><span class="line">    List&lt;Operation&gt; operations = <span class="keyword">this</span>.getParser().parse(statement);</span><br><span class="line">    <span class="keyword">if</span> (operations.size() != <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> TableException(<span class="string">"Unsupported SQL query! executeSql() only accepts a single SQL statement of type CREATE TABLE, DROP TABLE, ALTER TABLE, CREATE DATABASE, DROP DATABASE, ALTER DATABASE, CREATE FUNCTION, DROP FUNCTION, ALTER FUNCTION, CREATE CATALOG, DROP CATALOG, USE CATALOG, USE [CATALOG.]DATABASE, SHOW CATALOGS, SHOW DATABASES, SHOW TABLES, SHOW [USER] FUNCTIONS, SHOW PARTITIONSCREATE VIEW, DROP VIEW, SHOW VIEWS, INSERT, DESCRIBE, LOAD MODULE, UNLOAD MODULE, USE MODULES, SHOW [FULL] MODULES."</span>);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 关键步骤：executeInternal</span></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>.executeInternal((Operation)operations.get(<span class="number">0</span>));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p><code>executeInternal(Operation operation)</code><br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> TableResultInternal <span class="title">executeInternal</span><span class="params">(Operation operation)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (operation <span class="keyword">instanceof</span> ModifyOperation) &#123;</span><br><span class="line">        <span class="comment">// 关键步骤：executeInternal</span></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>.executeInternal(Collections.singletonList((ModifyOperation)operation));</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (operation <span class="keyword">instanceof</span> StatementSetOperation) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>.executeInternal(((StatementSetOperation)operation).getOperations());</span><br></pre></td></tr></table></figure></p>
-<p><code>executeInternal(List&lt;ModifyOperation&gt; operations)</code><br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> TableResultInternal <span class="title">executeInternal</span><span class="params">(List&lt;ModifyOperation&gt; operations)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 关键步骤：translate</span></span><br><span class="line">    List&lt;Transformation&lt;?&gt;&gt; transformations = <span class="keyword">this</span>.translate(operations);</span><br><span class="line">    List&lt;String&gt; sinkIdentifierNames = <span class="keyword">this</span>.extractSinkIdentifierNames(operations);</span><br><span class="line">    TableResultInternal result = <span class="keyword">this</span>.executeInternal(transformations, sinkIdentifierNames);</span><br><span class="line">    <span class="keyword">if</span> ((Boolean)<span class="keyword">this</span>.tableConfig.get(TableConfigOptions.TABLE_DML_SYNC)) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            result.await();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (ExecutionException | InterruptedException var6) &#123;</span><br><span class="line">            result.getJobClient().ifPresent(JobClient::cancel);</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> TableException(<span class="string">"Fail to wait execution finish."</span>, var6);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p><code>translate</code><br>这里的planner为BatchPlanner，因为我们设置了batch模式EnvironmentSettings.inBatchMode()<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> List&lt;Transformation&lt;?&gt;&gt; translate(List&lt;ModifyOperation&gt; modifyOperations) &#123;</span><br><span class="line">    <span class="comment">// 这里的planner为BatchPlanner，因为我们设置了batch模式EnvironmentSettings.inBatchMode()</span></span><br><span class="line">    <span class="comment">// 关键步骤：PlannerBase.translate</span></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>.planner.translate(modifyOperations);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<h4 id="BatchPlanner"><a href="#BatchPlanner" class="headerlink" title="BatchPlanner"></a>BatchPlanner</h4><p>(BatchPlanner的父类)<code>PlannerBase.translate</code><br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">override def <span class="title">translate</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    modifyOperations: util.List[ModifyOperation])</span>: util.List[Transformation[_]] </span>= &#123;</span><br><span class="line">  beforeTranslation()</span><br><span class="line">  <span class="keyword">if</span> (modifyOperations.isEmpty) &#123;</span><br><span class="line">    <span class="keyword">return</span> List.empty[Transformation[_]]</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 关键步骤：translateToRel</span></span><br><span class="line">  val relNodes = modifyOperations.map(translateToRel)</span><br><span class="line">  val optimizedRelNodes = optimize(relNodes)</span><br><span class="line">  val execGraph = translateToExecNodeGraph(optimizedRelNodes, isCompiled = <span class="keyword">false</span>)</span><br><span class="line">  <span class="comment">// 关键步骤：translateToPlan</span></span><br><span class="line">  val transformations = translateToPlan(execGraph)</span><br><span class="line">  afterTranslation()</span><br><span class="line">  transformations</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p><code>PlannerBase.translateToRel</code><br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span>[flink] <span class="function">def <span class="title">translateToRel</span><span class="params">(modifyOperation: ModifyOperation)</span>: RelNode </span>= &#123;</span><br><span class="line">  val dataTypeFactory = catalogManager.getDataTypeFactory</span><br><span class="line">  modifyOperation match &#123;</span><br><span class="line">    <span class="keyword">case</span> s: UnregisteredSinkModifyOperation[_] =&gt;</span><br><span class="line">      val input = getRelBuilder.queryOperation(s.getChild).build()</span><br><span class="line">      val sinkSchema = s.getSink.getTableSchema</span><br><span class="line">      <span class="comment">// validate query schema and sink schema, and apply cast if possible</span></span><br><span class="line">      val query = validateSchemaAndApplyImplicitCast(</span><br><span class="line">        input,</span><br><span class="line">        catalogManager.getSchemaResolver.resolve(sinkSchema.toSchema),</span><br><span class="line">        <span class="keyword">null</span>,</span><br><span class="line">        dataTypeFactory,</span><br><span class="line">        getTypeFactory)</span><br><span class="line">      LogicalLegacySink.create(</span><br><span class="line">        query,</span><br><span class="line">        s.getSink,</span><br><span class="line">        <span class="string">"UnregisteredSink"</span>,</span><br><span class="line">        ConnectorCatalogTable.sink(s.getSink, !isStreamingMode))</span><br><span class="line"></span><br><span class="line">    <span class="keyword">case</span> collectModifyOperation: CollectModifyOperation =&gt;</span><br><span class="line">      val input = getRelBuilder.queryOperation(modifyOperation.getChild).build()</span><br><span class="line">      DynamicSinkUtils.convertCollectToRel(</span><br><span class="line">        getRelBuilder,</span><br><span class="line">        input,</span><br><span class="line">        collectModifyOperation,</span><br><span class="line">        getTableConfig,</span><br><span class="line">        getFlinkContext.getClassLoader</span><br><span class="line">      )</span><br><span class="line"></span><br><span class="line">    <span class="keyword">case</span> catalogSink: SinkModifyOperation =&gt;</span><br><span class="line">      val input = getRelBuilder.queryOperation(modifyOperation.getChild).build()</span><br><span class="line">      val dynamicOptions = catalogSink.getDynamicOptions</span><br><span class="line">      <span class="comment">// 关键步骤：getTableSink</span></span><br><span class="line">      getTableSink(catalogSink.getContextResolvedTable, dynamicOptions).map &#123;</span><br><span class="line">        <span class="keyword">case</span> (table, sink: TableSink[_]) =&gt;</span><br><span class="line">          <span class="comment">// Legacy tables can't be anonymous</span></span><br><span class="line">          val identifier = catalogSink.getContextResolvedTable.getIdentifier</span><br><span class="line">          <span class="comment">// check the logical field type and physical field type are compatible</span></span><br><span class="line">          val queryLogicalType = FlinkTypeFactory.toLogicalRowType(input.getRowType)</span><br><span class="line">          <span class="comment">// validate logical schema and physical schema are compatible</span></span><br><span class="line">          validateLogicalPhysicalTypesCompatible(table, sink, queryLogicalType)</span><br><span class="line">          <span class="comment">// validate TableSink</span></span><br><span class="line">          validateTableSink(catalogSink, identifier, sink, table.getPartitionKeys)</span><br><span class="line">          <span class="comment">// validate query schema and sink schema, and apply cast if possible</span></span><br><span class="line">          val query = validateSchemaAndApplyImplicitCast(</span><br><span class="line">            input,</span><br><span class="line">            table.getResolvedSchema,</span><br><span class="line">            identifier.asSummaryString,</span><br><span class="line">            dataTypeFactory,</span><br><span class="line">            getTypeFactory)</span><br><span class="line">          val hints = <span class="keyword">new</span> util.ArrayList[RelHint]</span><br><span class="line">          <span class="keyword">if</span> (!dynamicOptions.isEmpty) &#123;</span><br><span class="line">            hints.add(RelHint.builder(<span class="string">"OPTIONS"</span>).hintOptions(dynamicOptions).build)</span><br><span class="line">          &#125;</span><br><span class="line">          LogicalLegacySink.create(</span><br><span class="line">            query,</span><br><span class="line">            hints,</span><br><span class="line">            sink,</span><br><span class="line">            identifier.toString,</span><br><span class="line">            table,</span><br><span class="line">            catalogSink.getStaticPartitions.toMap)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">case</span> (table, sink: DynamicTableSink) =&gt;</span><br><span class="line">          DynamicSinkUtils.convertSinkToRel(getRelBuilder, input, catalogSink, sink)</span><br><span class="line">      &#125; match &#123;</span><br><span class="line">        <span class="function"><span class="keyword">case</span> <span class="title">Some</span><span class="params">(sinkRel)</span> </span>=&gt; sinkRel</span><br><span class="line">        <span class="keyword">case</span> None =&gt;</span><br><span class="line">          <span class="keyword">throw</span> <span class="keyword">new</span> TableException(</span><br><span class="line">            s<span class="string">"Sink '$&#123;catalogSink.getContextResolvedTable&#125;' does not exists"</span>)</span><br><span class="line">      &#125;</span><br></pre></td></tr></table></figure></p>
-<p><code>PlannerBase.getTableSink</code></p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> def <span class="title">getTableSink</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    contextResolvedTable: ContextResolvedTable,</span></span></span><br><span class="line"><span class="function"><span class="params">    dynamicOptions: JMap[String, String])</span>: Option[<span class="params">(ResolvedCatalogTable, Any)</span>] </span>= &#123;</span><br><span class="line">  contextResolvedTable.getTable[CatalogBaseTable] match &#123;</span><br><span class="line">    <span class="keyword">case</span> connectorTable: ConnectorCatalogTable[_, _] =&gt;</span><br><span class="line">      val resolvedTable = contextResolvedTable.getResolvedTable[ResolvedCatalogTable]</span><br><span class="line">      toScala(connectorTable.getTableSink) match &#123;</span><br><span class="line">        <span class="function"><span class="keyword">case</span> <span class="title">Some</span><span class="params">(sink)</span> </span>=&gt; Some(resolvedTable, sink)</span><br><span class="line">        <span class="keyword">case</span> None =&gt; None</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">case</span> regularTable: CatalogTable =&gt;</span><br><span class="line">      val resolvedTable = contextResolvedTable.getResolvedTable[ResolvedCatalogTable]</span><br><span class="line">      ...</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> (</span><br><span class="line">        !contextResolvedTable.isAnonymous &amp;&amp;</span><br><span class="line">        TableFactoryUtil.isLegacyConnectorOptions(</span><br><span class="line">          catalogManager.getCatalog(objectIdentifier.getCatalogName).orElse(<span class="keyword">null</span>),</span><br><span class="line">          tableConfig,</span><br><span class="line">          isStreamingMode,</span><br><span class="line">          objectIdentifier,</span><br><span class="line">          resolvedTable.getOrigin,</span><br><span class="line">          isTemporary</span><br><span class="line">        )</span><br><span class="line">      ) &#123;</span><br><span class="line">       ...</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        ...</span><br><span class="line">        <span class="comment">// 关键步骤：FactoryUtil.createDynamicTableSink</span></span><br><span class="line">        val tableSink = FactoryUtil.createDynamicTableSink(</span><br><span class="line">          factory,</span><br><span class="line">          objectIdentifier,</span><br><span class="line">          tableToFind,</span><br><span class="line">          Collections.emptyMap(),</span><br><span class="line">          getTableConfig,</span><br><span class="line">          getFlinkContext.getClassLoader,</span><br><span class="line">          isTemporary)</span><br><span class="line">        Option(resolvedTable, tableSink)</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">case</span> _ =&gt; None</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
-<p><code>FactoryUtil.createDynamicTableSink</code></p>
-<blockquote>
-<p>根据’connector’=’hudi’ 找到factory为org.apache.hudi.table.HoodieTableFactory，接着调用<code>HoodieTableFactory.createDynamicTableSink</code></p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> DynamicTableSink <span class="title">createDynamicTableSink</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">        @Nullable DynamicTableSinkFactory preferredFactory,</span></span></span><br><span class="line"><span class="function"><span class="params">        ObjectIdentifier objectIdentifier,</span></span></span><br><span class="line"><span class="function"><span class="params">        ResolvedCatalogTable catalogTable,</span></span></span><br><span class="line"><span class="function"><span class="params">        Map&lt;String, String&gt; enrichmentOptions,</span></span></span><br><span class="line"><span class="function"><span class="params">        ReadableConfig configuration,</span></span></span><br><span class="line"><span class="function"><span class="params">        ClassLoader classLoader,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">boolean</span> isTemporary)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> DefaultDynamicTableContext context =</span><br><span class="line">            <span class="keyword">new</span> DefaultDynamicTableContext(</span><br><span class="line">                    objectIdentifier,</span><br><span class="line">                    catalogTable,</span><br><span class="line">                    enrichmentOptions,</span><br><span class="line">                    configuration,</span><br><span class="line">                    classLoader,</span><br><span class="line">                    isTemporary);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 'connector'='hudi' </span></span><br><span class="line">        <span class="comment">// org.apache.hudi.table.HoodieTableFactory</span></span><br><span class="line">        <span class="keyword">final</span> DynamicTableSinkFactory factory =</span><br><span class="line">                preferredFactory != <span class="keyword">null</span></span><br><span class="line">                        ? preferredFactory</span><br><span class="line">                        : discoverTableFactory(DynamicTableSinkFactory.class, context);</span><br><span class="line">        <span class="comment">// 关键步骤：HoodieTableFactory.createDynamicTableSink</span></span><br><span class="line">        <span class="keyword">return</span> factory.createDynamicTableSink(context);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> ValidationException(</span><br><span class="line">                String.format(</span><br><span class="line">                        <span class="string">"Unable to create a sink for writing table '%s'.\n\n"</span></span><br><span class="line">                                + <span class="string">"Table options are:\n\n"</span></span><br><span class="line">                                + <span class="string">"%s"</span>,</span><br><span class="line">                        objectIdentifier.asSummaryString(),</span><br><span class="line">                        catalogTable.getOptions().entrySet().stream()</span><br><span class="line">                                .map(e -&gt; stringifyOption(e.getKey(), e.getValue()))</span><br><span class="line">                                .sorted()</span><br><span class="line">                                .collect(Collectors.joining(<span class="string">"\n"</span>))),</span><br><span class="line">                t);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><code>HoodieTableFactory.createDynamicTableSink</code></p>
-<blockquote>
-<p>第一个问题解决</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> DynamicTableSink <span class="title">createDynamicTableSink</span><span class="params">(Context context)</span> </span>&#123;</span><br><span class="line">  Configuration conf = FlinkOptions.fromMap(context.getCatalogTable().getOptions());</span><br><span class="line">  checkArgument(!StringUtils.isNullOrEmpty(conf.getString(FlinkOptions.PATH)),</span><br><span class="line">      <span class="string">"Option [path] should not be empty."</span>);</span><br><span class="line">  setupTableOptions(conf.getString(FlinkOptions.PATH), conf);</span><br><span class="line">  ResolvedSchema schema = context.getCatalogTable().getResolvedSchema();</span><br><span class="line">  sanityCheck(conf, schema);</span><br><span class="line">  setupConfOptions(conf, context.getObjectIdentifier(), context.getCatalogTable(), schema);</span><br><span class="line">  <span class="comment">// 关键步骤：HoodieTableSink</span></span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">new</span> HoodieTableSink(conf, schema);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h4 id="BatchExecSink"><a href="#BatchExecSink" class="headerlink" title="BatchExecSink"></a>BatchExecSink</h4><p>回到方法<code>PlannerBase.translate</code>，它会在后面调用<code>translateToPlan</code>。<code>execGraph.getRootNodes</code>返回的内容为<code>BatchExecSink</code> （想知道为啥是<code>BatchExecSink</code>，可以看<code>PlannerBase.translate</code>中调用的<code>translateToExecNodeGraph</code>方法）,<br><code>BatchExecSink</code>是<code>BatchExecNode</code>的子类，所以会执行<code>node.translateToPlan</code></p>
-<p><code>PlannerBase.translateToPlan</code><br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">override <span class="keyword">protected</span> def <span class="title">translateToPlan</span><span class="params">(execGraph: ExecNodeGraph)</span>: util.List[Transformation[_]] </span>= &#123;</span><br><span class="line">  beforeTranslation()</span><br><span class="line">  val planner = createDummyPlanner()</span><br><span class="line"></span><br><span class="line">  val transformations = execGraph.getRootNodes.map &#123;</span><br><span class="line">    <span class="comment">// BatchExecSink</span></span><br><span class="line">    <span class="comment">// 关键步骤：ExecNodeBase.translateToPlan</span></span><br><span class="line">    <span class="keyword">case</span> node: BatchExecNode[_] =&gt; node.translateToPlan(planner)</span><br><span class="line">    <span class="keyword">case</span> _ =&gt;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> TableException(</span><br><span class="line">        <span class="string">"Cannot generate BoundedStream due to an invalid logical plan. "</span> +</span><br><span class="line">          <span class="string">"This is a bug and should not happen. Please file an issue."</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  afterTranslation()</span><br><span class="line">  transformations</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p><code>BatchExecSink</code><br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BatchExecSink</span> <span class="keyword">extends</span> <span class="title">CommonExecSink</span> <span class="keyword">implements</span> <span class="title">BatchExecNode</span>&lt;<span class="title">Object</span>&gt; </span>&#123;</span><br><span class="line">    ...</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">CommonExecSink</span> <span class="keyword">extends</span> <span class="title">ExecNodeBase</span>&lt;<span class="title">Object</span>&gt;</span></span><br><span class="line"><span class="class">        <span class="keyword">implements</span> <span class="title">MultipleTransformationTranslator</span>&lt;<span class="title">Object</span>&gt; </span>&#123;</span><br><span class="line">    ...</span><br></pre></td></tr></table></figure></p>
-<p><code>ExecNodeBase.translateToPlan</code></p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> Transformation&lt;T&gt; <span class="title">translateToPlan</span><span class="params">(Planner planner)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (transformation == <span class="keyword">null</span>) &#123;</span><br><span class="line">        transformation =</span><br><span class="line">                <span class="comment">// 关键步骤：BatchExecSink.translateToPlanInternal</span></span><br><span class="line">                translateToPlanInternal(</span><br><span class="line">                        (PlannerBase) planner,</span><br><span class="line">                        ExecNodeConfig.of(</span><br><span class="line">                                ((PlannerBase) planner).getTableConfig(),</span><br><span class="line">                                persistedConfig,</span><br><span class="line">                                isCompiled));</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">this</span> <span class="keyword">instanceof</span> SingleTransformationTranslator) &#123;</span><br><span class="line">            <span class="keyword">if</span> (inputsContainSingleton()) &#123;</span><br><span class="line">                transformation.setParallelism(<span class="number">1</span>);</span><br><span class="line">                transformation.setMaxParallelism(<span class="number">1</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> transformation;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><code>BatchExecSink.translateToPlanInternal</code></p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> Transformation&lt;Object&gt; <span class="title">translateToPlanInternal</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">        PlannerBase planner, ExecNodeConfig config)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> Transformation&lt;RowData&gt; inputTransform =</span><br><span class="line">            (Transformation&lt;RowData&gt;) getInputEdges().get(<span class="number">0</span>).translateToPlan(planner);</span><br><span class="line">    <span class="comment">// org.apache.hudi.table.HoodieTableSink        </span></span><br><span class="line">    <span class="keyword">final</span> DynamicTableSink tableSink = tableSinkSpec.getTableSink(planner.getFlinkContext());</span><br><span class="line">    <span class="comment">// 关键步骤：CommonExecSink.createSinkTransformation</span></span><br><span class="line">    <span class="keyword">return</span> createSinkTransformation(</span><br><span class="line">            planner.getExecEnv(), config, inputTransform, tableSink, -<span class="number">1</span>, <span class="keyword">false</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><code>CommonExecSink.createSinkTransformation</code></p>
-<blockquote>
-<p>这里的tableSink为HoodieTableSink，会调用HoodieTableSink的getSinkRuntimeProvider方法返回runtimeProvider（没有执行里面的方法体）</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">protected</span> Transformation&lt;Object&gt; <span class="title">createSinkTransformation</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">        StreamExecutionEnvironment streamExecEnv,</span></span></span><br><span class="line"><span class="function"><span class="params">        ExecNodeConfig config,</span></span></span><br><span class="line"><span class="function"><span class="params">        Transformation&lt;RowData&gt; inputTransform,</span></span></span><br><span class="line"><span class="function"><span class="params">        // 这里的tableSink为HoodieTableSink</span></span></span><br><span class="line"><span class="function"><span class="params">        DynamicTableSink tableSink,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">int</span> rowtimeFieldIndex,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">boolean</span> upsertMaterialize)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> ResolvedSchema schema = tableSinkSpec.getContextResolvedTable().getResolvedSchema();</span><br><span class="line">    <span class="keyword">final</span> SinkRuntimeProvider runtimeProvider =</span><br><span class="line">           <span class="comment">// 关键步骤：HoodieTableSink.getSinkRuntimeProvider</span></span><br><span class="line">            tableSink.getSinkRuntimeProvider(<span class="keyword">new</span> SinkRuntimeProviderContext(isBounded));</span><br><span class="line">    <span class="keyword">final</span> RowType physicalRowType = getPhysicalRowType(schema);</span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">int</span>[] primaryKeys = getPrimaryKeyIndices(physicalRowType, schema);</span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">int</span> sinkParallelism = deriveSinkParallelism(inputTransform, runtimeProvider);</span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">int</span> inputParallelism = inputTransform.getParallelism();</span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">boolean</span> inputInsertOnly = inputChangelogMode.containsOnly(RowKind.INSERT);</span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">boolean</span> hasPk = primaryKeys.length &gt; <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> (Transformation&lt;Object&gt;)</span><br><span class="line">            <span class="comment">// 关键步骤：CommonExecSink.applySinkProvider</span></span><br><span class="line">            applySinkProvider(</span><br><span class="line">                    sinkTransform,</span><br><span class="line">                    streamExecEnv,</span><br><span class="line">                    runtimeProvider,</span><br><span class="line">                    rowtimeFieldIndex,</span><br><span class="line">                    sinkParallelism,</span><br><span class="line">                    config);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><code>CommonExecSink.applySinkProvider</code></p>
-<blockquote>
-<p>先通过new DataStream&lt;&gt;(env, sinkTransformation)生成dataStream，接着通过执行<code>provider.consumeDataStream</code>调用<code>HoodieTableSink.getSinkRuntimeProvider</code>中的方法体，这里的provider为<code>HoodieTableSink.getSinkRuntimeProvider</code>返回的<code>DataStreamSinkProviderAdapter</code></p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> Transformation&lt;?&gt; applySinkProvider(</span><br><span class="line">        Transformation&lt;RowData&gt; inputTransform,</span><br><span class="line">        StreamExecutionEnvironment env,</span><br><span class="line">        SinkRuntimeProvider runtimeProvider,</span><br><span class="line">        <span class="keyword">int</span> rowtimeFieldIndex,</span><br><span class="line">        <span class="keyword">int</span> sinkParallelism,</span><br><span class="line">        ExecNodeConfig config) &#123;</span><br><span class="line">    TransformationMetadata sinkMeta = createTransformationMeta(SINK_TRANSFORMATION, config);</span><br><span class="line">    <span class="keyword">if</span> (runtimeProvider <span class="keyword">instanceof</span> DataStreamSinkProvider) &#123;</span><br><span class="line">        Transformation&lt;RowData&gt; sinkTransformation =</span><br><span class="line">                applyRowtimeTransformation(</span><br><span class="line">                        inputTransform, rowtimeFieldIndex, sinkParallelism, config);</span><br><span class="line">        <span class="comment">// 生成dataStream</span></span><br><span class="line">        <span class="keyword">final</span> DataStream&lt;RowData&gt; dataStream = <span class="keyword">new</span> DataStream&lt;&gt;(env, sinkTransformation);</span><br><span class="line">        <span class="keyword">final</span> DataStreamSinkProvider provider = (DataStreamSinkProvider) runtimeProvider;</span><br><span class="line">        <span class="comment">// 关键步骤：provider.consumeDataStream</span></span><br><span class="line">        <span class="keyword">return</span> provider.consumeDataStream(createProviderContext(config), dataStream)</span><br><span class="line">                .getTransformation();</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (runtimeProvider <span class="keyword">instanceof</span> TransformationSinkProvider) &#123;</span><br><span class="line">        ...</span><br></pre></td></tr></table></figure>
-<p><code>provider.consumeDataStream</code>(已经在上面的类<code>DataStreamSinkProviderAdapter</code>提过）</p>
-<blockquote>
-<p>它会调用<code>HoodieTableSink.getSinkRuntimeProvider</code>中的方法体（Lambda 表达式）执行后面的写hudi逻辑<br>第二个问题解决</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">default</span> DataStreamSink&lt;?&gt; consumeDataStream(ProviderContext providerContext, DataStream&lt;RowData&gt; dataStream) &#123;</span><br><span class="line">  <span class="keyword">return</span> consumeDataStream(dataStream);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>本文主要简单记录了自己调试 Hudi Flink SQL 源码的过程，并没有对源码进行深入的分析（自己水平也不够）。主要目的是为了弄清楚从<code>Table API</code> 的入口到<code>createDynamicTableSink</code>返回<code>HoodieTableSink</code>的主要代码步骤以及在哪里调用<code>HoodieTableSink.getSinkRuntimeProvider</code>的方法体以进行后面的写Hudi逻辑，这样便于后面对Hudi源码的分析和学习。</p>
-<blockquote>
-<p>本文新学习知识点：函数式接口以及对应的 Lambda 表达式的实现</p>
-</blockquote>
 
       
 
@@ -386,9 +370,9 @@
  <p>非商业转载请注明作者及出处。商业转载请联系作者本人。</p>
 
 
- <p>本文标题：<a href="https://dongkelun.com/2023/07/31/hudi/hudiFlinkSQLSourceCodeDebug2/">Hudi Flink SQL源码调试学习（1）</a> </p>
+ <p>本文标题：<a href="https://dongkelun.com/2023/08/20/hudi/hudiFlinkProblemSolvingMethod/">记录几个Hudi Flink使用问题及解决方法</a> </p>
 
- <p>本文链接：<a href="https://dongkelun.com/2023/07/31/hudi/hudiFlinkSQLSourceCodeDebug2/">https://dongkelun.com/2023/07/31/hudi/hudiFlinkSQLSourceCodeDebug2/</a></p>
+ <p>本文链接：<a href="https://dongkelun.com/2023/08/20/hudi/hudiFlinkProblemSolvingMethod/">https://dongkelun.com/2023/08/20/hudi/hudiFlinkProblemSolvingMethod/</a></p>
  <p>欢迎关注我的公众号</p>
  <img src='https://img.dongkelun.com/gongzhonghao.jpg' style='margin:10px'/>
   <p>作者联系方式：</p>
@@ -450,7 +434,7 @@
     <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="http://qr.liantu.com/api.php?text=https://dongkelun.com/2023/07/31/hudi/hudiFlinkSQLSourceCodeDebug2/" alt="微信分享二维码">
+      <img src="http://qr.liantu.com/api.php?text=https://dongkelun.com/2023/08/20/hudi/hudiFlinkProblemSolvingMethod/" alt="微信分享二维码">
     </div>
 </div>
 
@@ -465,8 +449,8 @@
 <nav id="article-nav">
   
   
-    <a href="/2023/07/05/flink/flinkKafka/" id="article-nav-older" class="article-nav-link-wrap">
-      <div class="article-nav-title">Flink 读写Kafka总结</div>
+    <a href="/2023/07/31/hudi/hudiFlinkSQLSourceCodeDebug1/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Hudi Flink SQL源码调试学习（1）</div>
       <i class="icon-circle-right"></i>
     </a>
   
@@ -493,7 +477,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#版本"><span class="toc-number">2.</span> <span class="toc-text">版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#目标"><span class="toc-number">3.</span> <span class="toc-text">目标</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#DataStream-API"><span class="toc-number">4.</span> <span class="toc-text">DataStream API</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Table-API"><span class="toc-number">5.</span> <span class="toc-text">Table API</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#整体调用流程"><span class="toc-number">5.1.</span> <span class="toc-text">整体调用流程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#具体代码"><span class="toc-number">5.2.</span> <span class="toc-text">具体代码</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#TableEnvironmentImpl"><span class="toc-number">5.2.1.</span> <span class="toc-text">TableEnvironmentImpl</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#BatchPlanner"><span class="toc-number">5.2.2.</span> <span class="toc-text">BatchPlanner</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#BatchExecSink"><span class="toc-number">5.2.3.</span> <span class="toc-text">BatchExecSink</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">6.</span> <span class="toc-text">总结</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#版本"><span class="toc-number">2.</span> <span class="toc-text">版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#流写"><span class="toc-number">3.</span> <span class="toc-text">流写</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#索引"><span class="toc-number">4.</span> <span class="toc-text">索引</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#FLINK-STATE-重复问题"><span class="toc-number">5.</span> <span class="toc-text">FLINK_STATE 重复问题</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#问题复现"><span class="toc-number">5.1.</span> <span class="toc-text">问题复现</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#重复原因"><span class="toc-number">5.2.</span> <span class="toc-text">重复原因</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#解决方法"><span class="toc-number">5.3.</span> <span class="toc-text">解决方法</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#BUCKET-INDEX"><span class="toc-number">6.</span> <span class="toc-text">BUCKET INDEX</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#insert转upsert问题"><span class="toc-number">6.1.</span> <span class="toc-text">insert转upsert问题</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#解决方法-1"><span class="toc-number">6.1.1.</span> <span class="toc-text">解决方法</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Hive查询异常"><span class="toc-number">7.</span> <span class="toc-text">Hive查询异常</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#异常信息"><span class="toc-number">7.1.</span> <span class="toc-text">异常信息</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#异常复现"><span class="toc-number">7.2.</span> <span class="toc-text">异常复现</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#解决方法-2"><span class="toc-number">7.3.</span> <span class="toc-text">解决方法</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#相关阅读"><span class="toc-number">8.</span> <span class="toc-text">相关阅读</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -668,14 +652,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -700,14 +676,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">算法</a>
               </li>
              
@@ -720,6 +688,22 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
@@ -728,27 +712,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -760,6 +732,22 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
@@ -768,11 +756,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -788,15 +772,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -812,11 +796,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -828,6 +812,18 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">IDEA</a>
               </li>
              
@@ -836,27 +832,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -868,11 +848,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -884,6 +872,14 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Python</a>
               </li>
              
@@ -892,15 +888,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -912,15 +900,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -948,10 +932,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
               </li>
              
@@ -976,6 +956,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
               </li>
              
@@ -984,23 +968,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1012,7 +988,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1025,6 +1001,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
             
             <div class="clearfix"></div>
