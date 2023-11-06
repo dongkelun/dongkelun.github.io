@@ -296,72 +296,6 @@
 
 
   
-    <article id="post-demo/spark/sparkWordCountDemo" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-      
-        <p><a href="https://spark.apache.org/docs/3.2.3/quick-start.html" target="_blank" rel="noopener">https://spark.apache.org/docs/3.2.3/quick-start.html</a></p>
-<h2 id="WrdCount"><a href="#WrdCount" class="headerlink" title="WrdCount"></a>WrdCount</h2><h3 id="Jar包"><a href="#Jar包" class="headerlink" title="Jar包"></a>Jar包</h3><p><code>spark-examples_2.12-3.2.3.jar</code></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ls /usr/hdp/3.1.0.0-78/spark2/examples/jars/</span><br><span class="line">scopt_2.12-3.7.1.jar  spark-examples_2.12-3.2.3.jar</span><br></pre></td></tr></table></figure>
-<h3 id="测试flie"><a href="#测试flie" class="headerlink" title="测试flie"></a>测试flie</h3><p><code>spark_word_count.txt</code></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">spark flink spark</span><br><span class="line">spark hudi kyuubi</span><br><span class="line">kafka spark hudi</span><br><span class="line">mysql flink hive</span><br></pre></td></tr></table></figure>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hadoop fs -put spark_word_count.txt /tmp/</span><br></pre></td></tr></table></figure>
-<h3 id="测试命令"><a href="#测试命令" class="headerlink" title="测试命令"></a>测试命令</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --master yarn --deploy-mode client --class org.apache.spark.examples.JavaWordCount --principal spark/indata-10-110-105-154.indata.com@INDATA.COM --keytab /etc/security/keytabs/spark.service.keytab /usr/hdp/3.1.0.0-78/spark2/examples/jars/spark-examples_2.12-3.2.3.jar /tmp/spark_word_count.txt</span><br></pre></td></tr></table></figure>
-<h3 id="结果"><a href="#结果" class="headerlink" title="结果"></a>结果</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">spark: 4</span><br><span class="line">hive: 1</span><br><span class="line">hudi: 2</span><br><span class="line">flink: 2</span><br><span class="line">mysql: 1</span><br><span class="line">kyuubi: 1</span><br><span class="line">kafka: 1</span><br></pre></td></tr></table></figure>
-<h2 id="MySQL2Hudi"><a href="#MySQL2Hudi" class="headerlink" title="MySQL2Hudi"></a>MySQL2Hudi</h2><h3 id="Jar包配置"><a href="#Jar包配置" class="headerlink" title="Jar包配置"></a>Jar包配置</h3><p>首先将<code>mysql-connector-java-5.1.49.jar</code>（版本不作要求） 放到每个节点的 <code>$SPARK_HOME</code>/jars目录下。</p>
-<p>Jar包下载地址：<a href="https://drive.uc.cn/s/2cb7136124304" target="_blank" rel="noopener">https://drive.uc.cn/s/2cb7136124304</a></p>
-<h3 id="首先建好MySQL并造数"><a href="#首先建好MySQL并造数" class="headerlink" title="首先建好MySQL并造数"></a>首先建好MySQL并造数</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> <span class="string">`test_mysql`</span> (</span><br><span class="line">  <span class="string">`id`</span> <span class="built_in">int</span>(<span class="number">11</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  <span class="string">`name`</span> <span class="built_in">text</span>,</span><br><span class="line">  <span class="string">`price`</span> <span class="keyword">double</span> <span class="keyword">DEFAULT</span> <span class="literal">NULL</span>,</span><br><span class="line">  <span class="string">`ts`</span> <span class="built_in">int</span>(<span class="number">11</span>) <span class="keyword">DEFAULT</span> <span class="literal">NULL</span>,</span><br><span class="line">  <span class="string">`dt`</span> <span class="built_in">text</span></span><br><span class="line">) <span class="keyword">ENGINE</span>=<span class="keyword">InnoDB</span> <span class="keyword">DEFAULT</span> <span class="keyword">CHARSET</span>=utf8</span><br></pre></td></tr></table></figure>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> cdc.test_mysql (<span class="keyword">id</span>,<span class="keyword">name</span>,price,ts,dt) <span class="keyword">VALUES</span></span><br><span class="line">	 (<span class="number">1</span>,<span class="string">'hudi1'</span>,<span class="number">11.11</span>,<span class="number">1000</span>,<span class="string">'2023-04-12'</span>),</span><br><span class="line">	 (<span class="number">2</span>,<span class="string">'hudi2'</span>,<span class="number">11.11</span>,<span class="number">1000</span>,<span class="string">'2023-04-12'</span>),</span><br><span class="line">	 (<span class="number">3</span>,<span class="string">'hudi3'</span>,<span class="number">11.11</span>,<span class="number">1000</span>,<span class="string">'2023-04-12'</span>),</span><br><span class="line">	 (<span class="number">4</span>,<span class="string">'hudi4'</span>,<span class="number">11.11</span>,<span class="number">1000</span>,<span class="string">'2023-04-12'</span>);</span><br></pre></td></tr></table></figure>
-<h3 id="执行-Spark-SQL"><a href="#执行-Spark-SQL" class="headerlink" title="执行 Spark SQL"></a>执行 Spark SQL</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spark-sql</span><br></pre></td></tr></table></figure>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> spark.sql.catalog.mysql = org.apache.spark.sql.execution.datasources.v2.jdbc.JDBCTableCatalog;</span><br><span class="line"><span class="keyword">set</span> spark.sql.catalog.mysql.driver = com.mysql.jdbc.Driver;</span><br><span class="line"><span class="keyword">set</span> spark.sql.catalog.mysql.user = root;</span><br><span class="line"><span class="keyword">set</span> spark.sql.catalog.mysql.password = InDaPl01?;</span><br><span class="line"><span class="keyword">set</span> spark.sql.catalog.mysql.url = jdbc:mysql://indata<span class="number">-10</span><span class="number">-110</span><span class="number">-105</span><span class="number">-154.</span>indata.com:<span class="number">3306</span>/cdc?useUnicode=<span class="literal">true</span>&amp;characterEncoding=utf<span class="number">-8</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">database</span> <span class="keyword">if</span> <span class="keyword">not</span> <span class="keyword">exists</span> hudi;</span><br><span class="line"></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> hudi.test_hudi_table <span class="keyword">using</span> hudi</span><br><span class="line">partitioned <span class="keyword">by</span> (dt)</span><br><span class="line">options (</span><br><span class="line">  primaryKey = <span class="string">'id'</span>,</span><br><span class="line">  preCombineField = <span class="string">'ts'</span>,</span><br><span class="line">  <span class="keyword">type</span> = <span class="string">'cow'</span></span><br><span class="line">)</span><br><span class="line"><span class="keyword">as</span> <span class="keyword">select</span> * <span class="keyword">from</span> mysql.test_mysql;</span><br></pre></td></tr></table></figure>
-<h2 id="Hudi2Hudi"><a href="#Hudi2Hudi" class="headerlink" title="Hudi2Hudi"></a>Hudi2Hudi</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> hudi.test_hudi_table2 <span class="keyword">using</span> hudi</span><br><span class="line">partitioned <span class="keyword">by</span> (dt)</span><br><span class="line">options (</span><br><span class="line">  primaryKey = <span class="string">'id'</span>,</span><br><span class="line">  preCombineField = <span class="string">'ts'</span>,</span><br><span class="line">  <span class="keyword">type</span> = <span class="string">'cow'</span></span><br><span class="line">)</span><br><span class="line"><span class="keyword">as</span> <span class="keyword">select</span> * <span class="keyword">from</span> hudi.test_hudi_table;</span><br></pre></td></tr></table></figure>
-      
-
-      
-	  
-    </div>
-    <div class="article-info article-info-index">
-      
-	   
-		  
-		  
-
-	  
-	 
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2023/09/18/demo/spark/sparkWordCountDemo/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
     <article id="post-flink/flink-source-code-jobgraph" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -405,11 +339,11 @@
 		<ul class="article-tag-list">
 			 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Flink</a>
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">源码</a>
         		</li>
       		 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">源码</a>
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Flink</a>
         		</li>
       		 
         		<li class="article-tag-list-item">
@@ -503,15 +437,15 @@
 		<ul class="article-tag-list">
 			 
         		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">源码</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
         			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Flink</a>
         		</li>
       		 
         		<li class="article-tag-list-item">
         			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">源码</a>
         		</li>
       		
 		</ul>
@@ -602,11 +536,11 @@
 		<ul class="article-tag-list">
 			 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Flink</a>
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">源码</a>
         		</li>
       		 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">源码</a>
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Flink</a>
         		</li>
       		 
         		<li class="article-tag-list-item">
@@ -623,6 +557,100 @@
       
         <p class="article-more-link">
           <a class="article-more-a" href="/2023/08/25/flink/flink-source-code-streamgraph/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-hudi/hudiFlinkProblemSolvingMethod" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2023/08/20/hudi/hudiFlinkProblemSolvingMethod/">记录几个Hudi Flink使用问题及解决方法</a>
+    </h1>
+  
+
+        
+        <a href="/2023/08/20/hudi/hudiFlinkProblemSolvingMethod/" class="archive-article-date">
+  	<time datetime="2023-08-19T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2023-08-20</time>
+</a>
+        
+      </header>
+	    
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>如题，记录几个Hudi Flink使用问题，学习和使用Hudi Flink有一段时间，虽然目前用的还不够深入，但是目前也遇到了几个问题，现在将遇到的这几个问题以及解决方式记录一下</p>
+<h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><ul>
+<li>Flink 1.15.4</li>
+<li>Hudi 0.13.0</li>
+</ul>
+<h2 id="流写"><a href="#流写" class="headerlink" title="流写"></a>流写</h2><p>流写Hudi,必须要开启Checkpoint，这个我在之前的文章:<a href="https://mp.weixin.qq.com/s/1-7yh3Qr2pOVZ9UiicJM9Q" target="_blank" rel="noopener">Flink SQL Checkpoint 学习总结</a>提到过。</p>
+<blockquote>
+<p>如果不设置Checkpoint，不会生成commit，感觉像是卡住一样，具体表现为只生成.commit.requested和.inflight,然后不写文件、不生成.commit也不报错，对于新手来说很费劲，很难找到解决方法。</p>
+</blockquote>
+        
+          <a class="article-more-a" href="/2023/08/20/hudi/hudiFlinkProblemSolvingMethod/#more">more >></a>
+        
+      
+
+      
+	  
+    </div>
+    <div class="article-info article-info-index">
+      
+	   
+		  
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Flink</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+		  
+
+	  
+	 
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2023/08/20/hudi/hudiFlinkProblemSolvingMethod/">展开全文 >></a>
         </p>
       
 
@@ -812,19 +840,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -852,7 +868,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -864,11 +896,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -892,14 +920,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
               </li>
              
@@ -908,11 +928,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -932,11 +968,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -944,15 +976,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">开源</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -960,11 +984,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">IDEA</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Maven</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -976,7 +996,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+                <a href="javascript:void(0)" class="js-tag color5">IDEA</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Maven</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -984,11 +1008,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -996,11 +1020,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
+                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1012,11 +1032,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1025,6 +1041,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1040,15 +1064,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1060,7 +1080,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1128,19 +1156,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color1">linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1168,7 +1196,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
