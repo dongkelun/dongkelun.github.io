@@ -9,13 +9,13 @@
   <link rel="dns-prefetch" href="https://dongkelun.com">
   <title>Hudi extraMetadata 研究总结 | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="前言研究总结 Hudi extraMetadata ,记录研究过程。主要目的是通过 extraMetadata 保存 source 表的 commitTime （checkpoint）， 来实现增量读Hudi表写Hudi表时，保存增量读状态的事务性，实现类似于流任务中的 exactly-once 背景需求有个需求：增量读Hudi表关联其他Hudi表然后做一些复杂的业务处理逻辑,然后将结果表保存到目">
+  <meta name="description" content="前言研究总结 Hudi extraMetadata ，记录研究过程。主要目的是通过 extraMetadata 保存 source 表的 commitTime （checkpoint）， 来实现增量读Hudi表写Hudi表时，保存增量读状态的事务性，实现类似于流任务中的 exactly-once 背景需求有个需求：增量读Hudi表关联其他Hudi表然后做一些复杂的业务处理逻辑,然后将结果表保存到目">
 <meta name="keywords" content="Spark,Hudi,extraMetadata">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Hudi extraMetadata 研究总结">
 <meta property="og:url" content="https://dongkelun.com/2024/06/13/hudi/hudiExtraMetadata/index.html">
 <meta property="og:site_name" content="伦少的博客">
-<meta property="og:description" content="前言研究总结 Hudi extraMetadata ,记录研究过程。主要目的是通过 extraMetadata 保存 source 表的 commitTime （checkpoint）， 来实现增量读Hudi表写Hudi表时，保存增量读状态的事务性，实现类似于流任务中的 exactly-once 背景需求有个需求：增量读Hudi表关联其他Hudi表然后做一些复杂的业务处理逻辑,然后将结果表保存到目">
+<meta property="og:description" content="前言研究总结 Hudi extraMetadata ，记录研究过程。主要目的是通过 extraMetadata 保存 source 表的 commitTime （checkpoint）， 来实现增量读Hudi表写Hudi表时，保存增量读状态的事务性，实现类似于流任务中的 exactly-once 背景需求有个需求：增量读Hudi表关联其他Hudi表然后做一些复杂的业务处理逻辑,然后将结果表保存到目">
 <meta property="og:locale" content="cn">
 <meta property="og:image" content="https://img.dongkelun.com/hudi/extraMetadata/em2.png">
 <meta property="og:image" content="https://img.dongkelun.com/hudi/extraMetadata/em1.png">
@@ -27,10 +27,10 @@
 <meta property="og:image" content="https://img.dongkelun.com/hudi/extraMetadata/em8.png">
 <meta property="og:image" content="https://img.dongkelun.com/hudi/extraMetadata/em9.png">
 <meta property="og:image" content="https://img.dongkelun.com/hudi/extraMetadata/em10.png">
-<meta property="og:updated_time" content="2024-06-13T11:07:34.694Z">
+<meta property="og:updated_time" content="2024-06-14T06:31:39.044Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Hudi extraMetadata 研究总结">
-<meta name="twitter:description" content="前言研究总结 Hudi extraMetadata ,记录研究过程。主要目的是通过 extraMetadata 保存 source 表的 commitTime （checkpoint）， 来实现增量读Hudi表写Hudi表时，保存增量读状态的事务性，实现类似于流任务中的 exactly-once 背景需求有个需求：增量读Hudi表关联其他Hudi表然后做一些复杂的业务处理逻辑,然后将结果表保存到目">
+<meta name="twitter:description" content="前言研究总结 Hudi extraMetadata ，记录研究过程。主要目的是通过 extraMetadata 保存 source 表的 commitTime （checkpoint）， 来实现增量读Hudi表写Hudi表时，保存增量读状态的事务性，实现类似于流任务中的 exactly-once 背景需求有个需求：增量读Hudi表关联其他Hudi表然后做一些复杂的业务处理逻辑,然后将结果表保存到目">
 <meta name="twitter:image" content="https://img.dongkelun.com/hudi/extraMetadata/em2.png">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
@@ -270,7 +270,7 @@
         
         
       
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>研究总结 Hudi extraMetadata ,记录研究过程。主要目的是通过 extraMetadata 保存 source 表的 commitTime （checkpoint）， 来实现增量读Hudi表写Hudi表时，保存增量读状态的事务性，实现类似于流任务中的 exactly-once</p>
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>研究总结 Hudi extraMetadata ，记录研究过程。主要目的是通过 extraMetadata 保存 source 表的 commitTime （checkpoint）， 来实现增量读Hudi表写Hudi表时，保存增量读状态的事务性，实现类似于流任务中的 exactly-once</p>
 <h2 id="背景需求"><a href="#背景需求" class="headerlink" title="背景需求"></a>背景需求</h2><p>有个需求：增量读Hudi表关联其他Hudi表然后做一些复杂的业务处理逻辑,然后将结果表保存到目标Hudi表中</p>
 <p>然后就有问题：如何保证保存目标Hudi表和保存 endCommiTime 是事务的。具体如下<br>1、Spark支持<a href="https://mp.weixin.qq.com/s/fKdgq6fKUiRnuxxHH9zYUg" target="_blank" rel="noopener">增量读Hudi表</a>，需要传入起（始） commitTime。<br>2、上一批数据处理完成后应该保存上次增量读的的 endCommiTime,作为下一批增量读的的 beginCommitTime<br>3、可以选择将上一批的 endCommiTime 保存到 HDFS 或者数据库表中，但是不能保证事务。（并且还需要借助外部表或者存储目录，如果能通过Hudi本身解决，就比较完美了）<br>4、也就是可能存在保存目标Hudi表成功，但是保存 endCommiTime 失败的情况</p>
 <p>这时就想到了 <a href="https://mp.weixin.qq.com/s/RQBBwp8DeH023A9b7LSD9A" target="_blank" rel="noopener">DeltaStreamer</a> 中是通过设置 checkpoint 来实现的，具体是通过将 commitTime 的值保存到目标表 .commit 元数据文件中(extraMetadata-&gt;deltastreamer.checkpoint.key)。我们可以参考 DeltaStreamer 中的实现逻辑，来实现我们的需求。</p>
@@ -300,7 +300,7 @@
 <p>但是目前还不知道 extraMetadata 是怎么保存的，所以我们需要先参考一下 DeltaStreamer 的源码，以下是部分源码：</p>
 <p><code>HoodieDeltaStreamer</code>.<code>main</code> -&gt; <code>HoodieDeltaStreamer</code>.<code>sync</code> -&gt; <code>DeltaSync</code>.<code>syncOnce</code> -&gt; <code>DeltaSync</code>.<code>syncOnce</code> 和 <code>DeltaSync</code>.<code>writeToSink</code><br>(其中 <code>DeltaSync</code>.<code>syncOnce</code> 会通过 readFromSource 获取具体的数据和checkpoint，比如 source 为 HoodieIncrSource 时，最终会调用 HoodieIncrSource.fetchNextBatch)</p>
 <p> <code>DeltaSync</code>.<code>writeToSink</code></p>
- <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> Pair&lt;Option&lt;String&gt;, JavaRDD&lt;WriteStatus&gt;&gt; writeToSink(JavaRDD&lt;HoodieRecord&gt; records, String checkpointStr,</span><br><span class="line">                                                                HoodieDeltaStreamerMetrics metrics,</span><br><span class="line">                                                                Timer.Context overallTimerContext) &#123;</span><br><span class="line">   ......</span><br><span class="line">   <span class="comment">// try to start a new commit</span></span><br><span class="line">   String instantTime = startCommit();</span><br><span class="line">   LOG.info(<span class="string">"Starting commit  : "</span> + instantTime);</span><br><span class="line"></span><br><span class="line">   JavaRDD&lt;WriteStatus&gt; writeStatusRDD;</span><br><span class="line">   <span class="keyword">switch</span> (cfg.operation) &#123;</span><br><span class="line">     <span class="keyword">case</span> INSERT:</span><br><span class="line">       writeStatusRDD = writeClient.insert(records, instantTime);</span><br><span class="line">       <span class="keyword">break</span>;</span><br><span class="line">     <span class="keyword">case</span> UPSERT:</span><br><span class="line">       writeStatusRDD = writeClient.upsert(records, instantTime);</span><br><span class="line">       <span class="keyword">break</span>;</span><br><span class="line">     <span class="keyword">case</span> BULK_INSERT:</span><br><span class="line">       writeStatusRDD = writeClient.bulkInsert(records, instantTime);</span><br><span class="line">       <span class="keyword">break</span>;</span><br><span class="line">     <span class="keyword">case</span> INSERT_OVERWRITE:</span><br><span class="line">       writeStatusRDD = writeClient.insertOverwrite(records, instantTime).getWriteStatuses();</span><br><span class="line">       <span class="keyword">break</span>;</span><br><span class="line">     <span class="keyword">case</span> INSERT_OVERWRITE_TABLE:</span><br><span class="line">       writeStatusRDD = writeClient.insertOverwriteTable(records, instantTime).getWriteStatuses();</span><br><span class="line">       <span class="keyword">break</span>;</span><br><span class="line">     <span class="keyword">case</span> DELETE_PARTITION:</span><br><span class="line">       List&lt;String&gt; partitions = records.map(record -&gt; record.getPartitionPath()).distinct().collect();</span><br><span class="line">       writeStatusRDD = writeClient.deletePartitions(partitions, instantTime).getWriteStatuses();</span><br><span class="line">       <span class="keyword">break</span>;</span><br><span class="line">     <span class="keyword">default</span>:</span><br><span class="line">       <span class="keyword">throw</span> <span class="keyword">new</span> HoodieDeltaStreamerException(<span class="string">"Unknown operation : "</span> + cfg.operation);</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   <span class="keyword">long</span> totalErrorRecords = writeStatusRDD.mapToDouble(WriteStatus::getTotalErrorRecords).sum().longValue();</span><br><span class="line">   <span class="keyword">long</span> totalRecords = writeStatusRDD.mapToDouble(WriteStatus::getTotalRecords).sum().longValue();</span><br><span class="line">   <span class="keyword">boolean</span> hasErrors = totalErrorRecords &gt; <span class="number">0</span>;</span><br><span class="line">   <span class="keyword">if</span> (!hasErrors || cfg.commitOnErrors) &#123;</span><br><span class="line">     HashMap&lt;String, String&gt; checkpointCommitMetadata = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">     <span class="keyword">if</span> (checkpointStr != <span class="keyword">null</span>) &#123;</span><br><span class="line">       checkpointCommitMetadata.put(CHECKPOINT_KEY, checkpointStr);</span><br><span class="line">     &#125;</span><br><span class="line">     <span class="keyword">if</span> (cfg.checkpoint != <span class="keyword">null</span>) &#123;</span><br><span class="line">       checkpointCommitMetadata.put(CHECKPOINT_RESET_KEY, cfg.checkpoint);</span><br><span class="line">     &#125;</span><br><span class="line"></span><br><span class="line">     <span class="keyword">if</span> (hasErrors) &#123;</span><br><span class="line">       LOG.warn(<span class="string">"Some records failed to be merged but forcing commit since commitOnErrors set. Errors/Total="</span></span><br><span class="line">           + totalErrorRecords + <span class="string">"/"</span> + totalRecords);</span><br><span class="line">     &#125;</span><br><span class="line">     String commitActionType = CommitUtils.getCommitActionType(cfg.operation, HoodieTableType.valueOf(cfg.tableType));</span><br><span class="line">     <span class="keyword">boolean</span> success = writeClient.commit(instantTime, writeStatusRDD, Option.of(checkpointCommitMetadata), commitActionType, Collections.emptyMap());</span><br><span class="line">     ……</span><br><span class="line">   &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    ……</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">long</span> overallTimeMs = overallTimerContext != <span class="keyword">null</span> ? overallTimerContext.stop() : <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">   <span class="comment">// Send DeltaStreamer Metrics</span></span><br><span class="line">   metrics.updateDeltaStreamerMetrics(overallTimeMs);</span><br><span class="line">   <span class="keyword">return</span> Pair.of(scheduledCompactionInstant, writeStatusRDD);</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> Pair&lt;Option&lt;String&gt;, JavaRDD&lt;WriteStatus&gt;&gt; writeToSink(JavaRDD&lt;HoodieRecord&gt; records, String checkpointStr,</span><br><span class="line">                                                                HoodieDeltaStreamerMetrics metrics,</span><br><span class="line">                                                                Timer.Context overallTimerContext) &#123;</span><br><span class="line">   ......</span><br><span class="line">   <span class="comment">// try to start a new commit</span></span><br><span class="line">   String instantTime = startCommit();</span><br><span class="line">   LOG.info(<span class="string">"Starting commit  : "</span> + instantTime);</span><br><span class="line"></span><br><span class="line">   JavaRDD&lt;WriteStatus&gt; writeStatusRDD;</span><br><span class="line">   <span class="keyword">switch</span> (cfg.operation) &#123;</span><br><span class="line">     <span class="keyword">case</span> INSERT:</span><br><span class="line">       writeStatusRDD = writeClient.insert(records, instantTime);</span><br><span class="line">       <span class="keyword">break</span>;</span><br><span class="line">     <span class="keyword">case</span> UPSERT:</span><br><span class="line">       writeStatusRDD = writeClient.upsert(records, instantTime);</span><br><span class="line">       <span class="keyword">break</span>;</span><br><span class="line">     <span class="keyword">case</span> BULK_INSERT:</span><br><span class="line">       writeStatusRDD = writeClient.bulkInsert(records, instantTime);</span><br><span class="line">       <span class="keyword">break</span>;</span><br><span class="line">     <span class="keyword">case</span> INSERT_OVERWRITE:</span><br><span class="line">       writeStatusRDD = writeClient.insertOverwrite(records, instantTime).getWriteStatuses();</span><br><span class="line">       <span class="keyword">break</span>;</span><br><span class="line">     <span class="keyword">case</span> INSERT_OVERWRITE_TABLE:</span><br><span class="line">       writeStatusRDD = writeClient.insertOverwriteTable(records, instantTime).getWriteStatuses();</span><br><span class="line">       <span class="keyword">break</span>;</span><br><span class="line">     <span class="keyword">case</span> DELETE_PARTITION:</span><br><span class="line">       List&lt;String&gt; partitions = records.map(record -&gt; record.getPartitionPath()).distinct().collect();</span><br><span class="line">       writeStatusRDD = writeClient.deletePartitions(partitions, instantTime).getWriteStatuses();</span><br><span class="line">       <span class="keyword">break</span>;</span><br><span class="line">     <span class="keyword">default</span>:</span><br><span class="line">       <span class="keyword">throw</span> <span class="keyword">new</span> HoodieDeltaStreamerException(<span class="string">"Unknown operation : "</span> + cfg.operation);</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   <span class="keyword">long</span> totalErrorRecords = writeStatusRDD.mapToDouble(WriteStatus::getTotalErrorRecords).sum().longValue();</span><br><span class="line">   <span class="keyword">long</span> totalRecords = writeStatusRDD.mapToDouble(WriteStatus::getTotalRecords).sum().longValue();</span><br><span class="line">   <span class="keyword">boolean</span> hasErrors = totalErrorRecords &gt; <span class="number">0</span>;</span><br><span class="line">   <span class="keyword">if</span> (!hasErrors || cfg.commitOnErrors) &#123;</span><br><span class="line">     HashMap&lt;String, String&gt; checkpointCommitMetadata = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">     <span class="keyword">if</span> (checkpointStr != <span class="keyword">null</span>) &#123;</span><br><span class="line">       checkpointCommitMetadata.put(CHECKPOINT_KEY, checkpointStr);</span><br><span class="line">     &#125;</span><br><span class="line">     <span class="keyword">if</span> (cfg.checkpoint != <span class="keyword">null</span>) &#123;</span><br><span class="line">       checkpointCommitMetadata.put(CHECKPOINT_RESET_KEY, cfg.checkpoint);</span><br><span class="line">     &#125;</span><br><span class="line"></span><br><span class="line">     <span class="keyword">if</span> (hasErrors) &#123;</span><br><span class="line">       LOG.warn(<span class="string">"Some records failed to be merged but forcing commit since commitOnErrors set. Errors/Total="</span></span><br><span class="line">           + totalErrorRecords + <span class="string">"/"</span> + totalRecords);</span><br><span class="line">     &#125;</span><br><span class="line">     String commitActionType = CommitUtils.getCommitActionType(cfg.operation, HoodieTableType.valueOf(cfg.tableType));</span><br><span class="line">     <span class="keyword">boolean</span> success = writeClient.commit(instantTime, writeStatusRDD, Option.of(checkpointCommitMetadata), commitActionType, Collections.emptyMap());</span><br><span class="line">     ……</span><br><span class="line">   &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    ……</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">long</span> overallTimeMs = overallTimerContext != <span class="keyword">null</span> ? overallTimerContext.stop() : <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">   <span class="comment">// Send DeltaStreamer Metrics</span></span><br><span class="line">   metrics.updateDeltaStreamerMetrics(overallTimeMs);</span><br><span class="line">   <span class="keyword">return</span> Pair.of(scheduledCompactionInstant, writeStatusRDD);</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
 <p>这里writeClient 为SparkRDDWriteClient，从 writeToSink 可以看出整体逻辑：<br> 1、startCommit()。对应生成 .requested<br> 2、调用 writeClient 的 insert、upsert、bulkInsert等方法。对应生成 .inflight。<br> 3、将 checkpointStr 作为 CHECKPOINT_KEY 的值放到 checkpointCommitMetadata中，通过 writeClient.commit 方法将 checkpointCommitMetadata 作为 extraMetadata 写到 .commit 文件中。对应生成 .commit</p>
 <p>解释一下2：默认情况下 writeClient.insert 会先生成 .inflight，然后写数据，最后生成 .commit。<br>writeClient.insert 最终会调用 commitOnAutoCommit，因为默认情况下 config.shouldAutoCommit 是true,所以会调用 autoCommit(extraMetadata, result) 生成.commit。但是在 <code>DeltaSync</code> 中构造 writeClient 将 AutoCommit 配置成了false，所以 步骤 2不会生成.commit，这样就可以在步骤3中手动调用 writeClient.commit 将 checkpointCommitMetadata 作为 extraMetadata 写到 .commit 文件中。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"> <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">commitOnAutoCommit</span><span class="params">(HoodieWriteMetadata result)</span> </span>&#123;</span><br><span class="line">   <span class="comment">// validate commit action before committing result</span></span><br><span class="line">   runPrecommitValidators(result);</span><br><span class="line">   <span class="keyword">if</span> (config.shouldAutoCommit()) &#123;</span><br><span class="line">     LOG.info(<span class="string">"Auto commit enabled: Committing "</span> + instantTime);</span><br><span class="line">     autoCommit(extraMetadata, result);</span><br><span class="line">   &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">     LOG.info(<span class="string">"Auto commit disabled for "</span> + instantTime);</span><br><span class="line">   &#125;</span><br><span class="line"> &#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> ConfigProperty&lt;String&gt; AUTO_COMMIT_ENABLE = ConfigProperty</span><br><span class="line">     .key(<span class="string">"hoodie.auto.commit"</span>)</span><br><span class="line">     .defaultValue(<span class="string">"true"</span>)</span><br><span class="line">     .withDocumentation(<span class="string">"Controls whether a write operation should auto commit. This can be turned off to perform inspection"</span></span><br><span class="line">         + <span class="string">" of the uncommitted write before deciding to commit."</span>);  </span><br><span class="line"></span><br><span class="line"> <span class="function"><span class="keyword">private</span> HoodieWriteConfig <span class="title">getHoodieClientConfig</span><span class="params">(Schema schema)</span> </span>&#123;</span><br><span class="line">   <span class="keyword">final</span> <span class="keyword">boolean</span> combineBeforeUpsert = <span class="keyword">true</span>;</span><br><span class="line">   <span class="comment">// 这里将 autoCommit 配置为 false。</span></span><br><span class="line">   <span class="keyword">final</span> <span class="keyword">boolean</span> autoCommit = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">   <span class="comment">// <span class="doctag">NOTE:</span> Provided that we're injecting combined properties</span></span><br><span class="line">   <span class="comment">//       (from &#123;@code props&#125;, including CLI overrides), there's no</span></span><br><span class="line">   <span class="comment">//       need to explicitly set up some configuration aspects that</span></span><br><span class="line">   <span class="comment">//       are based on these (for ex Clustering configuration)</span></span><br><span class="line">   HoodieWriteConfig.Builder builder =</span><br><span class="line">       HoodieWriteConfig.newBuilder()</span><br><span class="line">           .withPath(cfg.targetBasePath)</span><br><span class="line">           .combineInput(cfg.filterDupes, combineBeforeUpsert)</span><br><span class="line">           .withCompactionConfig(</span><br><span class="line">               HoodieCompactionConfig.newBuilder()</span><br><span class="line">                   .withInlineCompaction(cfg.isInlineCompactionEnabled())</span><br><span class="line">                   .build()</span><br><span class="line">           )</span><br><span class="line">           .withPayloadConfig(</span><br><span class="line">               HoodiePayloadConfig.newBuilder()</span><br><span class="line">                   .withPayloadClass(cfg.payloadClassName)</span><br><span class="line">                   .withPayloadOrderingField(cfg.sourceOrderingField)</span><br><span class="line">                   .build())</span><br><span class="line">           .forTable(cfg.targetTableName)</span><br><span class="line">           .withAutoCommit(autoCommit)</span><br><span class="line">           .withProps(props);</span><br></pre></td></tr></table></figure></p>
 <p>从上面的分析中，我们知道了 extraMetadata 是通过 writeClient.commit 方法写到.commit 文件中的，并不是通过参数配置实现的。这属于Hudi源码中比较底层的代码，如果是 Hudi Java Client 可以参考这样实现，但是 Spark Client 是封装好的，这样实现并不通用。最好是研究一下有没有通过参数配置实现的这种比较简单的方案，如果实在没有再考虑自己参考 DeltaStreamer 的逻辑实现，封装一个公用的实现方法，或者修改源码，所以接下来先看一下 Spark Client 的 源码：<code>HoodieSparkSqlWriter</code></p>
@@ -458,6 +458,15 @@
 
   
 <nav id="article-nav">
+  
+    <a href="/2024/06/24/flink/flink-task-failure-recovery/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          Flink 重启策略和故障恢复策略
+        
+      </div>
+    </a>
   
   
     <a href="/2024/06/07/hudi/HudiCliConf/" id="article-nav-older" class="article-nav-link-wrap">
@@ -671,15 +680,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">SQL</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -695,31 +712,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -743,15 +744,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -763,15 +776,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">hbase</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -787,19 +804,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">hbase</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Partition</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -815,11 +820,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">java</a>
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -828,6 +829,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Maven</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -843,7 +852,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -855,31 +864,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -887,15 +876,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">ogg</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -907,7 +892,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -915,7 +908,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -931,7 +928,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -943,10 +948,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
               </li>
              
@@ -955,15 +956,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -975,7 +984,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -983,11 +992,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -995,7 +1008,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1011,11 +1024,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1027,19 +1036,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">RPC</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">extraMetadata</a>
+                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Hudi CLI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">extraMetadata</a>
               </li>
              
               <li class="article-tag-list-item">
