@@ -21,7 +21,7 @@
 <meta property="og:image" content="https://img.dongkelun.com/hudi/write-flow/wf2.png">
 <meta property="og:image" content="https://img.dongkelun.com/hudi/write-flow/wf3.png">
 <meta property="og:image" content="https://img.dongkelun.com/hudi/write-flow/wf4.png">
-<meta property="og:updated_time" content="2024-07-05T03:00:34.084Z">
+<meta property="og:updated_time" content="2024-07-05T07:10:32.680Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Hudi 写入流程（图）">
 <meta name="twitter:description" content="前言 主要为之前总结的源码文章补充流程图。 总结一下整体流程  说明之前以Java Client为例,总结了 Insert 源码的整体流程及部分源码，由于各种原因，没有总结完。长时间不看这方面的源码，容易忘记，之前没有总结流程图，现在回忆起来比较麻烦，不如看流程图方便快捷。所以先补充总结一下之前文章中的流程图，再继续学习总结后面的源码，这样比较方便。 流程图主要分为自己总结以及借助Shiyan X">
@@ -288,8 +288,9 @@
 <li>Flink HoodieFlinkWriteClient</li>
 </ul>
 <h3 id="构造-HoodieRecord-（转换数据）"><a href="#构造-HoodieRecord-（转换数据）" class="headerlink" title="构造 HoodieRecord （转换数据）"></a>构造 HoodieRecord （转换数据）</h3><blockquote>
-<p>在写入客户端处理输入数据之前，会发生几个转换，包括HoodieRecords的构建和模式协调。让我们深入研究HoodieRecord，因为它是写入路径中的一个基本模型。<br>将输入的数据转换为 HoodieRecord</p>
+<p>在写入客户端处理输入数据之前，会发生几个转换，包括HoodieRecords的构建和模式协调。让我们深入研究HoodieRecord，因为它是写入路径中的一个基本模型。</p>
 </blockquote>
+<p>将输入的数据转换为 HoodieRecord</p>
 <p><img src="https://img.dongkelun.com/hudi/write-flow/wf4.png" alt=""></p>
 <blockquote>
 <p>Hudi使用 HoodieKey 模型来标识唯一记录，该模型由“recordKey”和“partitionPath”组成。这些值是通过实现 KeyGenerator API 来填充的。该 API 可以灵活地根据输入模式提取自定义字段并将其转换为Key。“currentLocation”和“newLocation”均由 Hudi 时间线的操作时间戳和FileGroup的 ID 组成。时间戳指向特定 FileGroup 内的 FileSlice。“位置”属性用于使用逻辑信息来定位物理文件。如果“currentLocation”不为空，则表示表中存在具有相同键的记录，而“newLocation”则指定应将传入记录写入何处。“数据”字段是一个通用类型，包含记录的实际字节，也称为有效负载。通常，此属性实现 HoodieRecordPayload ，它指导引擎如何将旧记录与新记录合并。从 0.13.0 版本开始，引入了新的实验接口 HoodieRecordMerger 来替代 HoodieRecordPayload 并作为统一的合并 API。</p>
@@ -369,7 +370,7 @@
 <li><p>桶有两种类型(BucketType)： INSERT 和 UPDATE 。INSERT 对应新增文件（新的fileId），新增文件只有新增的数据 ，UPDATE 包含更新数据和新增数据（小文件合并部分），UPDATE 对应已经存在的 FileID。</p>
 <ul>
 <li><p>对于 INSERT BucketType：调用 handleInsert ，返回 JavaLazyInsertIterable&lt;&gt;(recordItr, true, config, instantTime, table, idPfx, taskContextSupplier, new CreateHandleFactory&lt;&gt;())。JavaLazyInsertIterable 是 LazyIterableIterator的子类，其中 next 方法是在 LazyIterableIterator 中定义的，他会调用 computeNext()，computeNext() 在具体的子类中实现，JavaLazyInsertIterable 的 computeNext 方法中调用了 BoundedInMemoryExecutor.execute</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> O <span class="title">next</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> computeNext();</span><br><span class="line">  &#125; <span class="keyword">catch</span> (Exception ex) &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(ex);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> List&lt;WriteStatus&gt; <span class="title">computeNext</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="comment">// Executor service used for launching writer thread.</span></span><br><span class="line">  BoundedInMemoryExecutor&lt;HoodieRecord&lt;T&gt;, HoodieInsertValueGenResult&lt;HoodieRecord&gt;, List&lt;WriteStatus&gt;&gt; bufferedIteratorExecutor =</span><br><span class="line">      <span class="keyword">null</span>;</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="keyword">final</span> Schema schema = <span class="keyword">new</span> Schema.Parser().parse(hoodieConfig.getSchema());</span><br><span class="line">    bufferedIteratorExecutor =</span><br><span class="line">        <span class="keyword">new</span> BoundedInMemoryExecutor&lt;&gt;(hoodieConfig.getWriteBufferLimitBytes(), <span class="keyword">new</span> IteratorBasedQueueProducer&lt;&gt;(inputItr), Option.of(getInsertHandler()), getTransformFunction(schema));</span><br><span class="line">    <span class="comment">// bufferedIteratorExecutor.execute通过生产者消费者模型实现写数据</span></span><br><span class="line">    <span class="keyword">final</span> List&lt;WriteStatus&gt; result = bufferedIteratorExecutor.execute();</span><br><span class="line">    <span class="keyword">assert</span> result != <span class="keyword">null</span> &amp;&amp; !result.isEmpty() &amp;&amp; !bufferedIteratorExecutor.isRemaining();</span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">  &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> HoodieException(e);</span><br><span class="line">  &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">null</span> != bufferedIteratorExecutor) &#123;</span><br><span class="line">      bufferedIteratorExecutor.shutdownNow();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> O <span class="title">next</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> computeNext();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception ex) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(ex);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> List&lt;WriteStatus&gt; <span class="title">computeNext</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// Executor service used for launching writer thread.</span></span><br><span class="line">    BoundedInMemoryExecutor&lt;HoodieRecord&lt;T&gt;, HoodieInsertValueGenResult&lt;HoodieRecord&gt;, List&lt;WriteStatus&gt;&gt; bufferedIteratorExecutor =</span><br><span class="line">        <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="keyword">final</span> Schema schema = <span class="keyword">new</span> Schema.Parser().parse(hoodieConfig.getSchema());</span><br><span class="line">      bufferedIteratorExecutor =</span><br><span class="line">          <span class="keyword">new</span> BoundedInMemoryExecutor&lt;&gt;(hoodieConfig.getWriteBufferLimitBytes(), <span class="keyword">new</span> IteratorBasedQueueProducer&lt;&gt;(inputItr), Option.of(getInsertHandler()), getTransformFunction(schema));</span><br><span class="line">      <span class="comment">// bufferedIteratorExecutor.execute通过生产者消费者模型实现写数据</span></span><br><span class="line">      <span class="keyword">final</span> List&lt;WriteStatus&gt; result = bufferedIteratorExecutor.execute();</span><br><span class="line">      <span class="keyword">assert</span> result != <span class="keyword">null</span> &amp;&amp; !result.isEmpty() &amp;&amp; !bufferedIteratorExecutor.isRemaining();</span><br><span class="line">      <span class="keyword">return</span> result;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> HoodieException(e);</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">      <span class="keyword">if</span> (<span class="keyword">null</span> != bufferedIteratorExecutor) &#123;</span><br><span class="line">        bufferedIteratorExecutor.shutdownNow();</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 </li>
 <li><p>对于 UPDATE BucketType ：调用 handleUpdate ，handleUpdate 首先创建 HoodieMergeHandle，然后在 handleUpdateInternal 方法中 调用了 JavaMergeHelper.newInstance().runMerge(table, upsertHandle) 。最终在 JavaMergeHelper 的 runMerge 方法中调用了 BoundedInMemoryExecutor.execute</p>
 </li>
@@ -774,6 +775,18 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
@@ -790,10 +803,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
@@ -803,22 +812,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -834,15 +827,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -854,11 +847,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -874,15 +875,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -894,15 +895,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -918,15 +919,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -939,10 +944,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -978,10 +979,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
@@ -998,11 +995,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1014,15 +1019,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1038,11 +1039,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
+                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1058,6 +1059,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
               </li>
              
@@ -1066,7 +1071,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1078,7 +1083,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1086,7 +1091,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1098,19 +1103,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
               </li>
              
               <li class="article-tag-list-item">
