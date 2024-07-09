@@ -202,6 +202,97 @@
           <div id="js-content" class="content-ll">
             
   
+    <article id="post-prestoHudiException" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2021/12/23/prestoHudiException/">Presto查询Hudi异常解决</a>
+    </h1>
+  
+
+        
+        <a href="/2021/12/23/prestoHudiException/" class="archive-article-date">
+  	<time datetime="2021-12-22T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-12-23</time>
+</a>
+        
+      </header>
+	    
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>记录一个Presto查询Hudi的异常的解决办法，本人目前对Presto还不是很熟，只是在使用过程中遇到了问题，记录一下异常解决方法以及过程</p>
+<h2 id="异常"><a href="#异常" class="headerlink" title="异常"></a>异常</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">2021</span>-<span class="number">12</span>-<span class="number">22</span>T17:<span class="number">29</span>:<span class="number">55.440</span>+<span class="number">0800</span>    ERROR   SplitRunner-<span class="number">101</span>-<span class="number">126</span>     com.facebook.presto.execution.executor.TaskExecutor     Error processing Split <span class="number">20211222_092954_00047_8</span>xk77.1.0.0-<span class="number">0</span> &#123;path=hdfs:<span class="comment">//cluster1/warehouse/tablespace/managed/hive/test_dkl.db/test_hudi_1/069eddc2-f3bf-4efc-911b-3cb3aa523a8e-0_0-0-0_20211222172800.parquet, start=0, length=435116, fileSize=435116, fileModifiedTime=1640165281695, hosts=[], database=test_dkl, table=test_hudi_1, nodeSelectionStrategy=NO_PREFERENCE, partitionName=&lt;UNPARTITIONED&gt;, s3SelectPushdownEnabled=false, cacheQuotaRequirement=CacheQuotaRequirement&#123;cacheQuotaScope=GLOBAL, quota=Optional.empty&#125;&#125; (start = 9.271133085962032E9, wall = 49 ms, cpu = 0 ms, wait = 0 ms, calls = 1)</span></span><br><span class="line">org.apache.parquet.io.ParquetDecodingException: Can not read value at <span class="number">0</span> in block -<span class="number">1</span> in file hdfs:<span class="comment">//cluster1/warehouse/tablespace/managed/hive/test_dkl.db/test_hudi_1/069eddc2-f3bf-4efc-911b-3cb3aa523a8e-0_0-0-0_20211222172800.parquet</span></span><br><span class="line">        at org.apache.parquet.hadoop.InternalParquetRecordReader.nextKeyValue(InternalParquetRecordReader.java:<span class="number">251</span>)</span><br><span class="line">        at org.apache.parquet.hadoop.ParquetRecordReader.nextKeyValue(ParquetRecordReader.java:<span class="number">207</span>)</span><br><span class="line">        at org.apache.hadoop.hive.ql.io.parquet.read.ParquetRecordReaderWrapper.&lt;init&gt;(ParquetRecordReaderWrapper.java:<span class="number">98</span>)</span><br><span class="line">        at org.apache.hadoop.hive.ql.io.parquet.read.ParquetRecordReaderWrapper.&lt;init&gt;(ParquetRecordReaderWrapper.java:<span class="number">60</span>)</span><br><span class="line">        at org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat.getRecordReader(MapredParquetInputFormat.java:<span class="number">92</span>)</span><br><span class="line">        at org.apache.hudi.hadoop.HoodieParquetInputFormat.getRecordReader(HoodieParquetInputFormat.java:<span class="number">216</span>)</span><br><span class="line">        at com.facebook.presto.hive.HiveUtil.createRecordReader(HiveUtil.java:<span class="number">266</span>)</span><br><span class="line">        at com.facebook.presto.hive.GenericHiveRecordCursorProvider.lambda$createRecordCursor$<span class="number">0</span>(GenericHiveRecordCursorProvider.java:<span class="number">74</span>)</span><br><span class="line">        at com.facebook.presto.hive.authentication.UserGroupInformationUtils.lambda$executeActionInDoAs$<span class="number">0</span>(UserGroupInformationUtils.java:<span class="number">29</span>)</span><br><span class="line">        at java.security.AccessController.doPrivileged(Native Method)</span><br><span class="line">        at javax.security.auth.Subject.doAs(Subject.java:<span class="number">360</span>)</span><br><span class="line">        at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:<span class="number">1726</span>)</span><br><span class="line">        at com.facebook.presto.hive.authentication.UserGroupInformationUtils.executeActionInDoAs(UserGroupInformationUtils.java:<span class="number">27</span>)</span><br><span class="line">        at com.facebook.presto.hive.authentication.DirectHdfsAuthentication.doAs(DirectHdfsAuthentication.java:<span class="number">38</span>)</span><br><span class="line">        at com.facebook.presto.hive.HdfsEnvironment.doAs(HdfsEnvironment.java:<span class="number">81</span>)</span><br><span class="line">        at com.facebook.presto.hive.GenericHiveRecordCursorProvider.createRecordCursor(GenericHiveRecordCursorProvider.java:<span class="number">73</span>)</span><br><span class="line">        at com.facebook.presto.hive.HivePageSourceProvider.createHivePageSource(HivePageSourceProvider.java:<span class="number">478</span>)</span><br><span class="line">        at com.facebook.presto.hive.HivePageSourceProvider.createPageSource(HivePageSourceProvider.java:<span class="number">184</span>)</span><br><span class="line">        at com.facebook.presto.spi.connector.classloader.ClassLoaderSafeConnectorPageSourceProvider.createPageSource(ClassLoaderSafeConnectorPageSourceProvider.java:<span class="number">63</span>)</span><br><span class="line">        at com.facebook.presto.split.PageSourceManager.createPageSource(PageSourceManager.java:<span class="number">80</span>)</span><br><span class="line">        at com.facebook.presto.operator.TableScanOperator.getOutput(TableScanOperator.java:<span class="number">249</span>)</span><br><span class="line">        at com.facebook.presto.operator.Driver.processInternal(Driver.java:<span class="number">424</span>)</span><br><span class="line">        at com.facebook.presto.operator.Driver.lambda$processFor$<span class="number">9</span>(Driver.java:<span class="number">307</span>)</span><br><span class="line">        at com.facebook.presto.operator.Driver.tryWithLock(Driver.java:<span class="number">728</span>)</span><br><span class="line">        at com.facebook.presto.operator.Driver.processFor(Driver.java:<span class="number">300</span>)</span><br><span class="line">        at com.facebook.presto.execution.SqlTaskExecution$DriverSplitRunner.processFor(SqlTaskExecution.java:<span class="number">1077</span>)</span><br><span class="line">        at com.facebook.presto.execution.executor.PrioritizedSplitRunner.process(PrioritizedSplitRunner.java:<span class="number">162</span>)</span><br><span class="line">        at com.facebook.presto.execution.executor.TaskExecutor$TaskRunner.run(TaskExecutor.java:<span class="number">599</span>)</span><br><span class="line">        at com.facebook.presto.$gen.Presto_0_265_1_ad1fce6____20211222_010139_1.run(Unknown Source)</span><br><span class="line">        at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:<span class="number">1149</span>)</span><br><span class="line">        at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:<span class="number">624</span>)</span><br><span class="line">        at java.lang.Thread.run(Thread.java:<span class="number">748</span>)</span><br><span class="line">Caused by: java.lang.UnsupportedOperationException: readDirect unsupported in RemoteBlockReader</span><br><span class="line">        at org.apache.hadoop.hdfs.RemoteBlockReader.read(RemoteBlockReader.java:<span class="number">492</span>)</span><br><span class="line">        at org.apache.hadoop.hdfs.DFSInputStream$ByteBufferStrategy.doRead(DFSInputStream.java:<span class="number">789</span>)</span><br><span class="line">        at org.apache.hadoop.hdfs.DFSInputStream.readBuffer(DFSInputStream.java:<span class="number">823</span>)</span><br><span class="line">        at org.apache.hadoop.hdfs.DFSInputStream.readWithStrategy(DFSInputStream.java:<span class="number">883</span>)</span><br><span class="line">        at org.apache.hadoop.hdfs.DFSInputStream.read(DFSInputStream.java:<span class="number">938</span>)</span><br><span class="line">        at org.apache.hadoop.fs.FSDataInputStream.read(FSDataInputStream.java:<span class="number">143</span>)</span><br><span class="line">        at org.apache.parquet.hadoop.util.H2SeekableInputStream$H2Reader.read(H2SeekableInputStream.java:<span class="number">81</span>)</span><br><span class="line">        at org.apache.parquet.hadoop.util.H2SeekableInputStream.readFully(H2SeekableInputStream.java:<span class="number">90</span>)</span><br><span class="line">        at org.apache.parquet.hadoop.util.H2SeekableInputStream.readFully(H2SeekableInputStream.java:<span class="number">75</span>)</span><br><span class="line">        at org.apache.parquet.hadoop.ParquetFileReader$ConsecutiveChunkList.readAll(ParquetFileReader.java:<span class="number">1174</span>)</span><br><span class="line">        at org.apache.parquet.hadoop.ParquetFileReader.readNextRowGroup(ParquetFileReader.java:<span class="number">805</span>)</span><br><span class="line">        at org.apache.parquet.hadoop.InternalParquetRecordReader.checkRead(InternalParquetRecordReader.java:<span class="number">127</span>)</span><br><span class="line">        at org.apache.parquet.hadoop.InternalParquetRecordReader.nextKeyValue(InternalParquetRecordReader.java:<span class="number">222</span>)</span><br></pre></td></tr></table></figure>
+        
+          <a class="article-more-a" href="/2021/12/23/prestoHudiException/#more">more >></a>
+        
+      
+
+      
+	  
+    </div>
+    <div class="article-info article-info-index">
+      
+	   
+		  
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">异常</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">Presto</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+		  
+
+	  
+	 
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2021/12/23/prestoHudiException/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
     <article id="post-submarinSparkRanger" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -576,110 +667,9 @@
 
 
   
-    <article id="post-dbeaverConnectKerberosHive" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2021/06/03/dbeaverConnectKerberosHive/">通过DBeaver本地访问远程Kerberos环境下的Hive</a>
-    </h1>
-  
-
-        
-        <a href="/2021/06/03/dbeaverConnectKerberosHive/" class="archive-article-date">
-  	<time datetime="2021-06-02T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-06-03</time>
-</a>
-        
-      </header>
-	    
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-      
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>本文讲解如何通过数据库客户端界面工具DBeaver连接远程Kerberos环境下的Hive。</p>
-<blockquote>
-<p>因为在远程服务器上的命令行里写SQL查询Hive表，如果数据量和表字段比较多，命令行界面不利于分析表数据，所以需要客户端工具如DBeave远程连接Hive查询数据，但是DBeaver默认的不能访问Kerberos下的Hive，需要一些配置才可以访问，这里记录一下。</p>
-</blockquote>
-<h2 id="1、DBeaver连接Hive"><a href="#1、DBeaver连接Hive" class="headerlink" title="1、DBeaver连接Hive"></a>1、DBeaver连接Hive</h2><p>关于DBeaver如何连接正常的不带Kerberos认证的Hive,请参考<a href="https://dongkelun.com/2018/07/13/dbeaverConnectHive/">通过数据库客户端界面工具DBeaver连接Hive</a>,本文只讲解如何在Windows上用DBeaver对kerberos认证</p>
-<h2 id="2、安装Kerberos客户端"><a href="#2、安装Kerberos客户端" class="headerlink" title="2、安装Kerberos客户端"></a>2、安装Kerberos客户端</h2><p>官网下载<a href="https://web.mit.edu/kerberos/dist/index.html" target="_blank" rel="noopener">https://web.mit.edu/kerberos/dist/index.html</a>,我下载的是这个：<a href="https://web.mit.edu/kerberos/dist/index.html#kfw-4.1" target="_blank" rel="noopener">Kerberos for Windows Release 4.1 - current release</a></p>
-<p>下载下来后，一键安装</p>
-<h2 id="3、krb5-ini"><a href="#3、krb5-ini" class="headerlink" title="3、krb5.ini"></a>3、krb5.ini</h2><p>我的kerberos客户端安装目录为D:\program\company\kerberos，将集群上的/etc/krb5.conf，复制到此目录下，改名为krb5.ini,内容如下：<br>
-        
-          <a class="article-more-a" href="/2021/06/03/dbeaverConnectKerberosHive/#more">more >></a>
-        
-      
-
-      
-	  
-    </div>
-    <div class="article-info article-info-index">
-      
-	   
-		  
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hive</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">DBeaver</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">Kerberos</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-		  
-
-	  
-	 
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2021/06/03/dbeaverConnectKerberosHive/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
   
     <nav id="page-nav">
-      <a class="extend prev" rel="prev" href="/page/13/">&laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/12/">12</a><a class="page-number" href="/page/13/">13</a><span class="page-number current">14</span><a class="page-number" href="/page/15/">15</a><a class="page-number" href="/page/16/">16</a><span class="space">&hellip;</span><a class="page-number" href="/page/35/">35</a><a class="extend next" rel="next" href="/page/15/">Next &raquo;</a>
+      <a class="extend prev" rel="prev" href="/page/13/">&laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/12/">12</a><a class="page-number" href="/page/13/">13</a><span class="page-number current">14</span><a class="page-number" href="/page/15/">15</a><a class="page-number" href="/page/16/">16</a><span class="space">&hellip;</span><a class="page-number" href="/page/36/">36</a><a class="extend next" rel="next" href="/page/15/">Next &raquo;</a>
     </nav>
   
 
@@ -849,11 +839,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -869,15 +859,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -886,6 +872,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -901,19 +891,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -929,14 +919,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
               </li>
              
@@ -946,6 +928,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -989,11 +979,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">java</a>
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+                <a href="javascript:void(0)" class="js-tag color5">java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1017,10 +1007,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
@@ -1037,15 +1023,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1057,19 +1055,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1081,11 +1071,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1105,10 +1091,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">压缩文件</a>
               </li>
              
@@ -1118,6 +1100,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1133,19 +1119,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1153,11 +1131,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
+                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1165,11 +1139,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1177,7 +1155,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1190,6 +1176,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
