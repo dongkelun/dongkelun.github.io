@@ -18,7 +18,7 @@
 <meta property="og:description" content="前言上篇文章 提到 ：索引的逻辑主要是根据 parquet 文件中保存的索引信息，判断记录是否存在，如果不存在，代表是新增数据，如果记录存在则代表是更新数据，需要找到并设置 currentLocation。对于布隆索引来说，这里的索引信息其实是布隆过滤器，本篇文章主要是先总结布隆过滤器是如何保存到 parquet 文件中的（主要是源码调用逻辑）。 我们新写一个表的时候，最开始是没有parquet文">
 <meta property="og:locale" content="cn">
 <meta property="og:image" content="https://img.dongkelun.com/hudi/index/bloom-index.png">
-<meta property="og:updated_time" content="2024-07-09T12:04:43.494Z">
+<meta property="og:updated_time" content="2024-07-10T01:53:32.845Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Hudi 索引总结 - Parquet布隆过滤器写入过程">
 <meta name="twitter:description" content="前言上篇文章 提到 ：索引的逻辑主要是根据 parquet 文件中保存的索引信息，判断记录是否存在，如果不存在，代表是新增数据，如果记录存在则代表是更新数据，需要找到并设置 currentLocation。对于布隆索引来说，这里的索引信息其实是布隆过滤器，本篇文章主要是先总结布隆过滤器是如何保存到 parquet 文件中的（主要是源码调用逻辑）。 我们新写一个表的时候，最开始是没有parquet文">
@@ -258,7 +258,7 @@
 <h2 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h2><blockquote>
 <p>索引是一个关键的步骤，它验证表中是否存在记录，并有助于实现高效的更新和删除操作。请注意本文中涵盖的索引是为写入端准备的，这与读取端索引不同。</p>
 </blockquote>
-<p>对于有的索引类型是不设计将索引信息保存到文件中的，比如 简单索引（simple index），而对于Bloom索引（Bloom Index）则需要将 布隆过滤器以及最大值最小值等信息写到 parquet 文件中的元数据中。</p>
+<p>对于有的索引类型是不涉及将索引信息保存到文件中的，比如 简单索引（simple index），而对于Bloom索引（Bloom Index）则需要将布隆过滤器以及最大值最小值等信息写到 parquet 文件中的元数据中。</p>
 <a id="more"></a>
 <h2 id="Bloom索引（Bloom-Index）"><a href="#Bloom索引（Bloom-Index）" class="headerlink" title="Bloom索引（Bloom Index）"></a>Bloom索引（Bloom Index）</h2><blockquote>
 <p>Bloom Index 最大限度地减少了用于查找的键和文件的数量，同时保持了较低的读取成本。</p>
@@ -273,7 +273,7 @@
 <h2 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h2><p>主要步骤包含布隆过滤器（BloomFilter）的创建、更新、和持久化。</p>
 <h2 id="fileWriter"><a href="#fileWriter" class="headerlink" title="fileWriter"></a>fileWriter</h2><p>HoodieCreateHandle 和 HoodieMergeHandle 中的 fileWriter 均为 HoodieParquetWriter 。<br>都是在构造函数中调用 HoodieFileWriterFactory.getFileWriter 创建</p>
 <p><code>HoodieFileWriterFactory</code></p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> &lt;T extends HoodieRecordPayload, R extends IndexedRecord, I, K, O&gt; <span class="function">HoodieFileWriter&lt;R&gt; <span class="title">getFileWriter</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    String instantTime, Path path, HoodieTable&lt;T, I, K, O&gt; hoodieTable, HoodieWriteConfig config, Schema schema,</span></span></span><br><span class="line"><span class="function"><span class="params">    TaskContextSupplier taskContextSupplier)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">  <span class="keyword">final</span> String extension = FSUtils.getFileExtension(path.getName());</span><br><span class="line">  <span class="keyword">if</span> (PARQUET.getFileExtension().equals(extension)) &#123;</span><br><span class="line">    <span class="keyword">return</span> newParquetFileWriter(instantTime, path, config, schema, hoodieTable, taskContextSupplier, config.populateMetaFields());</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (HFILE.getFileExtension().equals(extension)) &#123;</span><br><span class="line">    <span class="keyword">return</span> newHFileFileWriter(instantTime, path, config, schema, hoodieTable, taskContextSupplier);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (ORC.getFileExtension().equals(extension)) &#123;</span><br><span class="line">    <span class="keyword">return</span> newOrcFileWriter(instantTime, path, config, schema, hoodieTable, taskContextSupplier);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">throw</span> <span class="keyword">new</span> UnsupportedOperationException(extension + <span class="string">" format not supported yet."</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> &lt;T extends HoodieRecordPayload, R extends IndexedRecord&gt; <span class="function">HoodieFileWriter&lt;R&gt; <span class="title">newParquetFileWriter</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    String instantTime, Path path, HoodieWriteConfig config, Schema schema, HoodieTable hoodieTable,</span></span></span><br><span class="line"><span class="function"><span class="params">    TaskContextSupplier taskContextSupplier, <span class="keyword">boolean</span> populateMetaFields)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> newParquetFileWriter(instantTime, path, config, schema, hoodieTable, taskContextSupplier, populateMetaFields, populateMetaFields);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> &lt;T extends HoodieRecordPayload, R extends IndexedRecord&gt; <span class="function">HoodieFileWriter&lt;R&gt; <span class="title">newParquetFileWriter</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    String instantTime, Path path, HoodieWriteConfig config, Schema schema, HoodieTable hoodieTable,</span></span></span><br><span class="line"><span class="function"><span class="params">    TaskContextSupplier taskContextSupplier, <span class="keyword">boolean</span> populateMetaFields, <span class="keyword">boolean</span> enableBloomFilter)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">  Option&lt;BloomFilter&gt; filter = enableBloomFilter ? Option.of(createBloomFilter(config)) : Option.empty();</span><br><span class="line">  HoodieAvroWriteSupport writeSupport = <span class="keyword">new</span> HoodieAvroWriteSupport(<span class="keyword">new</span> AvroSchemaConverter(hoodieTable.getHadoopConf()).convert(schema), schema, filter);</span><br><span class="line"></span><br><span class="line">  HoodieAvroParquetConfig parquetConfig = <span class="keyword">new</span> HoodieAvroParquetConfig(writeSupport, config.getParquetCompressionCodec(),</span><br><span class="line">      config.getParquetBlockSize(), config.getParquetPageSize(), config.getParquetMaxFileSize(),</span><br><span class="line">      hoodieTable.getHadoopConf(), config.getParquetCompressionRatio());</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">new</span> HoodieParquetWriter&lt;&gt;(instantTime, path, parquetConfig, schema, taskContextSupplier, populateMetaFields);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> &lt;T extends HoodieRecordPayload, R extends IndexedRecord, I, K, O&gt; <span class="function">HoodieFileWriter&lt;R&gt; <span class="title">getFileWriter</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    String instantTime, Path path, HoodieTable&lt;T, I, K, O&gt; hoodieTable, HoodieWriteConfig config, Schema schema,</span></span></span><br><span class="line"><span class="function"><span class="params">    TaskContextSupplier taskContextSupplier)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">  <span class="keyword">final</span> String extension = FSUtils.getFileExtension(path.getName());</span><br><span class="line">  <span class="keyword">if</span> (PARQUET.getFileExtension().equals(extension)) &#123;</span><br><span class="line">    <span class="comment">// config.populateMetaFields() 默认 true</span></span><br><span class="line">    <span class="keyword">return</span> newParquetFileWriter(instantTime, path, config, schema, hoodieTable, taskContextSupplier, config.populateMetaFields());</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (HFILE.getFileExtension().equals(extension)) &#123;</span><br><span class="line">    <span class="keyword">return</span> newHFileFileWriter(instantTime, path, config, schema, hoodieTable, taskContextSupplier);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (ORC.getFileExtension().equals(extension)) &#123;</span><br><span class="line">    <span class="keyword">return</span> newOrcFileWriter(instantTime, path, config, schema, hoodieTable, taskContextSupplier);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">throw</span> <span class="keyword">new</span> UnsupportedOperationException(extension + <span class="string">" format not supported yet."</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> &lt;T extends HoodieRecordPayload, R extends IndexedRecord&gt; <span class="function">HoodieFileWriter&lt;R&gt; <span class="title">newParquetFileWriter</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    String instantTime, Path path, HoodieWriteConfig config, Schema schema, HoodieTable hoodieTable,</span></span></span><br><span class="line"><span class="function"><span class="params">    TaskContextSupplier taskContextSupplier, <span class="keyword">boolean</span> populateMetaFields)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">  <span class="comment">// enableBloomFilter 和 populateMetaFields 值一样，都为 true</span></span><br><span class="line">  <span class="keyword">return</span> newParquetFileWriter(instantTime, path, config, schema, hoodieTable, taskContextSupplier, populateMetaFields, populateMetaFields);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> &lt;T extends HoodieRecordPayload, R extends IndexedRecord&gt; <span class="function">HoodieFileWriter&lt;R&gt; <span class="title">newParquetFileWriter</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    String instantTime, Path path, HoodieWriteConfig config, Schema schema, HoodieTable hoodieTable,</span></span></span><br><span class="line"><span class="function"><span class="params">    TaskContextSupplier taskContextSupplier, <span class="keyword">boolean</span> populateMetaFields, <span class="keyword">boolean</span> enableBloomFilter)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">  <span class="comment">// 创建布隆过滤器</span></span><br><span class="line">  Option&lt;BloomFilter&gt; filter = enableBloomFilter ? Option.of(createBloomFilter(config)) : Option.empty();</span><br><span class="line">  HoodieAvroWriteSupport writeSupport = <span class="keyword">new</span> HoodieAvroWriteSupport(<span class="keyword">new</span> AvroSchemaConverter(hoodieTable.getHadoopConf()).convert(schema), schema, filter);</span><br><span class="line"></span><br><span class="line">  HoodieAvroParquetConfig parquetConfig = <span class="keyword">new</span> HoodieAvroParquetConfig(writeSupport, config.getParquetCompressionCodec(),</span><br><span class="line">      config.getParquetBlockSize(), config.getParquetPageSize(), config.getParquetMaxFileSize(),</span><br><span class="line">      hoodieTable.getHadoopConf(), config.getParquetCompressionRatio());</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">new</span> HoodieParquetWriter&lt;&gt;(instantTime, path, parquetConfig, schema, taskContextSupplier, populateMetaFields);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h2 id="populateMetaFields"><a href="#populateMetaFields" class="headerlink" title="populateMetaFields"></a>populateMetaFields</h2><blockquote>
 <p>启用时，填充所有元字段。禁用时，不会填充任何元字段，增量查询也不会起作用。这仅用于批处理的仅附加/不可变数据</p>
 </blockquote>
@@ -294,7 +294,7 @@
 <h2 id="更新布隆过滤器"><a href="#更新布隆过滤器" class="headerlink" title="更新布隆过滤器"></a>更新布隆过滤器</h2><p>通过 HoodieAvroWriteSupport.add 更新布隆过滤器，将 recordKey 添加到 BloomFilter 中，调用链：</p>
 <ul>
 <li>Insert : HoodieCreateHandle.write -&gt; HoodieParquetWriter.writeAvro/writeAvroWithMetadata -&gt; HoodieAvroWriteSupport.add </li>
-<li>Upsert : HoodieMergeHandle.write -&gt; HoodieParquetWriter.fileWriter.writeAvro/writeAvroWithMetadata-&gt; HoodieAvroWriteSupport.add </li>
+<li>Upsert : HoodieMergeHandle.write -&gt; HoodieParquetWriter.writeAvro/writeAvroWithMetadata-&gt; HoodieAvroWriteSupport.add </li>
 </ul>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">add</span><span class="params">(String recordKey)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (bloomFilterOpt.isPresent()) &#123;</span><br><span class="line">    <span class="comment">// HoodieDynamicBoundedBloomFilter.add -&gt; InternalDynamicBloomFilter.add -&gt; org.apache.hadoop.util.bloom.BloomFilter</span></span><br><span class="line">    <span class="keyword">this</span>.bloomFilterOpt.get().add(recordKey);</span><br><span class="line">    <span class="keyword">if</span> (minRecordKey != <span class="keyword">null</span>) &#123;</span><br><span class="line">      minRecordKey = minRecordKey.compareTo(recordKey) &lt;= <span class="number">0</span> ? minRecordKey : recordKey;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      minRecordKey = recordKey;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (maxRecordKey != <span class="keyword">null</span>) &#123;</span><br><span class="line">      maxRecordKey = maxRecordKey.compareTo(recordKey) &gt;= <span class="number">0</span> ? maxRecordKey : recordKey;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      maxRecordKey = recordKey;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>这里主要调用 HoodieDynamicBoundedBloomFilter.add 继而调用 InternalDynamicBloomFilter.add 最终将 recordKey 添加到 org.apache.hadoop.util.bloom.BloomFilter 中,然后更新最大值和最小值。</p>
@@ -315,7 +315,7 @@
 <p>writeSupport.getName -&gt; HoodieAvroWriteSupport.getName -&gt; AvroWriteSupport.getName</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">getName</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> <span class="string">"avro"</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p><code>ParquetFileWriter.end</code><br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">end</span><span class="params">(Map&lt;String, String&gt; extraMetaData)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">  state = state.end();</span><br><span class="line">  LOG.debug(<span class="string">"&#123;&#125;: end"</span>, out.getPos());</span><br><span class="line">  <span class="comment">// 将 extraMetaData 赋给 FileMetaData.keyValueMetaData </span></span><br><span class="line">  <span class="keyword">this</span>.footer = <span class="keyword">new</span> ParquetMetadata(<span class="keyword">new</span> FileMetaData(schema, extraMetaData, Version.FULL_VERSION), blocks);</span><br><span class="line">  serializeFooter(footer, out);</span><br><span class="line">  out.close();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p><code>ParquetFileWriter.serializeFooter</code><br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">serializeFooter</span><span class="params">(ParquetMetadata footer, PositionOutputStream out)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">  <span class="keyword">long</span> footerIndex = out.getPos();</span><br><span class="line">  <span class="comment">// 将 footer 转换 为 org.apache.parquet.format.FileMetaData</span></span><br><span class="line">  org.apache.parquet.format.FileMetaData parquetMetadata = metadataConverter.toParquetMetadata(CURRENT_VERSION, footer);</span><br><span class="line">  <span class="comment">// 调用 writeFileMetaData 将 parquetMetadata 写到 paruqet 元数据中</span></span><br><span class="line">  writeFileMetaData(parquetMetadata, out);</span><br><span class="line">  LOG.debug(<span class="string">"&#123;&#125;: footer length = &#123;&#125;"</span> , out.getPos(), (out.getPos() - footerIndex));</span><br><span class="line">  BytesUtils.writeIntLittleEndian(out, (<span class="keyword">int</span>) (out.getPos() - footerIndex));</span><br><span class="line">  out.write(MAGIC);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>ParquetFileWriter.serializeFooter</code><br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">serializeFooter</span><span class="params">(ParquetMetadata footer, PositionOutputStream out)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">  <span class="keyword">long</span> footerIndex = out.getPos();</span><br><span class="line">  <span class="comment">// 将 footer 转换为 org.apache.parquet.format.FileMetaData</span></span><br><span class="line">  org.apache.parquet.format.FileMetaData parquetMetadata = metadataConverter.toParquetMetadata(CURRENT_VERSION, footer);</span><br><span class="line">  <span class="comment">// 调用 writeFileMetaData 将 parquetMetadata 写到 parquet 元数据中</span></span><br><span class="line">  writeFileMetaData(parquetMetadata, out);</span><br><span class="line">  LOG.debug(<span class="string">"&#123;&#125;: footer length = &#123;&#125;"</span> , out.getPos(), (out.getPos() - footerIndex));</span><br><span class="line">  BytesUtils.writeIntLittleEndian(out, (<span class="keyword">int</span>) (out.getPos() - footerIndex));</span><br><span class="line">  out.write(MAGIC);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 
       
 
@@ -638,35 +638,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">算法</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -678,11 +654,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
+                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -710,14 +694,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
               </li>
              
@@ -726,7 +702,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -738,31 +734,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">hbase</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -778,11 +754,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">开源</a>
+                <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -790,11 +766,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">java</a>
+                <a href="javascript:void(0)" class="js-tag color3">开源</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Scala</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -806,7 +790,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -814,11 +810,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -838,7 +830,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -846,15 +838,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -866,7 +854,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -874,11 +862,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">scala</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -898,6 +898,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
               </li>
              
@@ -914,14 +918,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
               </li>
              
@@ -930,7 +926,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -938,7 +934,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -946,7 +946,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -954,7 +954,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -962,19 +962,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -990,7 +982,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1002,11 +1002,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
+                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
+                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
               </li>
              
               <li class="article-tag-list-item">
