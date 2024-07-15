@@ -17,7 +17,7 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言接上篇文章和之前的总结的源码文章，本文总结源码 tag/tagLocation ，对应功能：根据索引信息判断记录是否存在，如果不存在，代表是新增数据，如果记录存在则代表是更新数据，需要找到并设置 currentLocation。 tagAbstractWriteHelper.tag 1234567private I tag(    I dedupedRecords, HoodieEngineC">
 <meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2024-07-15T06:10:07.340Z">
+<meta property="og:updated_time" content="2024-07-15T06:45:59.223Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Hudi 源码 | 索引总结 - tag&#x2F;tagLocation">
 <meta name="twitter:description" content="前言接上篇文章和之前的总结的源码文章，本文总结源码 tag/tagLocation ，对应功能：根据索引信息判断记录是否存在，如果不存在，代表是新增数据，如果记录存在则代表是更新数据，需要找到并设置 currentLocation。 tagAbstractWriteHelper.tag 1234567private I tag(    I dedupedRecords, HoodieEngineC">
@@ -257,6 +257,7 @@
 <h2 id="table-getIndex"><a href="#table-getIndex" class="headerlink" title="table.getIndex()"></a>table.getIndex()</h2><p>对于 Java Client 这里 table 为 HoodieJavaCopyOnWriteTable ， HoodieJavaCopyOnWriteTable.getIndex() -&gt; HoodieJavaTable.getIndex </p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> HoodieIndex&lt;T, List&lt;HoodieRecord&lt;T&gt;&gt;, List&lt;HoodieKey&gt;, List&lt;WriteStatus&gt;&gt; getIndex(HoodieWriteConfig config, HoodieEngineContext context) &#123;</span><br><span class="line">  <span class="keyword">return</span> JavaHoodieIndex.createIndex(config);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> HoodieIndex <span class="title">createIndex</span><span class="params">(HoodieWriteConfig config)</span> </span>&#123;</span><br><span class="line">  <span class="comment">// first use index class config to create index.</span></span><br><span class="line">  <span class="keyword">if</span> (!StringUtils.isNullOrEmpty(config.getIndexClass())) &#123;</span><br><span class="line">    Object instance = ReflectionUtils.loadClass(config.getIndexClass(), config);</span><br><span class="line">    <span class="keyword">if</span> (!(instance <span class="keyword">instanceof</span> HoodieIndex)) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> HoodieIndexException(config.getIndexClass() + <span class="string">" is not a subclass of HoodieIndex"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> (JavaHoodieIndex) instance;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// TODO more indexes to be added</span></span><br><span class="line">  <span class="comment">// 从这里看出，当前版本（0.9.0），Java Client 只支持两种索引类型：INMEMORY 和 BLOOM</span></span><br><span class="line">  <span class="keyword">switch</span> (config.getIndexType()) &#123;</span><br><span class="line">    <span class="keyword">case</span> INMEMORY:</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">new</span> JavaInMemoryHashIndex(config);</span><br><span class="line">    <span class="keyword">case</span> BLOOM:</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">new</span> JavaHoodieBloomIndex(config);</span><br><span class="line">    <span class="keyword">default</span>:</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> HoodieIndexException(<span class="string">"Unsupported index type "</span> + config.getIndexType());</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>因为指定了索引类型为 BLOOM , 所以这里返回 JavaHoodieBloomIndex 。</p>
+<a id="more"></a>
 <h2 id="JavaHoodieBloomIndex"><a href="#JavaHoodieBloomIndex" class="headerlink" title="JavaHoodieBloomIndex"></a>JavaHoodieBloomIndex</h2><p>JavaHoodieBloomIndex 的父类为 HoodieBaseBloomIndex ，其 tagLocation 在父类 HoodieBaseBloomIndex</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">JavaHoodieBloomIndex</span>&lt;<span class="title">T</span> <span class="keyword">extends</span> <span class="title">HoodieRecordPayload</span>&gt; <span class="keyword">extends</span> <span class="title">HoodieBaseBloomIndex</span>&lt;<span class="title">T</span>&gt; </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="title">JavaHoodieBloomIndex</span><span class="params">(HoodieWriteConfig config)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">super</span>(config);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h2 id="tagLocation"><a href="#tagLocation" class="headerlink" title="tagLocation"></a>tagLocation</h2><ol>
@@ -273,7 +274,7 @@
 <li>findMatchingFilesForRecordKeys ：遍历 explodeRecordsWithFileComparisons 返回的 <code>List&lt;Pair&lt;fileId, HoodieKey&gt;&gt;</code> ，以 fileId 为维度，利用布隆索引判断有哪些 HoodieKey 可能存在于该文件中，并添加到候选：candidateRecordKeys ，最后遍历 candidateRecordKeys ，去 parquet 数据文件中确认该 key 是否确实存在于该文件，最后返回确切的 recordKey 和 location 的映射关系 ：<code>Map&lt;HoodieKey, HoodieRecordLocation&gt;</code></li>
 </ol>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Lookup the location for each record key and return the pair&lt;record_key,location&gt; for all record keys already</span></span><br><span class="line"><span class="comment"> * present and drop the record keys if not present.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * 查找每个 recordKey 的 location，并返回已存在的所有 recordKey 的 pair&lt;record_key,location&gt;，如果不存在，则删除记录键。</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> Map&lt;HoodieKey, HoodieRecordLocation&gt; <span class="title">lookupIndex</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    Map&lt;String, List&lt;String&gt;&gt; partitionRecordKeyMap, <span class="keyword">final</span> HoodieEngineContext context,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">final</span> HoodieTable hoodieTable)</span> </span>&#123;</span><br><span class="line">  <span class="comment">// Obtain records per partition, in the incoming records</span></span><br><span class="line">  <span class="comment">// 在传入记录中获取每个分区的记录数</span></span><br><span class="line">  Map&lt;String, Long&gt; recordsPerPartition = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">  <span class="comment">// （分区路径，每个分区路径对应的记录数）</span></span><br><span class="line">  partitionRecordKeyMap.keySet().forEach(k -&gt; recordsPerPartition.put(k, Long.valueOf(partitionRecordKeyMap.get(k).size())));</span><br><span class="line">  <span class="comment">// 所有的分区路径</span></span><br><span class="line">  List&lt;String&gt; affectedPartitionPathList = <span class="keyword">new</span> ArrayList&lt;&gt;(recordsPerPartition.keySet());</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Step 2: Load all involved files as &lt;Partition, filename&gt; pairs</span></span><br><span class="line">  <span class="comment">// 第二步：将所有涉及的文件加载为＜Partition, filename＞对</span></span><br><span class="line">  <span class="comment">// List(Partition, BloomIndexFileInfo) BloomIndexFileInfo 包含 fileID,minRecordKey,maxRecordKey</span></span><br><span class="line">  List&lt;Pair&lt;String, BloomIndexFileInfo&gt;&gt; fileInfoList =</span><br><span class="line">      loadInvolvedFiles(affectedPartitionPathList, context, hoodieTable);</span><br><span class="line">  <span class="comment">// Map (Partition, List(BloomIndexFileInfo))</span></span><br><span class="line">  <span class="keyword">final</span> Map&lt;String, List&lt;BloomIndexFileInfo&gt;&gt; partitionToFileInfo =</span><br><span class="line">      fileInfoList.stream().collect(groupingBy(Pair::getLeft, mapping(Pair::getRight, toList())));</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Step 3: Obtain a List, for each incoming record, that already exists, with the file id,</span></span><br><span class="line">  <span class="comment">// that contains it.</span></span><br><span class="line">  <span class="comment">// 第三步：为每个已存在的传入记录获取一个列表，其中包含该列表的文件id。</span></span><br><span class="line">  <span class="comment">// List(fileId, HoodieKey) ，这里多个 fileId 对应一个 HoodieKey ，一个 fileId 对应多个HoodieKey</span></span><br><span class="line">  <span class="comment">// 类似于笛卡尔积，多对多的关系，按照 fileId 排序</span></span><br><span class="line">  List&lt;Pair&lt;String, HoodieKey&gt;&gt; fileComparisons =</span><br><span class="line">      explodeRecordsWithFileComparisons(partitionToFileInfo, partitionRecordKeyMap);</span><br><span class="line">  <span class="keyword">return</span> findMatchingFilesForRecordKeys(fileComparisons, hoodieTable);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="loadInvolvedFiles"><a href="#loadInvolvedFiles" class="headerlink" title="loadInvolvedFiles"></a>loadInvolvedFiles</h2><p>将所有涉及的文件加载为＜Partition, filename＞对</p>
+<h2 id="loadInvolvedFiles"><a href="#loadInvolvedFiles" class="headerlink" title="loadInvolvedFiles"></a>loadInvolvedFiles</h2><p>将所有涉及的文件加载为 <code>List&lt;Pair&lt;partitionPath, BloomIndexFileInfo&gt;&gt;</code></p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Load all involved files as &lt;Partition, filename&gt; pair List.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * 将所有涉及的文件加载为＜Partition，BloomIndexFileInfo＞对列表。</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="comment">//TODO duplicate code with spark, we can optimize this method later</span></span><br><span class="line">List&lt;Pair&lt;String, BloomIndexFileInfo&gt;&gt; loadInvolvedFiles(List&lt;String&gt; partitions, <span class="keyword">final</span> HoodieEngineContext context,</span><br><span class="line">                                                         <span class="keyword">final</span> HoodieTable hoodieTable) &#123;</span><br><span class="line">  <span class="comment">// Obtain the latest data files from all the partitions.</span></span><br><span class="line">  <span class="comment">// 从所有分区中获取最新的数据文件。</span></span><br><span class="line">  <span class="comment">// List (partitionPath,FileId)</span></span><br><span class="line">  List&lt;Pair&lt;String, String&gt;&gt; partitionPathFileIDList = getLatestBaseFilesForAllPartitions(partitions, context, hoodieTable).stream()</span><br><span class="line">      .map(pair -&gt; Pair.of(pair.getKey(), pair.getValue().getFileId()))</span><br><span class="line">      .collect(toList());</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 是否需要根据最大值最小值进行第一阶段过滤</span></span><br><span class="line">  <span class="keyword">if</span> (config.getBloomIndexPruneByRanges()) &#123;<span class="comment">// 默认true</span></span><br><span class="line">    <span class="comment">// also obtain file ranges, if range pruning is enabled</span></span><br><span class="line">    context.setJobStatus(<span class="keyword">this</span>.getClass().getName(), <span class="string">"Obtain key ranges for file slices (range pruning=on)"</span>);</span><br><span class="line">    <span class="keyword">return</span> context.map(partitionPathFileIDList, pf -&gt; &#123;</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        HoodieRangeInfoHandle rangeInfoHandle = <span class="keyword">new</span> HoodieRangeInfoHandle(config, hoodieTable, pf);</span><br><span class="line">        <span class="comment">// 读取最大值最小值，具体为 parquet 文件元数据中的 hoodie_min_record_key 、hoodie_max_record_key</span></span><br><span class="line">        String[] minMaxKeys = rangeInfoHandle.getMinMaxKeys();</span><br><span class="line">        <span class="comment">// 返回 (partitionPath, (fileId, hoodie_min_record_key, hoodie_max_record_key))</span></span><br><span class="line">        <span class="keyword">return</span> Pair.of(pf.getKey(), <span class="keyword">new</span> BloomIndexFileInfo(pf.getValue(), minMaxKeys[<span class="number">0</span>], minMaxKeys[<span class="number">1</span>]));</span><br><span class="line">      &#125; <span class="keyword">catch</span> (MetadataNotFoundException me) &#123;</span><br><span class="line">        LOG.warn(<span class="string">"Unable to find range metadata in file :"</span> + pf);</span><br><span class="line">        <span class="keyword">return</span> Pair.of(pf.getKey(), <span class="keyword">new</span> BloomIndexFileInfo(pf.getValue()));</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;, Math.max(partitionPathFileIDList.size(), <span class="number">1</span>));</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// 返回 (partitionPath, (fileId, null, null))</span></span><br><span class="line">    <span class="keyword">return</span> partitionPathFileIDList.stream()</span><br><span class="line">        .map(pf -&gt; Pair.of(pf.getKey(), <span class="keyword">new</span> BloomIndexFileInfo(pf.getValue()))).collect(toList());</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
 <h2 id="Interval-Tree"><a href="#Interval-Tree" class="headerlink" title="Interval Tree"></a>Interval Tree</h2><p>Interval Tree ： 区间树 ，翻译软件一般翻译为间隔树。</p>
 <ul>
@@ -668,6 +669,22 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -680,23 +697,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -708,10 +709,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
@@ -720,15 +717,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -748,18 +757,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
               </li>
              
@@ -772,11 +769,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -812,11 +813,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color5">java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -828,19 +837,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">java</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -848,11 +845,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -864,7 +861,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -872,7 +877,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -888,15 +897,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -905,18 +910,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -936,7 +929,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -948,6 +949,14 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
               </li>
              
@@ -956,23 +965,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">yarn</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1004,14 +1001,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">vue</a>
               </li>
              
@@ -1021,6 +1010,18 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
