@@ -9,22 +9,22 @@
   <link rel="dns-prefetch" href="https://dongkelun.com">
   <title>Netty 入门学习 | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="前言学习Spark源码绕不开通信，Spark通信是基于Netty实现的，所以先简单学习总结一下Netty。 Spark 通信历史最开始: AkkaSpark 1.3： 开始引入Netty，为了解决大块数据（如Shuffle）的传输问题Spark 1.6：支持配置使用 Akka 或者 NettySpark 2：完全废气Akka,全部使用Netty  Akka 是一个用 Scala 编写的库，用于简化">
+  <meta name="description" content="前言学习Spark源码绕不开通信，Spark通信是基于Netty实现的，所以先简单学习总结一下Netty。 Spark 通信历史最开始: AkkaSpark 1.3： 开始引入Netty，为了解决大块数据（如Shuffle）的传输问题Spark 1.6：支持配置使用 Akka 或者 NettySpark 2：完全废弃Akka,全部使用Netty  Akka 是一个用 Scala 编写的库，用于简化">
 <meta name="keywords" content="Netty">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Netty 入门学习">
 <meta property="og:url" content="https://dongkelun.com/2025/01/09/netty/netty-learning/index.html">
 <meta property="og:site_name" content="伦少的博客">
-<meta property="og:description" content="前言学习Spark源码绕不开通信，Spark通信是基于Netty实现的，所以先简单学习总结一下Netty。 Spark 通信历史最开始: AkkaSpark 1.3： 开始引入Netty，为了解决大块数据（如Shuffle）的传输问题Spark 1.6：支持配置使用 Akka 或者 NettySpark 2：完全废气Akka,全部使用Netty  Akka 是一个用 Scala 编写的库，用于简化">
+<meta property="og:description" content="前言学习Spark源码绕不开通信，Spark通信是基于Netty实现的，所以先简单学习总结一下Netty。 Spark 通信历史最开始: AkkaSpark 1.3： 开始引入Netty，为了解决大块数据（如Shuffle）的传输问题Spark 1.6：支持配置使用 Akka 或者 NettySpark 2：完全废弃Akka,全部使用Netty  Akka 是一个用 Scala 编写的库，用于简化">
 <meta property="og:locale" content="cn">
 <meta property="og:image" content="https://img.dongkelun.com/netty/server.png">
 <meta property="og:image" content="https://img.dongkelun.com/netty/client.png">
 <meta property="og:image" content="https://img.dongkelun.com/netty/spark-netty-server.png">
 <meta property="og:image" content="https://img.dongkelun.com/netty/spark-netty-client.png">
-<meta property="og:updated_time" content="2025-01-10T08:46:15.757Z">
+<meta property="og:updated_time" content="2025-01-10T08:58:49.225Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Netty 入门学习">
-<meta name="twitter:description" content="前言学习Spark源码绕不开通信，Spark通信是基于Netty实现的，所以先简单学习总结一下Netty。 Spark 通信历史最开始: AkkaSpark 1.3： 开始引入Netty，为了解决大块数据（如Shuffle）的传输问题Spark 1.6：支持配置使用 Akka 或者 NettySpark 2：完全废气Akka,全部使用Netty  Akka 是一个用 Scala 编写的库，用于简化">
+<meta name="twitter:description" content="前言学习Spark源码绕不开通信，Spark通信是基于Netty实现的，所以先简单学习总结一下Netty。 Spark 通信历史最开始: AkkaSpark 1.3： 开始引入Netty，为了解决大块数据（如Shuffle）的传输问题Spark 1.6：支持配置使用 Akka 或者 NettySpark 2：完全废弃Akka,全部使用Netty  Akka 是一个用 Scala 编写的库，用于简化">
 <meta name="twitter:image" content="https://img.dongkelun.com/netty/server.png">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
@@ -257,7 +257,7 @@
         
       
         <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>学习Spark源码绕不开通信，Spark通信是基于Netty实现的，所以先简单学习总结一下Netty。</p>
-<h2 id="Spark-通信历史"><a href="#Spark-通信历史" class="headerlink" title="Spark 通信历史"></a>Spark 通信历史</h2><p>最开始: Akka<br>Spark 1.3： 开始引入Netty，为了解决大块数据（如Shuffle）的传输问题<br>Spark 1.6：支持配置使用 Akka 或者 Netty<br>Spark 2：完全废气Akka,全部使用Netty</p>
+<h2 id="Spark-通信历史"><a href="#Spark-通信历史" class="headerlink" title="Spark 通信历史"></a>Spark 通信历史</h2><p>最开始: Akka<br>Spark 1.3： 开始引入Netty，为了解决大块数据（如Shuffle）的传输问题<br>Spark 1.6：支持配置使用 Akka 或者 Netty<br>Spark 2：完全废弃Akka,全部使用Netty</p>
 <blockquote>
 <p>Akka 是一个用 Scala 编写的库，用于简化编写容错的、高可伸缩性的 Java 和 Scala 的 Actor 模型应用。<br>Spark 借鉴Akka 通过 Netty 实现了类似的简约版的Actor 模型</p>
 </blockquote>
@@ -609,15 +609,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -629,14 +625,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">SQL</a>
               </li>
              
@@ -645,7 +633,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -661,10 +661,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
@@ -673,15 +669,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">S3</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -701,15 +697,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -741,11 +737,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -761,19 +757,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">IDEA</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Maven</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">IDEA</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Maven</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -785,11 +781,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -805,11 +805,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -817,7 +813,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -829,11 +833,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -842,18 +854,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -905,7 +905,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -913,7 +913,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -937,6 +937,14 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">vmware</a>
               </li>
              
@@ -953,23 +961,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ai</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">amazon</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -978,6 +970,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">HBase</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ai</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">amazon</a>
               </li>
              
               <li class="article-tag-list-item">
