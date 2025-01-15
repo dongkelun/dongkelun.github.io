@@ -21,7 +21,7 @@
 <meta property="og:image" content="https://img.dongkelun.com/spark/rpc/rpc-remote-server.png">
 <meta property="og:image" content="https://img.dongkelun.com/spark/rpc/rpc-remote-test.png">
 <meta property="og:image" content="https://img.dongkelun.com/spark/rpc/rpc-onstart-test.png">
-<meta property="og:updated_time" content="2025-01-15T07:18:01.411Z">
+<meta property="og:updated_time" content="2025-01-15T07:22:49.791Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Spark RPC 学习总结">
 <meta name="twitter:description" content="前言本文从API层面学习总结Spark RPC,暂不涉及源码分析。 Spark 通信历史最开始: AkkaSpark 1.3： 开始引入Netty，为了解决大块数据（如Shuffle）的传输问题Spark 1.6：支持配置使用 Akka 或者 Netty。Spark 2：完全废弃Akka,全部使用Netty   Akka 是一个用 Scala 编写的库，用于简化编写容错的、高可伸缩性的 Java">
@@ -271,7 +271,7 @@
 <h2 id="RpcEnv"><a href="#RpcEnv" class="headerlink" title="RpcEnv"></a>RpcEnv</h2><p>Rpc环境，<code>RpcEndpoint</code> 需要在 <code>RpcEnv</code> 中注册一个名称来接收消息。</p>
 <p>先看源码中是如何创建 RpcEnv<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> securityMgr = <span class="keyword">new</span> <span class="type">SecurityManager</span>(conf)</span><br><span class="line"><span class="keyword">val</span> rpcEnv = <span class="type">RpcEnv</span>.create(<span class="type">SYSTEM_NAME</span>, host, port, conf, securityMgr)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">create</span></span>(</span><br><span class="line">    name: <span class="type">String</span>,</span><br><span class="line">    host: <span class="type">String</span>,</span><br><span class="line">    port: <span class="type">Int</span>,</span><br><span class="line">    conf: <span class="type">SparkConf</span>,</span><br><span class="line">    securityManager: <span class="type">SecurityManager</span>,</span><br><span class="line">    clientMode: <span class="type">Boolean</span> = <span class="literal">false</span>): <span class="type">RpcEnv</span> = &#123;</span><br><span class="line">  create(name, host, host, port, conf, securityManager, <span class="number">0</span>, clientMode)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">create</span></span>(</span><br><span class="line">    name: <span class="type">String</span>,</span><br><span class="line">    bindAddress: <span class="type">String</span>,</span><br><span class="line">    advertiseAddress: <span class="type">String</span>,</span><br><span class="line">    port: <span class="type">Int</span>,</span><br><span class="line">    conf: <span class="type">SparkConf</span>,</span><br><span class="line">    securityManager: <span class="type">SecurityManager</span>,</span><br><span class="line">    numUsableCores: <span class="type">Int</span>,</span><br><span class="line">    clientMode: <span class="type">Boolean</span>): <span class="type">RpcEnv</span> = &#123;</span><br><span class="line">  <span class="keyword">val</span> config = <span class="type">RpcEnvConfig</span>(conf, name, bindAddress, advertiseAddress, port, securityManager,</span><br><span class="line">    numUsableCores, clientMode)</span><br><span class="line">  <span class="keyword">new</span> <span class="type">NettyRpcEnvFactory</span>().create(config)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <p>本次测试用的代码<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">createRpcEnv</span></span>(</span><br><span class="line">                  conf: <span class="type">SparkConf</span>,</span><br><span class="line">                  name: <span class="type">String</span>,</span><br><span class="line">                  port: <span class="type">Int</span>,</span><br><span class="line">                  clientMode: <span class="type">Boolean</span> = <span class="literal">false</span>): <span class="type">RpcEnv</span> = &#123;</span><br><span class="line">  <span class="keyword">val</span> config = <span class="type">RpcEnvConfig</span>(conf, name, <span class="string">"localhost"</span>, <span class="string">"localhost"</span>, port,</span><br><span class="line">    <span class="keyword">new</span> <span class="type">SecurityManager</span>(conf), <span class="number">0</span>, clientMode)</span><br><span class="line">  <span class="keyword">new</span> <span class="type">NettyRpcEnvFactory</span>().create(config)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>clientMode: 是否客户端模式，默认false，默认会启动一个 NettyServer,具体在 TransportServer.init 中实现，可参考上篇文章。如果设置为true,则不启动服务，只作为一个客户端。<br>port: 为0时，会随机绑定一个端口号，这一点是Netty本身实现的，如果非0，则按照指定的端口绑定，但是要求端口号范围为[1024,65536)，如果端口已占用，则尝试端口号+1，默认重试16次，可以通过配置 spark.port.maxRetries 修改最大重试次数 。</p>
+<p>clientMode: 是否客户端模式，默认false，默认会启动一个 NettyServer,具体在 TransportServer.init 中实现，可参考<a href="https://mp.weixin.qq.com/s/ZVOVZprTHi6eHv2czoOioA" target="_blank" rel="noopener">上篇文章</a>。如果设置为true,则不启动服务，只作为一个客户端。<br>port: 为0时，会随机绑定一个端口号，这一点是Netty本身实现的，如果非0，则按照指定的端口绑定，但是要求端口号范围为[1024,65536)，如果端口已占用，则尝试端口号+1，默认重试16次，可以通过配置 spark.port.maxRetries 修改最大重试次数 。</p>
 <h2 id="RpcEndpoint"><a href="#RpcEndpoint" class="headerlink" title="RpcEndpoint"></a>RpcEndpoint</h2><p>很多都是RpcEndpoint的子类，如：<code>Master</code>、<code>Worker</code>、<code>ClientEndpoint</code>、<code>DriverEndpoint</code>、<code>CoarseGrainedExecutorBackend</code>、<code>YarnCoarseGrainedExecutorBackend</code>、<code>YarnDriverEndpoint</code>、<code>YarnSchedulerEndpoint</code> 等。</p>
 <p><code>RpcEndpoint</code> 的生命周期：constructor -&gt; onStart -&gt; receive* -&gt; onStop 。也就是首先会调用 onStart 方法。</p>
 <p><code>RpcEndpoint</code> 首先必须通过调用 <code>rpcEnv</code>.<code>setupEndpoint</code> 才能使用<br><code>setupEndpoint</code> 使用名称注册 <code>RpcEndpoint</code> 并返回其 <code>RpcEndpointRef</code><br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">setupEndpoint</span></span>(name: <span class="type">String</span>, endpoint: <span class="type">RpcEndpoint</span>): <span class="type">RpcEndpointRef</span></span><br></pre></td></tr></table></figure></p>
@@ -626,11 +626,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -650,23 +654,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -675,14 +671,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">源码</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -695,6 +683,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -718,10 +714,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
               </li>
              
@@ -730,11 +722,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Flink</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -743,6 +739,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -762,19 +762,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">开源</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color3">开源</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">异常</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -798,19 +798,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Linux</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -830,15 +830,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -850,11 +854,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -874,6 +882,18 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">持久化</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">cache</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">persist</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
               </li>
              
@@ -883,6 +903,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -898,14 +926,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
@@ -914,15 +934,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">持久化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">cache</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">persist</a>
+                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -930,7 +942,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -938,11 +950,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -958,10 +970,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">vue</a>
               </li>
              
@@ -974,14 +982,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">ai</a>
               </li>
              
@@ -990,11 +990,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
+                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
+                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
