@@ -17,7 +17,7 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言最初是想学习一下Spark提交流程的源码，比如 Spark On Yarn 、Standalone。之前只是通过网上总结的文章大概了解整体的提交流程，但是每个文章描述的又不太一样，弄不清楚到底哪个说的准确，比如Client 和 CLuster 模式的区别，Driver到底是干啥的，是如何定义的，为了彻底弄清楚这些疑问，所以决定学习一下相关的源码。因为不管是服务启动还是应用程序启动，都是通过脚本">
 <meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2025-02-10T07:49:14.689Z">
+<meta property="og:updated_time" content="2025-02-10T08:27:02.653Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Spark 源码 | 脚本分析总结">
 <meta name="twitter:description" content="前言最初是想学习一下Spark提交流程的源码，比如 Spark On Yarn 、Standalone。之前只是通过网上总结的文章大概了解整体的提交流程，但是每个文章描述的又不太一样，弄不清楚到底哪个说的准确，比如Client 和 CLuster 模式的区别，Driver到底是干啥的，是如何定义的，为了彻底弄清楚这些疑问，所以决定学习一下相关的源码。因为不管是服务启动还是应用程序启动，都是通过脚本">
@@ -272,20 +272,20 @@
 <p>主要逻辑：由 spark-daemon.sh 启动类 org.apache.spark.deploy.master.Master</p>
 <p>具体的参数：/opt/dkl/spark-3.2.3-bin-hadoop3.2/sbin/spark-daemon.sh start org.apache.spark.deploy.master.Master 1   –host indata-10-110-8-199.indata.com –port 7077 –webui-port 8080</p>
 <h2 id="start-workers-sh"><a href="#start-workers-sh" class="headerlink" title="start-workers.sh"></a>start-workers.sh</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> [ -z <span class="string">"<span class="variable">$&#123;SPARK_HOME&#125;</span>"</span> ]; <span class="keyword">then</span></span><br><span class="line">  <span class="built_in">export</span> SPARK_HOME=<span class="string">"<span class="variable">$(cd "`dirname "$0"`"/..; pwd)</span>"</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line">. <span class="string">"<span class="variable">$&#123;SPARK_HOME&#125;</span>/sbin/spark-config.sh"</span></span><br><span class="line">. <span class="string">"<span class="variable">$&#123;SPARK_HOME&#125;</span>/bin/load-spark-env.sh"</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Find the port number for the master</span></span><br><span class="line"><span class="keyword">if</span> [ <span class="string">"<span class="variable">$SPARK_MASTER_PORT</span>"</span> = <span class="string">""</span> ]; <span class="keyword">then</span></span><br><span class="line">  SPARK_MASTER_PORT=7077</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> [ <span class="string">"<span class="variable">$SPARK_MASTER_HOST</span>"</span> = <span class="string">""</span> ]; <span class="keyword">then</span></span><br><span class="line">  <span class="keyword">case</span> `uname` <span class="keyword">in</span></span><br><span class="line">      (SunOS)</span><br><span class="line">          SPARK_MASTER_HOST=<span class="string">"`/usr/sbin/check-hostname | awk '&#123;print <span class="variable">$NF</span>&#125;'`"</span></span><br><span class="line">          ;;</span><br><span class="line">      (*)</span><br><span class="line">          SPARK_MASTER_HOST=<span class="string">"`hostname -f`"</span></span><br><span class="line">          ;;</span><br><span class="line">  <span class="keyword">esac</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Launch the workers</span></span><br><span class="line"><span class="string">"<span class="variable">$&#123;SPARK_HOME&#125;</span>/sbin/workers.sh"</span> <span class="built_in">cd</span> <span class="string">"<span class="variable">$&#123;SPARK_HOME&#125;</span>"</span> \; <span class="string">"<span class="variable">$&#123;SPARK_HOME&#125;</span>/sbin/start-worker.sh"</span> <span class="string">"spark://<span class="variable">$SPARK_MASTER_HOST</span>:<span class="variable">$SPARK_MASTER_PORT</span>"</span></span><br></pre></td></tr></table></figure>
-<p>配置host和端口，然后调用 workers.sh 参数是 cd “${SPARK_HOME}” \; “${SPARK_HOME}/sbin/start-worker.sh” “spark://$SPARK_MASTER_HOST:$SPARK_MASTER_PORT”<br>具体的参数：cd /opt/dkl/spark-3.2.3-bin-hadoop3.2 ; /opt/dkl/spark-3.2.3-bin-hadoop3.2/sbin/start-worker.sh spark://indata-10-110-8-199.indata.com:7077</p>
-<h3 id="workers-sh"><a href="#workers-sh" class="headerlink" title="workers.sh"></a>workers.sh</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Run a shell command on all worker hosts.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># Environment Variables</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment">#   SPARK_WORKERS    File naming remote hosts.</span></span><br><span class="line"><span class="comment">#     Default is $&#123;SPARK_CONF_DIR&#125;/workers.</span></span><br><span class="line"><span class="comment">#   SPARK_CONF_DIR  Alternate conf dir. Default is $&#123;SPARK_HOME&#125;/conf.</span></span><br><span class="line"><span class="comment">#   SPARK_WORKER_SLEEP Seconds to sleep between spawning remote commands.</span></span><br><span class="line"><span class="comment">#   SPARK_SSH_OPTS Options passed to ssh when running remote commands.</span></span><br><span class="line"><span class="comment">##</span></span><br><span class="line"></span><br><span class="line">usage=<span class="string">"Usage: workers.sh [--config &lt;conf-dir&gt;] command..."</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># if no args specified, show usage</span></span><br><span class="line"><span class="keyword">if</span> [ <span class="variable">$#</span> -le 0 ]; <span class="keyword">then</span></span><br><span class="line">  <span class="built_in">echo</span> <span class="variable">$usage</span></span><br><span class="line">  <span class="built_in">exit</span> 1</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> [ -z <span class="string">"<span class="variable">$&#123;SPARK_HOME&#125;</span>"</span> ]; <span class="keyword">then</span></span><br><span class="line">  <span class="built_in">export</span> SPARK_HOME=<span class="string">"<span class="variable">$(cd "`dirname "$0"`"/..; pwd)</span>"</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line">. <span class="string">"<span class="variable">$&#123;SPARK_HOME&#125;</span>/sbin/spark-config.sh"</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># If the workers file is specified in the command line,</span></span><br><span class="line"><span class="comment"># then it takes precedence over the definition in</span></span><br><span class="line"><span class="comment"># spark-env.sh. Save it here.</span></span><br><span class="line"><span class="keyword">if</span> [ -f <span class="string">"<span class="variable">$SPARK_WORKERS</span>"</span> ]; <span class="keyword">then</span></span><br><span class="line">  HOSTLIST=`cat <span class="string">"<span class="variable">$SPARK_WORKERS</span>"</span>`</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"><span class="keyword">if</span> [ -f <span class="string">"<span class="variable">$SPARK_SLAVES</span>"</span> ]; <span class="keyword">then</span></span><br><span class="line">  &gt;&amp;2 <span class="built_in">echo</span> <span class="string">"SPARK_SLAVES is deprecated, use SPARK_WORKERS"</span></span><br><span class="line">  HOSTLIST=`cat <span class="string">"<span class="variable">$SPARK_SLAVES</span>"</span>`</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># Check if --config is passed as an argument. It is an optional parameter.</span></span><br><span class="line"><span class="comment"># Exit if the argument is not a directory.</span></span><br><span class="line"><span class="keyword">if</span> [ <span class="string">"<span class="variable">$1</span>"</span> == <span class="string">"--config"</span> ]</span><br><span class="line"><span class="keyword">then</span></span><br><span class="line">  <span class="built_in">shift</span></span><br><span class="line">  conf_dir=<span class="string">"<span class="variable">$1</span>"</span></span><br><span class="line">  <span class="keyword">if</span> [ ! -d <span class="string">"<span class="variable">$conf_dir</span>"</span> ]</span><br><span class="line">  <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"ERROR : <span class="variable">$conf_dir</span> is not a directory"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="variable">$usage</span></span><br><span class="line">    <span class="built_in">exit</span> 1</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">    <span class="built_in">export</span> SPARK_CONF_DIR=<span class="string">"<span class="variable">$conf_dir</span>"</span></span><br><span class="line">  <span class="keyword">fi</span></span><br><span class="line">  <span class="built_in">shift</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line">. <span class="string">"<span class="variable">$&#123;SPARK_HOME&#125;</span>/bin/load-spark-env.sh"</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> [ <span class="string">"<span class="variable">$HOSTLIST</span>"</span> = <span class="string">""</span> ]; <span class="keyword">then</span></span><br><span class="line">  <span class="keyword">if</span> [ <span class="string">"<span class="variable">$SPARK_SLAVES</span>"</span> = <span class="string">""</span> ] &amp;&amp; [ <span class="string">"<span class="variable">$SPARK_WORKERS</span>"</span> = <span class="string">""</span> ]; <span class="keyword">then</span></span><br><span class="line">    <span class="keyword">if</span> [ -f <span class="string">"<span class="variable">$&#123;SPARK_CONF_DIR&#125;</span>/workers"</span> ]; <span class="keyword">then</span></span><br><span class="line">      HOSTLIST=`cat <span class="string">"<span class="variable">$&#123;SPARK_CONF_DIR&#125;</span>/workers"</span>`</span><br><span class="line">    <span class="keyword">elif</span> [ -f <span class="string">"<span class="variable">$&#123;SPARK_CONF_DIR&#125;</span>/slaves"</span> ]; <span class="keyword">then</span></span><br><span class="line">      HOSTLIST=`cat <span class="string">"<span class="variable">$&#123;SPARK_CONF_DIR&#125;</span>/slaves"</span>`</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">      HOSTLIST=localhost</span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">    <span class="keyword">if</span> [ -f <span class="string">"<span class="variable">$SPARK_WORKERS</span>"</span> ]; <span class="keyword">then</span></span><br><span class="line">      HOSTLIST=`cat <span class="string">"<span class="variable">$SPARK_WORKERS</span>"</span>`</span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">    <span class="keyword">if</span> [ -f <span class="string">"<span class="variable">$SPARK_SLAVES</span>"</span> ]; <span class="keyword">then</span></span><br><span class="line">      &gt;&amp;2 <span class="built_in">echo</span> <span class="string">"SPARK_SLAVES is deprecated, use SPARK_WORKERS"</span></span><br><span class="line">      HOSTLIST=`cat <span class="string">"<span class="variable">$SPARK_SLAVES</span>"</span>`</span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">  <span class="keyword">fi</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># By default disable strict host key checking</span></span><br><span class="line"><span class="keyword">if</span> [ <span class="string">"<span class="variable">$SPARK_SSH_OPTS</span>"</span> = <span class="string">""</span> ]; <span class="keyword">then</span></span><br><span class="line">  SPARK_SSH_OPTS=<span class="string">"-o StrictHostKeyChecking=no"</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"><span class="comment"># 这里通过sed 将host # 后面的删除</span></span><br><span class="line"><span class="keyword">for</span> host <span class="keyword">in</span> `<span class="built_in">echo</span> <span class="string">"<span class="variable">$HOSTLIST</span>"</span>|sed  <span class="string">"s/#.*$//;/^$/d"</span>`; <span class="keyword">do</span></span><br><span class="line">  <span class="keyword">if</span> [ -n <span class="string">"<span class="variable">$&#123;SPARK_SSH_FOREGROUND&#125;</span>"</span> ]; <span class="keyword">then</span></span><br><span class="line">    ssh <span class="variable">$SPARK_SSH_OPTS</span> <span class="string">"<span class="variable">$host</span>"</span> $<span class="string">"<span class="variable">$&#123;@// /\\ &#125;</span>"</span> \</span><br><span class="line">      2&gt;&amp;1 | sed <span class="string">"s/^/<span class="variable">$host</span>: /"</span></span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">    ssh <span class="variable">$SPARK_SSH_OPTS</span> <span class="string">"<span class="variable">$host</span>"</span> $<span class="string">"<span class="variable">$&#123;@// /\\ &#125;</span>"</span> \</span><br><span class="line">      2&gt;&amp;1 | sed <span class="string">"s/^/<span class="variable">$host</span>: /"</span> &amp;</span><br><span class="line">  <span class="keyword">fi</span></span><br><span class="line">  <span class="keyword">if</span> [ <span class="string">"<span class="variable">$SPARK_WORKER_SLEEP</span>"</span> != <span class="string">""</span> ]; <span class="keyword">then</span></span><br><span class="line">    sleep <span class="variable">$SPARK_WORKER_SLEEP</span></span><br><span class="line">  <span class="keyword">fi</span></span><br><span class="line">  <span class="keyword">if</span> [ <span class="string">"<span class="variable">$SPARK_SLAVE_SLEEP</span>"</span> != <span class="string">""</span> ]; <span class="keyword">then</span></span><br><span class="line">    &gt;&amp;2 <span class="built_in">echo</span> <span class="string">"SPARK_SLAVE_SLEEP is deprecated, use SPARK_WORKER_SLEEP"</span></span><br><span class="line">    sleep <span class="variable">$SPARK_SLAVE_SLEEP</span></span><br><span class="line">  <span class="keyword">fi</span></span><br><span class="line"><span class="keyword">done</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">wait</span></span><br></pre></td></tr></table></figure>
+<p>配置host和端口，然后调用 workers.sh 参数是 cd <code>&quot;${SPARK_HOME}&quot;</code> \; <code>&quot;${SPARK_HOME}</code>/sbin/start-worker.sh” “spark://<code>$SPARK_MASTER_HOST</code>:<code>$SPARK_MASTER_PORT</code>“<br>具体的参数：cd /opt/dkl/spark-3.2.3-bin-hadoop3.2 ; /opt/dkl/spark-3.2.3-bin-hadoop3.2/sbin/start-worker.sh spark://indata-10-110-8-199.indata.com:7077</p>
+<h3 id="workers-sh"><a href="#workers-sh" class="headerlink" title="workers.sh"></a>workers.sh</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Run a shell command on all worker hosts.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># Environment Variables</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment">#   SPARK_WORKERS    File naming remote hosts.</span></span><br><span class="line"><span class="comment">#     Default is $&#123;SPARK_CONF_DIR&#125;/workers.</span></span><br><span class="line"><span class="comment">#   SPARK_CONF_DIR  Alternate conf dir. Default is $&#123;SPARK_HOME&#125;/conf.</span></span><br><span class="line"><span class="comment">#   SPARK_WORKER_SLEEP Seconds to sleep between spawning remote commands.</span></span><br><span class="line"><span class="comment">#   SPARK_SSH_OPTS Options passed to ssh when running remote commands.</span></span><br><span class="line"><span class="comment">##</span></span><br><span class="line"></span><br><span class="line">usage=<span class="string">"Usage: workers.sh [--config &lt;conf-dir&gt;] command..."</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># if no args specified, show usage</span></span><br><span class="line"><span class="keyword">if</span> [ <span class="variable">$#</span> -le 0 ]; <span class="keyword">then</span></span><br><span class="line">  <span class="built_in">echo</span> <span class="variable">$usage</span></span><br><span class="line">  <span class="built_in">exit</span> 1</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> [ -z <span class="string">"<span class="variable">$&#123;SPARK_HOME&#125;</span>"</span> ]; <span class="keyword">then</span></span><br><span class="line">  <span class="built_in">export</span> SPARK_HOME=<span class="string">"<span class="variable">$(cd "`dirname "$0"`"/..; pwd)</span>"</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line">. <span class="string">"<span class="variable">$&#123;SPARK_HOME&#125;</span>/sbin/spark-config.sh"</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># If the workers file is specified in the command line,</span></span><br><span class="line"><span class="comment"># then it takes precedence over the definition in</span></span><br><span class="line"><span class="comment"># spark-env.sh. Save it here.</span></span><br><span class="line"><span class="keyword">if</span> [ -f <span class="string">"<span class="variable">$SPARK_WORKERS</span>"</span> ]; <span class="keyword">then</span></span><br><span class="line">  HOSTLIST=`cat <span class="string">"<span class="variable">$SPARK_WORKERS</span>"</span>`</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"><span class="keyword">if</span> [ -f <span class="string">"<span class="variable">$SPARK_SLAVES</span>"</span> ]; <span class="keyword">then</span></span><br><span class="line">  &gt;&amp;2 <span class="built_in">echo</span> <span class="string">"SPARK_SLAVES is deprecated, use SPARK_WORKERS"</span></span><br><span class="line">  HOSTLIST=`cat <span class="string">"<span class="variable">$SPARK_SLAVES</span>"</span>`</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># Check if --config is passed as an argument. It is an optional parameter.</span></span><br><span class="line"><span class="comment"># Exit if the argument is not a directory.</span></span><br><span class="line"><span class="keyword">if</span> [ <span class="string">"<span class="variable">$1</span>"</span> == <span class="string">"--config"</span> ]</span><br><span class="line"><span class="keyword">then</span></span><br><span class="line">  <span class="built_in">shift</span></span><br><span class="line">  conf_dir=<span class="string">"<span class="variable">$1</span>"</span></span><br><span class="line">  <span class="keyword">if</span> [ ! -d <span class="string">"<span class="variable">$conf_dir</span>"</span> ]</span><br><span class="line">  <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"ERROR : <span class="variable">$conf_dir</span> is not a directory"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="variable">$usage</span></span><br><span class="line">    <span class="built_in">exit</span> 1</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">    <span class="built_in">export</span> SPARK_CONF_DIR=<span class="string">"<span class="variable">$conf_dir</span>"</span></span><br><span class="line">  <span class="keyword">fi</span></span><br><span class="line">  <span class="built_in">shift</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line">. <span class="string">"<span class="variable">$&#123;SPARK_HOME&#125;</span>/bin/load-spark-env.sh"</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> [ <span class="string">"<span class="variable">$HOSTLIST</span>"</span> = <span class="string">""</span> ]; <span class="keyword">then</span></span><br><span class="line">  <span class="keyword">if</span> [ <span class="string">"<span class="variable">$SPARK_SLAVES</span>"</span> = <span class="string">""</span> ] &amp;&amp; [ <span class="string">"<span class="variable">$SPARK_WORKERS</span>"</span> = <span class="string">""</span> ]; <span class="keyword">then</span></span><br><span class="line">    <span class="keyword">if</span> [ -f <span class="string">"<span class="variable">$&#123;SPARK_CONF_DIR&#125;</span>/workers"</span> ]; <span class="keyword">then</span></span><br><span class="line">      HOSTLIST=`cat <span class="string">"<span class="variable">$&#123;SPARK_CONF_DIR&#125;</span>/workers"</span>`</span><br><span class="line">    <span class="keyword">elif</span> [ -f <span class="string">"<span class="variable">$&#123;SPARK_CONF_DIR&#125;</span>/slaves"</span> ]; <span class="keyword">then</span></span><br><span class="line">      HOSTLIST=`cat <span class="string">"<span class="variable">$&#123;SPARK_CONF_DIR&#125;</span>/slaves"</span>`</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">      HOSTLIST=localhost</span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">    <span class="keyword">if</span> [ -f <span class="string">"<span class="variable">$SPARK_WORKERS</span>"</span> ]; <span class="keyword">then</span></span><br><span class="line">      HOSTLIST=`cat <span class="string">"<span class="variable">$SPARK_WORKERS</span>"</span>`</span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">    <span class="keyword">if</span> [ -f <span class="string">"<span class="variable">$SPARK_SLAVES</span>"</span> ]; <span class="keyword">then</span></span><br><span class="line">      &gt;&amp;2 <span class="built_in">echo</span> <span class="string">"SPARK_SLAVES is deprecated, use SPARK_WORKERS"</span></span><br><span class="line">      HOSTLIST=`cat <span class="string">"<span class="variable">$SPARK_SLAVES</span>"</span>`</span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">  <span class="keyword">fi</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># By default disable strict host key checking</span></span><br><span class="line"><span class="keyword">if</span> [ <span class="string">"<span class="variable">$SPARK_SSH_OPTS</span>"</span> = <span class="string">""</span> ]; <span class="keyword">then</span></span><br><span class="line">  SPARK_SSH_OPTS=<span class="string">"-o StrictHostKeyChecking=no"</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"><span class="comment"># 这里通过sed 将host # 后面的删除</span></span><br><span class="line"><span class="comment"># 遍历 HOSTLIST ，ssh 到每个host节点，执行 start-workers.sh 中的参数</span></span><br><span class="line"><span class="comment"># 备注：$@：传递给脚本或函数的所有参数</span></span><br><span class="line"><span class="keyword">for</span> host <span class="keyword">in</span> `<span class="built_in">echo</span> <span class="string">"<span class="variable">$HOSTLIST</span>"</span>|sed  <span class="string">"s/#.*$//;/^$/d"</span>`; <span class="keyword">do</span></span><br><span class="line">  <span class="keyword">if</span> [ -n <span class="string">"<span class="variable">$&#123;SPARK_SSH_FOREGROUND&#125;</span>"</span> ]; <span class="keyword">then</span></span><br><span class="line">    ssh <span class="variable">$SPARK_SSH_OPTS</span> <span class="string">"<span class="variable">$host</span>"</span> $<span class="string">"<span class="variable">$&#123;@// /\\ &#125;</span>"</span> \</span><br><span class="line">      2&gt;&amp;1 | sed <span class="string">"s/^/<span class="variable">$host</span>: /"</span></span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">    ssh <span class="variable">$SPARK_SSH_OPTS</span> <span class="string">"<span class="variable">$host</span>"</span> $<span class="string">"<span class="variable">$&#123;@// /\\ &#125;</span>"</span> \</span><br><span class="line">      2&gt;&amp;1 | sed <span class="string">"s/^/<span class="variable">$host</span>: /"</span> &amp;</span><br><span class="line">  <span class="keyword">fi</span></span><br><span class="line">  <span class="keyword">if</span> [ <span class="string">"<span class="variable">$SPARK_WORKER_SLEEP</span>"</span> != <span class="string">""</span> ]; <span class="keyword">then</span></span><br><span class="line">    sleep <span class="variable">$SPARK_WORKER_SLEEP</span></span><br><span class="line">  <span class="keyword">fi</span></span><br><span class="line">  <span class="keyword">if</span> [ <span class="string">"<span class="variable">$SPARK_SLAVE_SLEEP</span>"</span> != <span class="string">""</span> ]; <span class="keyword">then</span></span><br><span class="line">    &gt;&amp;2 <span class="built_in">echo</span> <span class="string">"SPARK_SLAVE_SLEEP is deprecated, use SPARK_WORKER_SLEEP"</span></span><br><span class="line">    sleep <span class="variable">$SPARK_SLAVE_SLEEP</span></span><br><span class="line">  <span class="keyword">fi</span></span><br><span class="line"><span class="keyword">done</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">wait</span></span><br></pre></td></tr></table></figure>
 <p>主要逻辑：</p>
 <ol>
-<li>先获取 HOSTLIST，优先级 $SPARK_WORKERS、$SPARK_SLAVES、${SPARK_CONF_DIR}/workers、${SPARK_CONF_DIR}/slaves，一般我们在 conf/workers (Spark3 默认) 或者 conf/slaves (Spark2 默认) 里配置 worker的 ip 或者hostname，如果没有配置，则默认 localhost</li>
+<li>先获取 HOSTLIST，优先级 <code>$SPARK_WORKERS</code>、<code>$SPARK_SLAVES</code>、<code>${SPARK_CONF_DIR}</code>/workers、<code>${SPARK_CONF_DIR}</code>/slaves，一般我们在 conf/workers (Spark3 默认) 或者 conf/slaves (Spark2 默认) 里配置 worker的 ip 或者hostname，如果没有配置，则默认 localhost</li>
 <li>获取 SPARK_SSH_OPTS ，默认 “-o StrictHostKeyChecking=no” ，如果有特殊需求，如端口号不是默认的 22，则可以在 spark-env.sh 中添加 export SPARK_SSH_OPTS=”-p 6233 -o StrictHostKeyChecking=no”</li>
-<li>遍历 HOSTLIST ， ssh 到每个host节点，执行上面 start-workers.sh 中的参数 cd “${SPARK_HOME}” \; “${SPARK_HOME}/sbin/start-worker.sh” “spark://$SPARK_MASTER_HOST:$SPARK_MASTER_PORT”。备注：$@：传递给脚本或函数的所有参数</li>
+<li>遍历 HOSTLIST ， ssh 到每个host节点，执行上面 start-workers.sh 中的参数 cd “<code>${SPARK_HOME}</code>“ \; “<code>${SPARK_HOME}</code>/sbin/start-worker.sh” “spark://<code>$SPARK_MASTER_HOST</code>:<code>$SPARK_MASTER_PORT</code>“。备注：$@：传递给脚本或函数的所有参数</li>
 </ol>
 <h3 id="start-worker-sh"><a href="#start-worker-sh" class="headerlink" title="start-worker.sh"></a>start-worker.sh</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Starts a worker on the machine this script is executed on.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># Environment Variables</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment">#   SPARK_WORKER_INSTANCES  The number of worker instances to run on this</span></span><br><span class="line"><span class="comment">#                           worker.  Default is 1. Note it has been deprecate since Spark 3.0.</span></span><br><span class="line"><span class="comment">#   SPARK_WORKER_PORT       The base port number for the first worker. If set,</span></span><br><span class="line"><span class="comment">#                           subsequent workers will increment this number.  If</span></span><br><span class="line"><span class="comment">#                           unset, Spark will find a valid port number, but</span></span><br><span class="line"><span class="comment">#                           with no guarantee of a predictable pattern.</span></span><br><span class="line"><span class="comment">#   SPARK_WORKER_WEBUI_PORT The base port for the web interface of the first</span></span><br><span class="line"><span class="comment">#                           worker.  Subsequent workers will increment this</span></span><br><span class="line"><span class="comment">#                           number.  Default is 8081.</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> [ -z <span class="string">"<span class="variable">$&#123;SPARK_HOME&#125;</span>"</span> ]; <span class="keyword">then</span></span><br><span class="line">  <span class="built_in">export</span> SPARK_HOME=<span class="string">"<span class="variable">$(cd "`dirname "$0"`"/..; pwd)</span>"</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># <span class="doctag">NOTE:</span> This exact class name is matched downstream by SparkSubmit.</span></span><br><span class="line"><span class="comment"># Any changes need to be reflected there.</span></span><br><span class="line">CLASS=<span class="string">"org.apache.spark.deploy.worker.Worker"</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> [[ <span class="variable">$#</span> -lt 1 ]] || [[ <span class="string">"<span class="variable">$@</span>"</span> = *--<span class="built_in">help</span> ]] || [[ <span class="string">"<span class="variable">$@</span>"</span> = *-h ]]; <span class="keyword">then</span></span><br><span class="line">  <span class="built_in">echo</span> <span class="string">"Usage: ./sbin/start-worker.sh &lt;master&gt; [options]"</span></span><br><span class="line">  pattern=<span class="string">"Usage:"</span></span><br><span class="line">  pattern+=<span class="string">"\|Using Spark's default log4j profile:"</span></span><br><span class="line">  pattern+=<span class="string">"\|Started daemon with process name"</span></span><br><span class="line">  pattern+=<span class="string">"\|Registered signal handler for"</span></span><br><span class="line"></span><br><span class="line">  <span class="string">"<span class="variable">$&#123;SPARK_HOME&#125;</span>"</span>/bin/spark-class <span class="variable">$CLASS</span> --<span class="built_in">help</span> 2&gt;&amp;1 | grep -v <span class="string">"<span class="variable">$pattern</span>"</span> 1&gt;&amp;2</span><br><span class="line">  <span class="built_in">exit</span> 1</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line">. <span class="string">"<span class="variable">$&#123;SPARK_HOME&#125;</span>/sbin/spark-config.sh"</span></span><br><span class="line"></span><br><span class="line">. <span class="string">"<span class="variable">$&#123;SPARK_HOME&#125;</span>/bin/load-spark-env.sh"</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># First argument should be the master; we need to store it aside because we may</span></span><br><span class="line"><span class="comment"># need to insert arguments between it and the other arguments</span></span><br><span class="line">MASTER=<span class="variable">$1</span></span><br><span class="line"><span class="built_in">shift</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Determine desired worker port</span></span><br><span class="line"><span class="keyword">if</span> [ <span class="string">"<span class="variable">$SPARK_WORKER_WEBUI_PORT</span>"</span> = <span class="string">""</span> ]; <span class="keyword">then</span></span><br><span class="line">  SPARK_WORKER_WEBUI_PORT=8081</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Start up the appropriate number of workers on this machine.</span></span><br><span class="line"><span class="comment"># quick local function to start a worker</span></span><br><span class="line"><span class="keyword">function</span> start_instance &#123;</span><br><span class="line">  WORKER_NUM=<span class="variable">$1</span></span><br><span class="line">  <span class="built_in">shift</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> [ <span class="string">"<span class="variable">$SPARK_WORKER_PORT</span>"</span> = <span class="string">""</span> ]; <span class="keyword">then</span></span><br><span class="line">    PORT_FLAG=</span><br><span class="line">    PORT_NUM=</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">    PORT_FLAG=<span class="string">"--port"</span></span><br><span class="line">    PORT_NUM=$(( <span class="variable">$SPARK_WORKER_PORT</span> + <span class="variable">$WORKER_NUM</span> - 1 ))</span><br><span class="line">  <span class="keyword">fi</span></span><br><span class="line">  WEBUI_PORT=$(( <span class="variable">$SPARK_WORKER_WEBUI_PORT</span> + <span class="variable">$WORKER_NUM</span> - 1 ))</span><br><span class="line"></span><br><span class="line">  <span class="string">"<span class="variable">$&#123;SPARK_HOME&#125;</span>/sbin"</span>/spark-daemon.sh start <span class="variable">$CLASS</span> <span class="variable">$WORKER_NUM</span> \</span><br><span class="line">     --webui-port <span class="string">"<span class="variable">$WEBUI_PORT</span>"</span> <span class="variable">$PORT_FLAG</span> <span class="variable">$PORT_NUM</span> <span class="variable">$MASTER</span> <span class="string">"<span class="variable">$@</span>"</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> [ <span class="string">"<span class="variable">$SPARK_WORKER_INSTANCES</span>"</span> = <span class="string">""</span> ]; <span class="keyword">then</span></span><br><span class="line">  start_instance 1 <span class="string">"<span class="variable">$@</span>"</span></span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">  <span class="keyword">for</span> ((i=0; i&lt;<span class="variable">$SPARK_WORKER_INSTANCES</span>; i++)); <span class="keyword">do</span></span><br><span class="line">    start_instance $(( 1 + <span class="variable">$i</span> )) <span class="string">"<span class="variable">$@</span>"</span></span><br><span class="line">  <span class="keyword">done</span></span><br><span class="line"><span class="keyword">fi</span></span><br></pre></td></tr></table></figure>
 <p>主要逻辑：</p>
 <ol>
 <li>获取 MASTER ，这里为 spark://indata-10-110-8-199.indata.com:7077</li>
 <li>判断 SPARK_WORKER_INSTANCES 是否为空，默认为空，也就是默认一个 Worker 实例</li>
-<li>调用 start_instance 1 “$@” ，主要逻辑计算每个示例的 PORT_NUM 和 WEBUI_PORT ，最后执行 “${SPARK_HOME}/sbin”/spark-daemon.sh start $CLASS $WORKER_NUM –webui-port “$WEBUI_PORT” $PORT_FLAG $PORT_NUM $MASTER “$@”</li>
+<li>调用 start_instance 1 “<code>$@</code>“ ，主要逻辑计算每个示例的 PORT_NUM 和 WEBUI_PORT ，最后执行 “<code>${SPARK_HOME}</code>/sbin”/spark-daemon.sh start <code>$CLASS</code> <code>$WORKER_NUM</code> –webui-port “<code>$WEBUI_PORT</code>“ <code>$PORT_FLAG</code> <code>$PORT_NUM</code> <code>$MASTER</code> “<code>$@</code>“</li>
 </ol>
 <p>具体的参数：/opt/dkl/spark-3.2.3-bin-hadoop3.2/sbin/spark-daemon.sh start org.apache.spark.deploy.worker.Worker 1      –webui-port 8081   spark://indata-10-110-8-199.indata.com:7077</p>
 <h2 id="spark-daemon-sh"><a href="#spark-daemon-sh" class="headerlink" title="spark-daemon.sh"></a>spark-daemon.sh</h2><p>根据上面的分析：master 和 worker 都是通过 spark-daemon.sh 来启动的。</p>
@@ -298,17 +298,17 @@
 <li>获取 instance ， 这里的值均为 1 , 注意这里的 instance 是前面传过来的参数，实例数，为了给后面的 log、pid用。</li>
 <li>配置 log、pid 的文件路径和文件名 。log 默认路径 ${SPARK_HOME}/logs , pid 默认路径 /tmp</li>
 <li>设置 SPARK_NICENESS ：守护进程的调度优先级，如果 SPARK_NICENESS 为空，则设置默认值为0 。注意这里的 SPARK_NICENESS 与前面的 instance 不同 。</li>
-<li>匹配 option ，如果为 submit ，执行 run_command submit “$@” ；如果为 start， 执行 run_command class “$@” ； …… ，这里只看 start</li>
+<li>匹配 option ，如果为 submit ，执行 run_command submit “<code>$@</code>“ ；如果为 start， 执行 run_command class “<code>$@</code>“ ； …… ，这里只看 start</li>
 <li>run_command 逻辑：<ul>
 <li>先获取 mode ，这里 mode 为 class ，</li>
 <li>创建 pid 文件夹， 判断 pid 文件是否存在，如果存在，则获取pid值并判断是否存在对应的java进程，如果存在，则提示服务已经运行，先停止它</li>
-<li>如果不存在，则匹配 mode 值，如果是class ,则执行 execute_command nice -n “$SPARK_NICENESS” “${SPARK_HOME}”/bin/spark-class “$command” “$@”</li>
+<li>如果不存在，则匹配 mode 值，如果是class ,则执行 execute_command nice -n “<code>$SPARK_NICENESS</code>“ “<code>${SPARK_HOME}</code>“/bin/spark-class “<code>$command</code>“ “<code>$@</code>“</li>
 <li>execute_command 是这里自定义的函数， nice -n “$SPARK_NICENESS” 是设置进程优先级，范围通常从 -20（最高优先级）到 +19（最低优先级）。默认的 nice 值是 0。可参考 <a href="https://www.cnblogs.com/yinguojin/p/18600924" target="_blank" rel="noopener">https://www.cnblogs.com/yinguojin/p/18600924</a></li>
 </ul>
 </li>
 <li>execute_command 逻辑 ： <ul>
 <li>-z 判断 ${SPARK_NO_DAEMONIZE+set} 是否为空，这里为空</li>
-<li>执行 nohup – “$@” &gt;&gt; $log 2&gt;&amp;1 &lt; /dev/null &amp; ，这里主要逻辑是执行 $@ 并将日志输出到对应的日志文件中， $@ : 所有脚本参数的内容, 这里为 ： nice -n 0 /opt/dkl/spark-3.2.3-bin-hadoop3.2/bin/spark-class org.apache.spark.deploy.master.Master –host indata-10-110-8-199.indata.com –port 7077 –webui-port 8080 和 nice -n 0 /opt/dkl/spark-3.2.3-bin-hadoop3.2/bin/spark-class org.apache.spark.deploy.worker.Worker –webui-port 8081 spark://indata-10-110-8-199.indata.com:7077<br>实际是通过 nice -n 0 设置进程优先级，然后通过 spark-class 启动对应的 Master 和 Worker 类</li>
+<li>执行 nohup – “<code>$@</code>“ &gt;&gt; <code>$log</code> 2&gt;&amp;1 &lt; /dev/null &amp; ，这里主要逻辑是执行 <code>$@</code> 并将日志输出到对应的日志文件中， <code>$@</code> : 所有脚本参数的内容, 这里为 ： nice -n 0 /opt/dkl/spark-3.2.3-bin-hadoop3.2/bin/spark-class org.apache.spark.deploy.master.Master –host indata-10-110-8-199.indata.com –port 7077 –webui-port 8080 和 nice -n 0 /opt/dkl/spark-3.2.3-bin-hadoop3.2/bin/spark-class org.apache.spark.deploy.worker.Worker –webui-port 8081 spark://indata-10-110-8-199.indata.com:7077<br>实际是通过 nice -n 0 设置进程优先级，然后通过 spark-class 启动对应的 Master 和 Worker 类</li>
 <li>将上面返回的进程号赋给 newpid ，然后将 newpid 写到对应的 pid 文件中。（$! ：Shell最后运行的后台Process的PID）</li>
 <li>for 循环 1到10，每次判断 newpid 对应的java 进程是否启动成功，如果启动成功则终止循环，否则sleep 0.5 ，继续下次循环，也就是轮询最多5秒，以启动java进程</li>
 <li>启动成功后，sleep 2秒，然后判断对应的java进程是否还存在，如果不存在，则提示启动失败，并打印对应的日志</li>
@@ -320,7 +320,7 @@
 <p>主要逻辑：</p>
 <ul>
 <li>找Java环境变量，如果有，则拼接 ${JAVA_HOME}/bin/java</li>
-<li><p>执行 build_command “$@” ，并打印输出结果。对应命令：”$RUNNER” -Xmx128m $SPARK_LAUNCHER_OPTS -cp “$LAUNCH_CLASSPATH” org.apache.spark.launcher.Main “$@” 具体为：</p>
+<li><p>执行 build_command “<code>$@</code>“ ，并打印输出结果。对应命令：”<code>$RUNNER</code>“ -Xmx128m <code>$SPARK_LAUNCHER_OPTS</code> -cp “<code>$LAUNCH_CLASSPATH</code>“ org.apache.spark.launcher.Main “<code>$@</code>“ 具体为：</p>
 <ul>
 <li>spark-sql 对应命令 ：/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64/bin/java -Xmx128m  -cp /opt/dkl/spark-3.2.3-bin-hadoop3.2/jars/* org.apache.spark.launcher.Main org.apache.spark.deploy.SparkSubmit –class org.apache.spark.sql.hive.thriftserver.SparkSQLCLIDriver</li>
 <li>spark-shell 对应命令 ：/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64/bin/java -Xmx128m  -cp /opt/dkl/spark-3.2.3-bin-hadoop3.2/jars/* org.apache.spark.launcher.Main org.apache.spark.deploy.SparkSubmit –class org.apache.spark.repl.Main –name Spark shell</li>
@@ -331,27 +331,26 @@
 </ul>
 <p>最后打印代码如上，先打印’\0’并换行，然后打印拼接的命令，每个命令后跟’\0’，不换行。最后打印的命令分别为：</p>
 <ul>
-<li>spark-sql :</li>
-</ul>
+<li><p>spark-sql :</p>
 <p>/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64/bin/java-cp/opt/dkl/spark-3.2.3-bin-hadoop3.2/conf/:/opt/dkl/spark-3.2.3-bin-hadoop3.2/jars/*-Xmx1gorg.apache.spark.deploy.SparkSubmit–classorg.apache.spark.sql.hive.thriftserver.SparkSQLCLIDriverspark-internal<br>一共两行，第一行是空字符串 \0’表示字符串结束符，第二行是具体拼接的命令，每一个命令后跟 ‘\0’ ，因为是空所以没有空格分隔开，第二行最后没有跟换行。后面的命令第一行一样，所以只记录第二行</p>
-<ul>
+</li>
 <li>spark-shell :<br>/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64/bin/java-cp/opt/dkl/spark-3.2.3-bin-hadoop3.2/conf/:/opt/dkl/spark-3.2.3-bin-hadoop3.2/jars/*-Dscala.usejavacp=true-Xmx1gorg.apache.spark.deploy.SparkSubmit–classorg.apache.spark.repl.Main–nameSpark shellspark-shell</li>
 <li>start-master :<br>/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64/bin/java-cp/opt/dkl/spark-3.2.3-bin-hadoop3.2/conf/:/opt/dkl/spark-3.2.3-bin-hadoop3.2/jars/*-Xmx1gorg.apache.spark.deploy.master.Master–hostindata-10-110-8-199.indata.com–port7077–webui-port8080</li>
 <li>start-worker :<br>/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64/bin/java-cp/opt/dkl/spark-3.2.3-bin-hadoop3.2/conf/:/opt/dkl/spark-3.2.3-bin-hadoop3.2/jars/*-Xmx1gorg.apache.spark.deploy.worker.Worker–webui-port8081spark://indata-10-110-8-199.indata.com:7077</li>
-<li>build_command 最后执行 printf “%d\0” $? ，这和脚本含义是打印 $? 后面再跟 \0 ，$? 是一个特殊的变量，用于获取上一个命令的退出状态码<ul>
+<li>build_command 最后执行 printf “%d\0” <code>$?</code> ，这和脚本含义是打印 <code>$?</code> 后面再跟 \0 ，<code>$?</code> 是一个特殊的变量，用于获取上一个命令的退出状态码<ul>
 <li>0：命令成功执行</li>
 <li>0以外的数字：命令执行失败。</li>
 <li>1：通用错误（General error）， 发生了一个通用的错误，但没有提供具体的错误信息。</li>
 <li>2：误用shell内置命令（Misuse of shell built-ins）</li>
 <li>126：命令不可执行（Command invoked cannot execute）</li>
-<li>127：未找到命令（Command not found）<br>所以build_command最终输出：以spark-sql为例：<br>/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64/bin/java-cp/opt/dkl/spark-3.2.3-bin-hadoop3.2/conf/:/opt/dkl/spark-3.2.3-bin-hadoop3.2/jars/<em>-Xmx1gorg.apache.spark.deploy.SparkSubmit–classorg.apache.spark.sql.hive.thriftserver.SparkSQLCLIDriverspark-internal0<br>\0 输出到日志文件中，以vi命令看，会显示^@，下面是在日志文件中vi查看的效果：<br>^@<br>/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64/bin/java^@-cp^@/opt/dkl/spark-3.2.3-bin-hadoop3.2/conf/:/opt/dkl/spark-3.2.3-bin-hadoop3.2/jars/</em>^@-Xmx1g^@org.apache.spark.deploy.SparkSubmit^@–class^@org.apache.spark.sql.hive.thriftserver.SparkSQLCLIDriver^@spark-internal^@0^@<br>这样更能方便的理解 build_command 的输出是啥样的，方便后面的脚本分析，然后我们将 ^@ 换成空格：<br>/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64/bin/java -cp /opt/dkl/spark-3.2.3-bin-hadoop3.2/conf/:/opt/dkl/spark-3.2.3-bin-hadoop3.2/jars/* -Xmx1g org.apache.spark.deploy.SparkSubmit –class org.apache.spark.sql.hive.thriftserver.SparkSQLCLIDriver spark-internal 0 </li>
+<li>127：未找到命令（Command not found）<br>所以build_command最终输出：以spark-sql为例：<br>/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64/bin/java-cp/opt/dkl/spark-3.2.3-bin-hadoop3.2/conf/:/opt/dkl/spark-3.2.3-bin-hadoop3.2/jars/<em>-Xmx1gorg.apache.spark.deploy.SparkSubmit–classorg.apache.spark.sql.hive.thriftserver.SparkSQLCLIDriverspark-internal0<br>\0 输出到日志文件中，以vi命令看，会显示^@，下面是在日志文件中vi查看的效果：<br><code>^@</code><br>/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64/bin/java<code>^@</code>-cp<code>^@</code>/opt/dkl/spark-3.2.3-bin-hadoop3.2/conf/:/opt/dkl/spark-3.2.3-bin-hadoop3.2/jars/</em><code>^@</code>-Xmx1g<code>^@</code>org.apache.spark.deploy.SparkSubmit<code>^@</code>–class<code>^@</code>org.apache.spark.sql.hive.thriftserver.SparkSQLCLIDriver<code>^@</code>spark-internal<code>^@</code>0<code>^@</code><br>这样更能方便的理解 build_command 的输出是啥样的，方便后面的脚本分析，然后我们将 ^@ 换成空格：<br>/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64/bin/java -cp /opt/dkl/spark-3.2.3-bin-hadoop3.2/conf/:/opt/dkl/spark-3.2.3-bin-hadoop3.2/jars/* -Xmx1g org.apache.spark.deploy.SparkSubmit –class org.apache.spark.sql.hive.thriftserver.SparkSQLCLIDriver spark-internal 0 </li>
 </ul>
 </li>
 <li>最后解释一下 printf “%d\0” $? %d 代表数字，该行脚本的含义是将上一个命令的退出状态码打印并后跟一个\0，该命令没有换行，另外测试发现 %d 如果后面没有跟具体数字则默认值为0，可以通过  printf “\0” &gt; test.log , 然后 vi test.log 查看 \0 在文件中会显示 ^@ ，但是cat test.log 则会显示空字符串。</li>
 </ul>
 </li>
-<li>后面 while IFS= read -d “$DELIM” -r ARG; 是通过 read 命令读取 build_command “$@” 输出的结果，Bash read 命令可以参考 <a href="https://blog.csdn.net/lingeio/article/details/96587362" target="_blank" rel="noopener">https://blog.csdn.net/lingeio/article/details/96587362</a> 。 主要逻辑是读取第2步中输出的结果，解析对应的命令并放到 CMD 数组中，首先解析完第一行，然后将 CMD_START_FLAG 设置为 true开始拼接 CMD ，后以 ‘’ 为分隔符分割具体命令，放到CMD数组中。</li>
-<li>组装好CMD数组后，先取CMD数组长度，获取CMD最后一个值作为 LAUNCHER_EXIT_CODE，即为在 build_command 中 执行 “$RUNNER” -Xmx128m $SPARK_LAUNCHER_OPTS -cp “$LAUNCH_CLASSPATH” org.apache.spark.launcher.Main “$@” 的命令退出状态码。</li>
+<li>后面 while IFS= read -d “<code>$DELIM</code>“ -r ARG; 是通过 read 命令读取 build_command “<code>$@</code>“ 输出的结果，Bash read 命令可以参考 <a href="https://blog.csdn.net/lingeio/article/details/96587362" target="_blank" rel="noopener">https://blog.csdn.net/lingeio/article/details/96587362</a> 。 主要逻辑是读取第2步中输出的结果，解析对应的命令并放到 CMD 数组中，首先解析完第一行，然后将 CMD_START_FLAG 设置为 true开始拼接 CMD ，后以 ‘’ 为分隔符分割具体命令，放到CMD数组中。</li>
+<li>组装好CMD数组后，先取CMD数组长度，获取CMD最后一个值作为 LAUNCHER_EXIT_CODE，即为在 build_command 中 执行 “<code>$RUNNER</code>“ -Xmx128m <code>$SPARK_LAUNCHER_OPTS</code> -cp “<code>$LAUNCH_CLASSPATH</code>“ org.apache.spark.launcher.Main “<code>$@</code>“ 的命令退出状态码。</li>
 <li>检查 LAUNCHER_EXIT_CODE 是否正常，如果不正常，则进行相应处理并退出，如果正常，则执行  org.apache.spark.launcher.Main 返回的命令 。</li>
 </ul>
 <h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>通过本文上面的简单分析可知，无论是 spark-sql 、 spark-shell 这种交互式命令行，还是 Master 和 Worker 等Stanalone服务的启动，最终都是通过 spark-class 启动的。而 spark-class 的逻辑则是先通过 java -cp 执行类 org.apache.spark.launcher.Main，然后将拼接好的启动命令打印输出，最终在 spark-class 中解析输出的命令并执行，最终也都是通过 java -cp 执行具体的类的，分别如下：</p>
@@ -684,18 +683,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
@@ -712,10 +699,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">SQL</a>
               </li>
              
@@ -724,7 +707,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -736,23 +731,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -764,15 +747,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -796,6 +779,22 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Scala</a>
               </li>
              
@@ -804,15 +803,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -852,10 +851,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Linux</a>
               </li>
              
@@ -872,6 +867,14 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">sql</a>
               </li>
              
@@ -880,11 +883,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -896,7 +895,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -904,23 +903,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -932,11 +915,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">原理</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -952,10 +943,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">压缩文件</a>
               </li>
              
@@ -968,15 +955,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1000,10 +987,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
@@ -1020,10 +1003,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">vue</a>
               </li>
              
@@ -1036,7 +1015,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1064,11 +1063,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Netty</a>
+                <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">tool</a>
+                <a href="javascript:void(0)" class="js-tag color1">Netty</a>
               </li>
             
             <div class="clearfix"></div>
