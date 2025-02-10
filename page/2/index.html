@@ -202,6 +202,93 @@
           <div id="js-content" class="content-ll">
             
   
+    <article id="post-hudi/hudiIndex-wirte" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2024/07/10/hudi/hudiIndex-wirte/">Hudi 索引总结 - Parquet布隆过滤器写入过程</a>
+    </h1>
+  
+
+        
+        <a href="/2024/07/10/hudi/hudiIndex-wirte/" class="archive-article-date">
+  	<time datetime="2024-07-09T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2024-07-10</time>
+</a>
+        
+      </header>
+	    
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p><a href="https://mp.weixin.qq.com/s/P4PtI1D7nq5WZB41XjAl2g" target="_blank" rel="noopener">上篇文章</a>提到 ：索引的逻辑主要是根据 parquet 文件中保存的索引信息，判断记录是否存在，如果不存在，代表是新增数据，如果记录存在则代表是更新数据，需要找到并设置 currentLocation。对于布隆索引来说，这里的索引信息其实是布隆过滤器，本篇文章主要是先总结布隆过滤器是如何保存到 parquet 文件中的（主要是源码调用逻辑）。</p>
+<p>我们新写一个表的时候，最开始是没有parquet文件的，所以顺序应该是先将布隆过滤器写到 parquet 文件中，下次写数据的时候，先读取 parquet 文件中的布隆过滤器来验证表中是否存在该记录，有助于实现高效的更新和删除操作。</p>
+<h2 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h2><blockquote>
+<p>索引是一个关键的步骤，它验证表中是否存在记录，并有助于实现高效的更新和删除操作。请注意本文中涵盖的索引是为写入端准备的，这与读取端索引不同。</p>
+</blockquote>
+<p>对于有的索引类型是不涉及将索引信息保存到文件中的，比如 简单索引（simple index），而对于Bloom索引（Bloom Index）则需要将布隆过滤器以及最大值最小值等信息写到 parquet 文件中的元数据中。</p>
+        
+          <a class="article-more-a" href="/2024/07/10/hudi/hudiIndex-wirte/#more">more >></a>
+        
+      
+
+      
+	  
+    </div>
+    <div class="article-info article-info-index">
+      
+	   
+		  
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+		  
+
+	  
+	 
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2024/07/10/hudi/hudiIndex-wirte/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
     <article id="post-hudi/hudiWriteFlow" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -583,102 +670,9 @@
 
 
   
-    <article id="post-hudi/hudiSparkSQLRollback" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2024/06/04/hudi/hudiSparkSQLRollback/">Hudi Spark Sql Procedures 回滚 Hudi 表数据</a>
-    </h1>
-  
-
-        
-        <a href="/2024/06/04/hudi/hudiSparkSQLRollback/" class="archive-article-date">
-  	<time datetime="2024-06-03T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2024-06-04</time>
-</a>
-        
-      </header>
-	    
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-      
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>因为有 Hudi Rollback 的需求，所以单独总结 Hudi Spark Sql Procedures Rollback。</p>
-<h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><ul>
-<li>Hudi 0.13.0（发现有bug）、（然后升级）0.14.1</li>
-<li>Spark 3.2.3</li>
-</ul>
-<h2 id="Procedures"><a href="#Procedures" class="headerlink" title="Procedures"></a>Procedures</h2><p>官方文档：<a href="https://hudi.apache.org/docs/procedures" target="_blank" rel="noopener">https://hudi.apache.org/docs/procedures</a><br>相关阅读：<a href="https://mp.weixin.qq.com/s/vctHNIJG05aHmb5l64eNXA" target="_blank" rel="noopener">Hudi Spark SQL Call Procedures学习总结（一）（查询统计表文件信息）</a></p>
-<h2 id="Rollback"><a href="#Rollback" class="headerlink" title="Rollback"></a>Rollback</h2><p>官方文档：<a href="https://hudi.apache.org/docs/rollbacks" target="_blank" rel="noopener">https://hudi.apache.org/docs/rollbacks</a></p>
-<p>回滚数据，可以回滚到至上一个commit（成功的）,也可以回滚到指定 commit (savepoint)。本文暂不涉及savepoint，只总结 回滚到上一个 commit。<br>
-        
-          <a class="article-more-a" href="/2024/06/04/hudi/hudiSparkSQLRollback/#more">more >></a>
-        
-      
-
-      
-	  
-    </div>
-    <div class="article-info article-info-index">
-      
-	   
-		  
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-		  
-
-	  
-	 
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2024/06/04/hudi/hudiSparkSQLRollback/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
   
     <nav id="page-nav">
-      <a class="extend prev" rel="prev" href="/">&laquo; Prev</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/36/">36</a><a class="extend next" rel="next" href="/page/3/">Next &raquo;</a>
+      <a class="extend prev" rel="prev" href="/">&laquo; Prev</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/37/">37</a><a class="extend next" rel="next" href="/page/3/">Next &raquo;</a>
     </nav>
   
 
