@@ -9,18 +9,18 @@
   <link rel="dns-prefetch" href="https://dongkelun.com">
   <title>Spark 源码 | 脚本分析总结 | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="前言最初是想学习一下Spark提交流程的源码，比如 Spark On Yarn 、Standalone。之前只是通过网上总结的文章大概了解整体的提交流程，但是每个文章描述的又不太一样，弄不清楚到底哪个说的准确，比如Client 和 CLuster 模式的区别，Driver到底是干啥的，是如何定义的，为了彻底弄清楚这些疑问，所以决定学习一下相关的源码。因为不管是服务启动还是应用程序启动，都是通过脚本">
+  <meta name="description" content="前言最初是想学习一下Spark提交流程的源码，比如 Spark On Yarn 、Standalone。之前只是通过网上总结的文章大概了解整体的提交流程，但是每个文章描述的又不太一样，弄不清楚到底哪个说的准确，比如Client 和 Cluster 模式的区别，Driver到底是干啥的，是如何定义的，为了彻底弄清楚这些疑问，所以决定学习一下相关的源码。因为不管是服务启动还是应用程序启动，都是通过脚本">
 <meta name="keywords" content="Spark,源码">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Spark 源码 | 脚本分析总结">
 <meta property="og:url" content="https://dongkelun.com/2025/02/10/spark/sparkSourceCode-script/index.html">
 <meta property="og:site_name" content="伦少的博客">
-<meta property="og:description" content="前言最初是想学习一下Spark提交流程的源码，比如 Spark On Yarn 、Standalone。之前只是通过网上总结的文章大概了解整体的提交流程，但是每个文章描述的又不太一样，弄不清楚到底哪个说的准确，比如Client 和 CLuster 模式的区别，Driver到底是干啥的，是如何定义的，为了彻底弄清楚这些疑问，所以决定学习一下相关的源码。因为不管是服务启动还是应用程序启动，都是通过脚本">
+<meta property="og:description" content="前言最初是想学习一下Spark提交流程的源码，比如 Spark On Yarn 、Standalone。之前只是通过网上总结的文章大概了解整体的提交流程，但是每个文章描述的又不太一样，弄不清楚到底哪个说的准确，比如Client 和 Cluster 模式的区别，Driver到底是干啥的，是如何定义的，为了彻底弄清楚这些疑问，所以决定学习一下相关的源码。因为不管是服务启动还是应用程序启动，都是通过脚本">
 <meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2025-02-10T08:27:02.653Z">
+<meta property="og:updated_time" content="2025-02-11T00:51:31.657Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Spark 源码 | 脚本分析总结">
-<meta name="twitter:description" content="前言最初是想学习一下Spark提交流程的源码，比如 Spark On Yarn 、Standalone。之前只是通过网上总结的文章大概了解整体的提交流程，但是每个文章描述的又不太一样，弄不清楚到底哪个说的准确，比如Client 和 CLuster 模式的区别，Driver到底是干啥的，是如何定义的，为了彻底弄清楚这些疑问，所以决定学习一下相关的源码。因为不管是服务启动还是应用程序启动，都是通过脚本">
+<meta name="twitter:description" content="前言最初是想学习一下Spark提交流程的源码，比如 Spark On Yarn 、Standalone。之前只是通过网上总结的文章大概了解整体的提交流程，但是每个文章描述的又不太一样，弄不清楚到底哪个说的准确，比如Client 和 Cluster 模式的区别，Driver到底是干啥的，是如何定义的，为了彻底弄清楚这些疑问，所以决定学习一下相关的源码。因为不管是服务启动还是应用程序启动，都是通过脚本">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -255,7 +255,7 @@
         
         
       
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>最初是想学习一下Spark提交流程的源码，比如 Spark On Yarn 、Standalone。之前只是通过网上总结的文章大概了解整体的提交流程，但是每个文章描述的又不太一样，弄不清楚到底哪个说的准确，比如Client 和 CLuster 模式的区别，Driver到底是干啥的，是如何定义的，为了彻底弄清楚这些疑问，所以决定学习一下相关的源码。因为不管是服务启动还是应用程序启动，都是通过脚本提交的，所以我们先从分析脚本开始。</p>
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>最初是想学习一下Spark提交流程的源码，比如 Spark On Yarn 、Standalone。之前只是通过网上总结的文章大概了解整体的提交流程，但是每个文章描述的又不太一样，弄不清楚到底哪个说的准确，比如Client 和 Cluster 模式的区别，Driver到底是干啥的，是如何定义的，为了彻底弄清楚这些疑问，所以决定学习一下相关的源码。因为不管是服务启动还是应用程序启动，都是通过脚本提交的，所以我们先从分析脚本开始。</p>
 <h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>Spark 3.2.3</p>
 <h2 id="Spark-脚本"><a href="#Spark-脚本" class="headerlink" title="Spark 脚本"></a>Spark 脚本</h2><p>先看一下Spark 主要的脚本有哪些：spark-submit、spark-sql、spark-shell、spark-class、start-all.sh、stop-all.sh、start-master.sh、start-workers.sh 等。</p>
 <h2 id="spark-sql"><a href="#spark-sql" class="headerlink" title="spark-sql"></a>spark-sql</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> [ -z <span class="string">"<span class="variable">$&#123;SPARK_HOME&#125;</span>"</span> ]; <span class="keyword">then</span></span><br><span class="line">  <span class="built_in">source</span> <span class="string">"<span class="variable">$(dirname "$0")</span>"</span>/find-spark-home</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">export</span> _SPARK_CMD_USAGE=<span class="string">"Usage: ./bin/spark-sql [options] [cli option]"</span></span><br><span class="line"><span class="built_in">exec</span> <span class="string">"<span class="variable">$&#123;SPARK_HOME&#125;</span>"</span>/bin/spark-submit --class org.apache.spark.sql.hive.thriftserver.SparkSQLCLIDriver <span class="string">"<span class="variable">$@</span>"</span></span><br></pre></td></tr></table></figure>
@@ -295,9 +295,9 @@
 <li>判断有没有参数 –config ，如果有，则配置 SPARK_CONF_DIR 等于参数值，默认 ${SPARK_HOME}/conf</li>
 <li>获取 option ，可选值 start|stop|submit|status ，start-master 和 start-worker 对应的都为 start</li>
 <li>获取 command , 这里的值对应具体的 class ， start-master 对应 org.apache.spark.deploy.master.Master ，start-worker 对应  org.apache.spark.deploy.worker.Worker</li>
-<li>获取 instance ， 这里的值均为 1 , 注意这里的 instance 是前面传过来的参数，实例数，为了给后面的 log、pid用。</li>
+<li>获取 instance ， 这里的值均为 1 ，实例数，为了给后面的 log、pid用。</li>
 <li>配置 log、pid 的文件路径和文件名 。log 默认路径 ${SPARK_HOME}/logs , pid 默认路径 /tmp</li>
-<li>设置 SPARK_NICENESS ：守护进程的调度优先级，如果 SPARK_NICENESS 为空，则设置默认值为0 。注意这里的 SPARK_NICENESS 与前面的 instance 不同 。</li>
+<li>设置 SPARK_NICENESS ：守护进程的调度优先级，如果 SPARK_NICENESS 为空，则设置默认值为0 。</li>
 <li>匹配 option ，如果为 submit ，执行 run_command submit “<code>$@</code>“ ；如果为 start， 执行 run_command class “<code>$@</code>“ ； …… ，这里只看 start</li>
 <li>run_command 逻辑：<ul>
 <li>先获取 mode ，这里 mode 为 class ，</li>
@@ -337,14 +337,16 @@
 <li>spark-shell :<br>/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64/bin/java-cp/opt/dkl/spark-3.2.3-bin-hadoop3.2/conf/:/opt/dkl/spark-3.2.3-bin-hadoop3.2/jars/*-Dscala.usejavacp=true-Xmx1gorg.apache.spark.deploy.SparkSubmit–classorg.apache.spark.repl.Main–nameSpark shellspark-shell</li>
 <li>start-master :<br>/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64/bin/java-cp/opt/dkl/spark-3.2.3-bin-hadoop3.2/conf/:/opt/dkl/spark-3.2.3-bin-hadoop3.2/jars/*-Xmx1gorg.apache.spark.deploy.master.Master–hostindata-10-110-8-199.indata.com–port7077–webui-port8080</li>
 <li>start-worker :<br>/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64/bin/java-cp/opt/dkl/spark-3.2.3-bin-hadoop3.2/conf/:/opt/dkl/spark-3.2.3-bin-hadoop3.2/jars/*-Xmx1gorg.apache.spark.deploy.worker.Worker–webui-port8081spark://indata-10-110-8-199.indata.com:7077</li>
-<li>build_command 最后执行 printf “%d\0” <code>$?</code> ，这和脚本含义是打印 <code>$?</code> 后面再跟 \0 ，<code>$?</code> 是一个特殊的变量，用于获取上一个命令的退出状态码<ul>
+<li><p>build_command 最后执行 printf “%d\0” <code>$?</code> ，这和脚本含义是打印 <code>$?</code> 后面再跟 \0 ，<code>$?</code> 是一个特殊的变量，用于获取上一个命令的退出状态码</p>
+<ul>
 <li>0：命令成功执行</li>
 <li>0以外的数字：命令执行失败。</li>
 <li>1：通用错误（General error）， 发生了一个通用的错误，但没有提供具体的错误信息。</li>
 <li>2：误用shell内置命令（Misuse of shell built-ins）</li>
 <li>126：命令不可执行（Command invoked cannot execute）</li>
-<li>127：未找到命令（Command not found）<br>所以build_command最终输出：以spark-sql为例：<br>/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64/bin/java-cp/opt/dkl/spark-3.2.3-bin-hadoop3.2/conf/:/opt/dkl/spark-3.2.3-bin-hadoop3.2/jars/<em>-Xmx1gorg.apache.spark.deploy.SparkSubmit–classorg.apache.spark.sql.hive.thriftserver.SparkSQLCLIDriverspark-internal0<br>\0 输出到日志文件中，以vi命令看，会显示^@，下面是在日志文件中vi查看的效果：<br><code>^@</code><br>/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64/bin/java<code>^@</code>-cp<code>^@</code>/opt/dkl/spark-3.2.3-bin-hadoop3.2/conf/:/opt/dkl/spark-3.2.3-bin-hadoop3.2/jars/</em><code>^@</code>-Xmx1g<code>^@</code>org.apache.spark.deploy.SparkSubmit<code>^@</code>–class<code>^@</code>org.apache.spark.sql.hive.thriftserver.SparkSQLCLIDriver<code>^@</code>spark-internal<code>^@</code>0<code>^@</code><br>这样更能方便的理解 build_command 的输出是啥样的，方便后面的脚本分析，然后我们将 ^@ 换成空格：<br>/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64/bin/java -cp /opt/dkl/spark-3.2.3-bin-hadoop3.2/conf/:/opt/dkl/spark-3.2.3-bin-hadoop3.2/jars/* -Xmx1g org.apache.spark.deploy.SparkSubmit –class org.apache.spark.sql.hive.thriftserver.SparkSQLCLIDriver spark-internal 0 </li>
+<li>127：未找到命令（Command not found）</li>
 </ul>
+<p>所以build_command最终输出：以spark-sql为例：<br>/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64/bin/java-cp/opt/dkl/spark-3.2.3-bin-hadoop3.2/conf/:/opt/dkl/spark-3.2.3-bin-hadoop3.2/jars/<code>*</code>-Xmx1gorg.apache.spark.deploy.SparkSubmit–classorg.apache.spark.sql.hive.thriftserver.SparkSQLCLIDriverspark-internal0<br>\0 输出到日志文件中，以vi命令看，会显示^@，下面是在日志文件中vi查看的效果：<br><code>^@</code><br>/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64/bin/java<code>^@</code>-cp<code>^@</code>/opt/dkl/spark-3.2.3-bin-hadoop3.2/conf/:/opt/dkl/spark-3.2.3-bin-hadoop3.2/jars/<code>*``^@</code>-Xmx1g<code>^@</code>org.apache.spark.deploy.SparkSubmit<code>^@</code>–class<code>^@</code>org.apache.spark.sql.hive.thriftserver.SparkSQLCLIDriver<code>^@</code>spark-internal<code>^@</code>0<code>^@</code><br>这样更能方便的理解 build_command 的输出是啥样的，方便后面的脚本分析，然后我们将 ^@ 换成空格：<br>/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64/bin/java -cp /opt/dkl/spark-3.2.3-bin-hadoop3.2/conf/:/opt/dkl/spark-3.2.3-bin-hadoop3.2/jars/* -Xmx1g org.apache.spark.deploy.SparkSubmit –class org.apache.spark.sql.hive.thriftserver.SparkSQLCLIDriver spark-internal 0 </p>
 </li>
 <li>最后解释一下 printf “%d\0” $? %d 代表数字，该行脚本的含义是将上一个命令的退出状态码打印并后跟一个\0，该命令没有换行，另外测试发现 %d 如果后面没有跟具体数字则默认值为0，可以通过  printf “\0” &gt; test.log , 然后 vi test.log 查看 \0 在文件中会显示 ^@ ，但是cat test.log 则会显示空字符串。</li>
 </ul>
@@ -715,14 +717,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">mysql</a>
               </li>
              
@@ -732,6 +726,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -747,15 +749,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -767,7 +769,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -775,23 +777,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
+                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -835,6 +829,14 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
@@ -851,27 +853,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -883,11 +869,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+                <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -899,19 +893,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">scala</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">日期</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -923,11 +925,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
+                <a href="javascript:void(0)" class="js-tag color1">scala</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+                <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -943,6 +953,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">压缩文件</a>
               </li>
              
@@ -955,15 +969,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -975,15 +989,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1023,19 +1037,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1047,11 +1049,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
+                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
+                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1063,11 +1065,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">tool</a>
+                <a href="javascript:void(0)" class="js-tag color1">Netty</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Netty</a>
+                <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
             
             <div class="clearfix"></div>
