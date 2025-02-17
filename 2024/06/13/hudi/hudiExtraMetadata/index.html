@@ -17,21 +17,21 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言研究总结 Hudi extraMetadata ，记录研究过程。主要目的是通过 extraMetadata 保存 source 表的 commitTime （checkpoint）， 来实现增量读Hudi表写Hudi表时，保存增量读状态的事务性，实现类似于流任务中的 exactly-once 背景需求有个需求：增量读Hudi表关联其他Hudi表然后做一些复杂的业务处理逻辑,然后将结果表保存到目">
 <meta property="og:locale" content="cn">
-<meta property="og:image" content="https://img.dongkelun.com/hudi/extraMetadata/em2.png">
-<meta property="og:image" content="https://img.dongkelun.com/hudi/extraMetadata/em1.png">
-<meta property="og:image" content="https://img.dongkelun.com/hudi/extraMetadata/em3.png">
-<meta property="og:image" content="https://img.dongkelun.com/hudi/extraMetadata/em4.png">
-<meta property="og:image" content="https://img.dongkelun.com/hudi/extraMetadata/em5.png">
-<meta property="og:image" content="https://img.dongkelun.com/hudi/extraMetadata/em6.png">
-<meta property="og:image" content="https://img.dongkelun.com/hudi/extraMetadata/em7.png">
-<meta property="og:image" content="https://img.dongkelun.com/hudi/extraMetadata/em8.png">
-<meta property="og:image" content="https://img.dongkelun.com/hudi/extraMetadata/em9.png">
-<meta property="og:image" content="https://img.dongkelun.com/hudi/extraMetadata/em10.png">
-<meta property="og:updated_time" content="2024-06-14T06:31:39.044Z">
+<meta property="og:image" content="https://dongkelun.com/hexo-images/hudi/extraMetadata/em2.4evhuhd4pfs0.png">
+<meta property="og:image" content="https://dongkelun.com/hexo-images/hudi/extraMetadata/em1.4x1selxsjrw0.png">
+<meta property="og:image" content="https://dongkelun.com/hexo-images/hudi/extraMetadata/em3.300gj0q1mg60.png">
+<meta property="og:image" content="https://dongkelun.com/hexo-images/hudi/extraMetadata/em4.1ud1ruhepk4g.png">
+<meta property="og:image" content="https://dongkelun.com/hexo-images/hudi/extraMetadata/em5.1omdftlog74w.png">
+<meta property="og:image" content="https://dongkelun.com/hexo-images/hudi/extraMetadata/em6.5innkgx4zso0.png">
+<meta property="og:image" content="https://dongkelun.com/hexo-images/hudi/extraMetadata/em7.616y114fg3c0.png">
+<meta property="og:image" content="https://dongkelun.com/hexo-images/hudi/extraMetadata/em8.710j0oie97g0.png">
+<meta property="og:image" content="https://dongkelun.com/hexo-images/hudi/extraMetadata/em9.6viwspsmasc0.png">
+<meta property="og:image" content="https://dongkelun.com/hexo-images/hudi/extraMetadata/em10.2p6u4tocqwq0.png">
+<meta property="og:updated_time" content="2025-02-17T08:21:30.964Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Hudi extraMetadata 研究总结">
 <meta name="twitter:description" content="前言研究总结 Hudi extraMetadata ，记录研究过程。主要目的是通过 extraMetadata 保存 source 表的 commitTime （checkpoint）， 来实现增量读Hudi表写Hudi表时，保存增量读状态的事务性，实现类似于流任务中的 exactly-once 背景需求有个需求：增量读Hudi表关联其他Hudi表然后做一些复杂的业务处理逻辑,然后将结果表保存到目">
-<meta name="twitter:image" content="https://img.dongkelun.com/hudi/extraMetadata/em2.png">
+<meta name="twitter:image" content="https://dongkelun.com/hexo-images/hudi/extraMetadata/em2.4evhuhd4pfs0.png">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -284,8 +284,8 @@
 <p>HoodieDeltaStreamer使用检查点来跟踪已经读取的数据，因此无需重新处理所有数据即可恢复。当使用Kafka源时，检查点是Kafka偏移，当使用DFS源时，该检查点是最近读取的文件的“上次修改”时间戳。检查点保存在.houdie提交文件中，作为deltastreamer.checkpoint.key。<br>如果需要更改检查点以重新处理或重放数据，可以使用以下选项：<br>–checkpoint将在提交文件中设置deltastreamer.checkpoint.reset_key以覆盖当前检查点。<br>–源限制将设置要从源读取的最大数据量。对于DFS源，这是读取的最大字节数。对于kafka来说，这是要阅读的事件的最大数量。</p>
 </blockquote>
 <p>先直接看一下 DeltaStreamer 的 checkpoint 长啥样：checkpoint 保存在 .commit文件中的 extraMetadata:deltastreamer.checkpoint.key 中。</p>
-<p>对于DFSSource，checkpoint 保存的是最近读取的文件的“上次修改”时间戳。<br><img src="https://img.dongkelun.com/hudi/extraMetadata/em2.png" alt=""><br><img src="https://img.dongkelun.com/hudi/extraMetadata/em1.png" alt=""></p>
-<p>对于HoodieIncrSource，checkpoint 保存的Hudi表的 commitTime.<br><img src="https://img.dongkelun.com/hudi/extraMetadata/em3.png" alt=""></p>
+<p>对于DFSSource，checkpoint 保存的是最近读取的文件的“上次修改”时间戳。<br><img src="https://dongkelun.com/hexo-images/hudi/extraMetadata/em2.4evhuhd4pfs0.png" alt=""><br><img src="https://dongkelun.com/hexo-images/hudi/extraMetadata/em1.4x1selxsjrw0.png" alt=""></p>
+<p>对于HoodieIncrSource，checkpoint 保存的Hudi表的 commitTime.<br><img src="https://dongkelun.com/hexo-images/hudi/extraMetadata/em3.300gj0q1mg60.png" alt=""></p>
 <p>对于KafkaSource，checkpoint 保存的是 offset</p>
 <h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><p>以下是 DFSSource 和 HoodieIncrSource 的示例，对于 DeltaStreamer 不熟悉的可以参考我之前写的<a href="https://mp.weixin.qq.com/s/RQBBwp8DeH023A9b7LSD9A" target="_blank" rel="noopener">文章</a></p>
 <h4 id="DFSSource"><a href="#DFSSource" class="headerlink" title="DFSSource"></a>DFSSource</h4><p>创建 source表并造数<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> test.test_source_json(</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span>,</span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="built_in">bigint</span>,</span><br><span class="line">  dt <span class="keyword">string</span></span><br><span class="line">)</span><br><span class="line"><span class="keyword">row</span> <span class="keyword">format</span> serde <span class="string">'org.apache.hive.hcatalog.data.JsonSerDe'</span></span><br><span class="line"><span class="keyword">STORED</span> <span class="keyword">AS</span> TEXTFILE;</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test.test_source_json <span class="keyword">values</span> (<span class="number">1</span>,<span class="string">'hudi'</span>, <span class="number">10.0</span>,<span class="number">100</span>,<span class="string">'2024-06-11'</span>);</span><br></pre></td></tr></table></figure></p>
@@ -319,7 +319,7 @@
 <h3 id="写示例"><a href="#写示例" class="headerlink" title="写示例"></a>写示例</h3><p>根据测试用例中的用法，简单尝试一下，看是否生效<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> hudi.test_hudi_table (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span>,</span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="keyword">long</span>,</span><br><span class="line">  dt <span class="keyword">string</span></span><br><span class="line">) <span class="keyword">using</span> hudi</span><br><span class="line"> partitioned <span class="keyword">by</span> (dt)</span><br><span class="line"> options (</span><br><span class="line">  <span class="keyword">type</span> = <span class="string">'cow'</span>,</span><br><span class="line">  primaryKey = <span class="string">'id'</span>,</span><br><span class="line">  preCombineField = <span class="string">'ts'</span>,</span><br><span class="line">  hoodie.datasource.write.commitmeta.key.prefix=<span class="string">'commit_extra_meta_'</span>,</span><br><span class="line">  commit_extra_meta_a=<span class="string">'valA'</span>,</span><br><span class="line">  commit_extra_meta_b=<span class="string">'valB'</span></span><br><span class="line"> ); </span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> hudi.test_hudi_table <span class="keyword">values</span> (<span class="number">1</span>,<span class="string">'hudi'</span>,<span class="number">10</span>,<span class="number">100</span>,<span class="string">'2024-06-11'</span>);</span><br></pre></td></tr></table></figure></p>
 <p>结果发现成功添加了 extraMetadata ，其中 schema 是默认自带的，commit_extra_meta_b 和 commit_extra_meta_a 是新添加的。</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">"extraMetadata"</span> : &#123;</span><br><span class="line">  <span class="string">"schema"</span> : <span class="string">"&#123;\"type\":\"record\",\"name\":\"test_hudi_table_record\",\"namespace\":\"hoodie.test_hudi_table\",\"fields\":[&#123;\"name\":\"id\",\"type\":[\"null\",\"int\"],\"default\":null&#125;,&#123;\"name\":\"name\",\"type\":[\"null\",\"string\"],\"default\":null&#125;,&#123;\"name\":\"price\",\"type\":[\"null\",\"double\"],\"default\":null&#125;,&#123;\"name\":\"ts\",\"type\":[\"null\",\"long\"],\"default\":null&#125;,&#123;\"name\":\"dt\",\"type\":[\"null\",\"string\"],\"default\":null&#125;]&#125;"</span>,</span><br><span class="line">  <span class="string">"commit_extra_meta_b"</span> : <span class="string">"valB"</span>,</span><br><span class="line">  <span class="string">"commit_extra_meta_a"</span> : <span class="string">"valA"</span></span><br><span class="line">&#125;,</span><br></pre></td></tr></table></figure>
-<p><img src="https://img.dongkelun.com/hudi/extraMetadata/em4.png" alt=""></p>
+<p><img src="https://dongkelun.com/hexo-images/hudi/extraMetadata/em4.1ud1ruhepk4g.png" alt=""></p>
 <p>但是这种方式，在建表语句里写死了值，不能灵活设置。我们的需求是要灵活设置，因为每次insert 对应的 beginCommitTime 都会变化， 我们尝试验证一下能不能灵活配置。</p>
 <h3 id="SQL-SET"><a href="#SQL-SET" class="headerlink" title="SQL SET"></a>SQL SET</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> hudi.test_hudi_table (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span>,</span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="keyword">long</span>,</span><br><span class="line">  dt <span class="keyword">string</span></span><br><span class="line">) <span class="keyword">using</span> hudi</span><br><span class="line"> partitioned <span class="keyword">by</span> (dt)</span><br><span class="line"> options (</span><br><span class="line">  <span class="keyword">type</span> = <span class="string">'cow'</span>,</span><br><span class="line">  primaryKey = <span class="string">'id'</span>,</span><br><span class="line">  preCombineField = <span class="string">'ts'</span></span><br><span class="line"> ); </span><br><span class="line"></span><br><span class="line"><span class="keyword">set</span> hoodie.datasource.write.commitmeta.key.prefix=commit_extra_meta_;</span><br><span class="line"></span><br><span class="line"><span class="keyword">set</span> commit_extra_meta_a=<span class="string">'valA'</span>;</span><br><span class="line"><span class="keyword">set</span> commit_extra_meta_b=<span class="string">'valB'</span>;  </span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> hudi.test_hudi_table <span class="keyword">values</span> (<span class="number">1</span>,<span class="string">'hudi'</span>,<span class="number">10</span>,<span class="number">100</span>,<span class="string">'2024-06-11'</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">set</span> commit_extra_meta_a=<span class="string">'new_valA'</span>;</span><br><span class="line"><span class="keyword">set</span> commit_extra_meta_b=<span class="string">'new_valB'</span>;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> hudi.test_hudi_table <span class="keyword">values</span> (<span class="number">2</span>,<span class="string">'hudi'</span>,<span class="number">20</span>,<span class="number">200</span>,<span class="string">'2024-06-11'</span>);</span><br></pre></td></tr></table></figure>
 <p>经验证，不生效。原因是Hudi Spark SQL 源码里过滤掉了不是以 hoodie. 开头的配置项。也就是要求配置项必须以 hoodie. 开头才生效，这样我们设置的 commit_extra_meta_a 和 commit_extra_meta_b 就不会生效。<br>相关源码：</p>
@@ -328,19 +328,19 @@
 <p>所以我们可以将 prefix 改为以 hoodie. 开头：</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> hoodie.datasource.write.commitmeta.key.prefix=hoodie.commit_extra_meta_;</span><br><span class="line"></span><br><span class="line"><span class="keyword">set</span> hoodie.commit_extra_meta_a=<span class="string">'valA'</span>;</span><br><span class="line"><span class="keyword">set</span> hoodie.commit_extra_meta_b=<span class="string">'valB'</span>;  </span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> hudi.test_hudi_table <span class="keyword">values</span> (<span class="number">1</span>,<span class="string">'hudi'</span>,<span class="number">10</span>,<span class="number">100</span>,<span class="string">'2024-06-11'</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">set</span> hoodie.commit_extra_meta_a=<span class="string">'new_valA'</span>;</span><br><span class="line"><span class="keyword">set</span> hoodie.commit_extra_meta_b=<span class="string">'new_valB'</span>;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> hudi.test_hudi_table <span class="keyword">values</span> (<span class="number">2</span>,<span class="string">'hudi'</span>,<span class="number">20</span>,<span class="number">200</span>,<span class="string">'2024-06-11'</span>);</span><br></pre></td></tr></table></figure>
 <p>经验证，生效：</p>
-<p><img src="https://img.dongkelun.com/hudi/extraMetadata/em5.png" alt=""></p>
+<p><img src="https://dongkelun.com/hexo-images/hudi/extraMetadata/em5.1omdftlog74w.png" alt=""></p>
 <p>但是这样限制并不合理，比如 DeltaStreamer 的 key 为 deltastreamer.checkpoint.key ，就不是以 hoodie. 开头，假如我们有这样的需求，不想被限制住，就可以通过修改源码来解决。<br>源码：<a href="https://github.com/dongkelun/hudi/commit/f8c3d547928af0d3287de42e3d0148970f21472c" target="_blank" rel="noopener">https://github.com/dongkelun/hudi/commit/f8c3d547928af0d3287de42e3d0148970f21472c</a><br>jar包：<a href="https://download.csdn.net/download/dkl12/89429544" target="_blank" rel="noopener">https://download.csdn.net/download/dkl12/89429544</a></p>
-<p><img src="https://img.dongkelun.com/hudi/extraMetadata/em6.png" alt=""></p>
+<p><img src="https://dongkelun.com/hexo-images/hudi/extraMetadata/em6.5innkgx4zso0.png" alt=""></p>
 <p>注意：set prefix 时不要加引号：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">## 加引号是有问题的</span><br><span class="line"><span class="keyword">set</span> hoodie.datasource.write.commitmeta.key.prefix=<span class="string">'hoodie.commit_extra_meta_'</span>;</span><br></pre></td></tr></table></figure></p>
 <p>原因：调试代码发现，解析时没有将引号删掉，导致过滤失效。’hoodie.commit_extra<em>meta</em>‘ 不等于 hoodie.commit_extra<em>meta</em> 。这样代码 val metaMap = parameters.filter(kv =&gt; kv._1.startsWith(parameters(COMMIT_METADATA_KEYPREFIX.key))) 返回空。</p>
-<p><img src="https://img.dongkelun.com/hudi/extraMetadata/em7.png" alt=""></p>
+<p><img src="https://dongkelun.com/hexo-images/hudi/extraMetadata/em7.616y114fg3c0.png" alt=""></p>
 <h3 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h3><p>根据我对Hudi源码的理解：因为代码和SQL的入口不一样， 代码可能并没有 hoodie. 开头的限制。接下来验证一下代码有没有 hoodie. 开头的限制，会不会生效。（先将包还原）</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.hudi.DataSourceWriteOptions._</span><br><span class="line"><span class="keyword">import</span> org.apache.hudi.config.HoodieWriteConfig</span><br><span class="line"><span class="keyword">import</span> org.apache.hudi.config.HoodieWriteConfig.TBL_NAME</span><br><span class="line"><span class="keyword">import</span> org.apache.hudi.hive.MultiPartKeysValueExtractor</span><br><span class="line"><span class="keyword">import</span> org.apache.hudi.keygen.ComplexKeyGenerator</span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.&#123;DataFrame, SaveMode, SparkSession&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">def <span class="title">save2HudiSyncHive</span><span class="params">(df: DataFrame, databaseName: String, tableName: String, primaryKey: String, preCombineField: String,</span></span></span><br><span class="line"><span class="function"><span class="params">                                    partitionField: String, operation: String, tablePath: String, metaA: String, metaB: String)</span>: Unit </span>= &#123;</span><br><span class="line">  df.</span><br><span class="line">    write.format(<span class="string">"hudi"</span>).</span><br><span class="line">    option(RECORDKEY_FIELD.key, primaryKey).</span><br><span class="line">    option(PRECOMBINE_FIELD.key, preCombineField).</span><br><span class="line">    option(PARTITIONPATH_FIELD.key, partitionField).</span><br><span class="line">    option(TBL_NAME.key, tableName).</span><br><span class="line">    option(KEYGENERATOR_CLASS_NAME.key(), classOf[ComplexKeyGenerator].getName).</span><br><span class="line">    option(OPERATION.key(), operation).</span><br><span class="line">    option(META_SYNC_ENABLED.key, <span class="keyword">true</span>).</span><br><span class="line">    option(HIVE_USE_JDBC.key, <span class="keyword">false</span>).</span><br><span class="line">    option(HIVE_DATABASE.key, databaseName).</span><br><span class="line">    option(HIVE_AUTO_CREATE_DATABASE.key, <span class="keyword">true</span>).</span><br><span class="line">    option(HIVE_CREATE_MANAGED_TABLE.key, <span class="keyword">true</span>).</span><br><span class="line">    option(HIVE_TABLE.key, tableName).</span><br><span class="line">    option(HIVE_CREATE_MANAGED_TABLE.key, <span class="keyword">true</span>).</span><br><span class="line">    option(HIVE_STYLE_PARTITIONING.key, <span class="keyword">true</span>).</span><br><span class="line">    option(HIVE_PARTITION_FIELDS.key, partitionField).</span><br><span class="line">    option(HIVE_PARTITION_EXTRACTOR_CLASS.key, classOf[MultiPartKeysValueExtractor].getName).</span><br><span class="line">    option(<span class="string">"hoodie.datasource.write.commitmeta.key.prefix"</span>, <span class="string">"commit_extra_meta_"</span>).</span><br><span class="line">    option(<span class="string">"commit_extra_meta_a"</span>, metaA).</span><br><span class="line">    option(<span class="string">"commit_extra_meta_b"</span>, metaB).</span><br><span class="line">    mode(<span class="string">"Append"</span>).</span><br><span class="line">    save(tablePath)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> spark.implicits._</span><br><span class="line">val df = Seq((<span class="number">1</span>, <span class="string">"a1"</span>, <span class="number">10</span>, <span class="number">100</span>, <span class="string">"2024-06-11"</span>)).toDF(<span class="string">"id"</span>, <span class="string">"name"</span>, <span class="string">"value"</span>, <span class="string">"ts"</span>, <span class="string">"dt"</span>)</span><br><span class="line">val databaseName = <span class="string">"hudi"</span></span><br><span class="line">val tableName = <span class="string">"test_hudi_table3"</span></span><br><span class="line">val primaryKey = <span class="string">"id"</span></span><br><span class="line">val preCombineField = <span class="string">"ts"</span></span><br><span class="line">val partitionField = <span class="string">"dt"</span></span><br><span class="line">val tablePath = <span class="string">"/tmp/hudi/test_hudi_table3"</span></span><br><span class="line"></span><br><span class="line">save2HudiSyncHive(df, databaseName, tableName, primaryKey, preCombineField, partitionField,</span><br><span class="line">  UPSERT_OPERATION_OPT_VAL, tablePath, <span class="string">"valA"</span>, <span class="string">"valB"</span> )</span><br><span class="line">save2HudiSyncHive(df, databaseName, tableName, primaryKey, preCombineField, partitionField,</span><br><span class="line">  UPSERT_OPERATION_OPT_VAL, tablePath, <span class="string">"new_valA"</span>, <span class="string">"new_valA"</span> )</span><br></pre></td></tr></table></figure>
 <p>验证结果：确实没有限制，所以对于没有必须使用SQL的需求，可以不用修改源码，直接写代码就可以搞定。比如我本次的需求，因为业务逻辑复杂，只能写代码实现，这样即使不修改源码，也可以实现我的需求了。</p>
-<p><img src="https://img.dongkelun.com/hudi/extraMetadata/em8.png" alt=""><br><img src="https://img.dongkelun.com/hudi/extraMetadata/em9.png" alt=""></p>
+<p><img src="https://dongkelun.com/hexo-images/hudi/extraMetadata/em8.710j0oie97g0.png" alt=""><br><img src="https://dongkelun.com/hexo-images/hudi/extraMetadata/em9.6viwspsmasc0.png" alt=""></p>
 <h2 id="读"><a href="#读" class="headerlink" title="读"></a>读</h2><p>前面我们已经成功的写入了 extraMetadata，该怎么获取它的值来使用呢？可以使用 SQL 也可以使用代码获取。本文仅展示简单的使用 show_commit_extra_metadata 来获取 extraMetadata 的值，关于代码实现获取 extraMetadata 以及实现本文开头提及的需求，会在后面的文章单独总结。</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">spark-sql&gt; call show_commit_extra_metadata(table =&gt; 'hudi.test_hudi_table2', metadata_key =&gt; 'commit_extra_meta_a');</span><br><span class="line">20240613143257097       <span class="keyword">commit</span>  commit_extra_meta_a     <span class="string">'new_valA'</span></span><br><span class="line"><span class="keyword">Time</span> taken: <span class="number">0.173</span> seconds, Fetched <span class="number">1</span> <span class="keyword">row</span>(s)</span><br><span class="line">spark-<span class="keyword">sql</span>&gt; <span class="keyword">call</span> show_commit_extra_metadata(<span class="keyword">table</span> =&gt; <span class="string">'hudi.test_hudi_table3'</span>, metadata_key =&gt; <span class="string">'commit_extra_meta_a'</span>);</span><br><span class="line">20240613154013674       <span class="keyword">commit</span>  commit_extra_meta_a     new_valA</span><br><span class="line"><span class="keyword">Time</span> taken: <span class="number">0.143</span> seconds, Fetched <span class="number">1</span> <span class="keyword">row</span>(s)</span><br></pre></td></tr></table></figure>
-<p><img src="https://img.dongkelun.com/hudi/extraMetadata/em10.png" alt=""></p>
+<p><img src="https://dongkelun.com/hexo-images/hudi/extraMetadata/em10.2p6u4tocqwq0.png" alt=""></p>
 
       
 
@@ -672,6 +672,18 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
@@ -696,11 +708,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -709,10 +721,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">源码</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -728,11 +736,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -748,6 +756,14 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
               </li>
              
@@ -756,7 +772,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -764,15 +780,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -784,10 +792,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
@@ -796,7 +800,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -808,27 +812,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">java</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -840,11 +828,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -856,15 +860,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -872,15 +868,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">ogg</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -892,11 +880,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -904,11 +892,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -917,6 +909,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -937,6 +933,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">persist</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -972,7 +972,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1024,7 +1024,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">

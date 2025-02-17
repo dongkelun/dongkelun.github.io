@@ -10,22 +10,22 @@
   <title>Hudi 写入流程（图） | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="前言 主要为之前总结的源码文章补充流程图。 总结一下整体流程  说明之前以Java Client为例,总结了 Insert 源码的整体流程及部分源码，由于各种原因，没有总结完。长时间不看这方面的源码，容易忘记，之前没有总结流程图，现在回忆起来比较麻烦，不如看流程图方便快捷。所以先补充总结一下之前文章中的流程图，再继续学习总结后面的源码，这样比较方便。 流程图主要分为自己总结以及借助Shiyan X">
-<meta name="keywords" content="Spark,Hudi,Flink">
+<meta name="keywords" content="Spark,Flink,Hudi">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Hudi 写入流程（图）">
 <meta property="og:url" content="https://dongkelun.com/2024/07/04/hudi/hudiWriteFlow/index.html">
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言 主要为之前总结的源码文章补充流程图。 总结一下整体流程  说明之前以Java Client为例,总结了 Insert 源码的整体流程及部分源码，由于各种原因，没有总结完。长时间不看这方面的源码，容易忘记，之前没有总结流程图，现在回忆起来比较麻烦，不如看流程图方便快捷。所以先补充总结一下之前文章中的流程图，再继续学习总结后面的源码，这样比较方便。 流程图主要分为自己总结以及借助Shiyan X">
 <meta property="og:locale" content="cn">
-<meta property="og:image" content="https://img.dongkelun.com/hudi/write-flow/wf1.png">
-<meta property="og:image" content="https://img.dongkelun.com/hudi/write-flow/wf2.png">
-<meta property="og:image" content="https://img.dongkelun.com/hudi/write-flow/wf3.png">
-<meta property="og:image" content="https://img.dongkelun.com/hudi/write-flow/wf4.png">
-<meta property="og:updated_time" content="2024-07-05T07:10:32.680Z">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/hudi/write-flow/wf1.16loxfeu81vg.webp">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/hudi/write-flow/wf2.2dilc4co9spw.webp">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/hudi/write-flow/wf3.3hb1oxptzds0.webp">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/hudi/write-flow/wf4.2zys9nsth200.webp">
+<meta property="og:updated_time" content="2025-02-17T07:22:16.213Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Hudi 写入流程（图）">
 <meta name="twitter:description" content="前言 主要为之前总结的源码文章补充流程图。 总结一下整体流程  说明之前以Java Client为例,总结了 Insert 源码的整体流程及部分源码，由于各种原因，没有总结完。长时间不看这方面的源码，容易忘记，之前没有总结流程图，现在回忆起来比较麻烦，不如看流程图方便快捷。所以先补充总结一下之前文章中的流程图，再继续学习总结后面的源码，这样比较方便。 流程图主要分为自己总结以及借助Shiyan X">
-<meta name="twitter:image" content="https://img.dongkelun.com/hudi/write-flow/wf1.png">
+<meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/hudi/write-flow/wf1.16loxfeu81vg.webp">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -236,11 +236,11 @@
         		</li>
       		 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Flink</a>
         		</li>
       		 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Flink</a>
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
         		</li>
       		
 		</ul>
@@ -270,15 +270,15 @@
 </ol>
 <h2 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h2><p>之前以Java Client为例,总结了 Insert 源码的整体流程及部分源码，由于各种原因，没有总结完。长时间不看这方面的源码，容易忘记，之前没有总结流程图，现在回忆起来比较麻烦，不如看流程图方便快捷。所以先补充总结一下之前文章中的流程图，再继续学习总结后面的源码，这样比较方便。</p>
 <h2 id="流程图"><a href="#流程图" class="headerlink" title="流程图"></a>流程图</h2><p>主要分为自己总结以及借助<code>Shiyan Xu</code>总结的博客中的流程图一起理解。</p>
-<p><img src="https://img.dongkelun.com/hudi/write-flow/wf1.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/hudi/write-flow/wf1.16loxfeu81vg.webp" alt=""></p>
 <a id="more"></a>
 <ul>
 <li>这个流程图主要是为之前的文章总结的，主要记录源码中关键的步骤和函数，适用于Java Client 和 Spark Client,Flink Client不太一样，但主要逻辑类似。</li>
 <li>由于之前并没有总结tag（索引相关）和后面的写入合并逻辑（handleInsertPartition/handleUpsertPartition），并且很难在一个图中包含所有的细节，所以本流程图并不算完整。对于本图中不完整的部分我们可以借助其他人总结的流程图来辅助理解。</li>
 </ul>
 <p>下面是<code>Shiyan Xu</code>总结的Hudi从零到一博客系列中的流程图： </p>
-<h3 id="整体流程图（高级步骤）"><a href="#整体流程图（高级步骤）" class="headerlink" title="整体流程图（高级步骤）"></a>整体流程图（高级步骤）</h3><p><img src="https://img.dongkelun.com/hudi/write-flow/wf2.png" alt=""></p>
-<h3 id="Upsert-流程图（偏细节）"><a href="#Upsert-流程图（偏细节）" class="headerlink" title="Upsert 流程图（偏细节）"></a>Upsert 流程图（偏细节）</h3><p><img src="https://img.dongkelun.com/hudi/write-flow/wf3.png" alt=""></p>
+<h3 id="整体流程图（高级步骤）"><a href="#整体流程图（高级步骤）" class="headerlink" title="整体流程图（高级步骤）"></a>整体流程图（高级步骤）</h3><p><img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/hudi/write-flow/wf2.2dilc4co9spw.webp" alt=""></p>
+<h3 id="Upsert-流程图（偏细节）"><a href="#Upsert-流程图（偏细节）" class="headerlink" title="Upsert 流程图（偏细节）"></a>Upsert 流程图（偏细节）</h3><p><img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/hudi/write-flow/wf3.3hb1oxptzds0.webp" alt=""></p>
 <h2 id="主要步骤"><a href="#主要步骤" class="headerlink" title="主要步骤"></a>主要步骤</h2><h3 id="初始化表"><a href="#初始化表" class="headerlink" title="初始化表"></a>初始化表</h3><p>initTable 先判断表是否存在，如果不存在，初始化表</p>
 <h3 id="Hudi-写配置"><a href="#Hudi-写配置" class="headerlink" title="Hudi 写配置"></a>Hudi 写配置</h3><p>HoodieWriteConfig</p>
 <h3 id="创建写客户端"><a href="#创建写客户端" class="headerlink" title="创建写客户端"></a>创建写客户端</h3><p>创建 WriteClient。</p>
@@ -291,7 +291,7 @@
 <p>在写入客户端处理输入数据之前，会发生几个转换，包括HoodieRecords的构建和模式协调。让我们深入研究HoodieRecord，因为它是写入路径中的一个基本模型。</p>
 </blockquote>
 <p>将输入的数据转换为 HoodieRecord</p>
-<p><img src="https://img.dongkelun.com/hudi/write-flow/wf4.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/hudi/write-flow/wf4.2zys9nsth200.webp" alt=""></p>
 <blockquote>
 <p>Hudi使用 HoodieKey 模型来标识唯一记录，该模型由“recordKey”和“partitionPath”组成。这些值是通过实现 KeyGenerator API 来填充的。该 API 可以灵活地根据输入模式提取自定义字段并将其转换为Key。“currentLocation”和“newLocation”均由 Hudi 时间线的操作时间戳和FileGroup的 ID 组成。时间戳指向特定 FileGroup 内的 FileSlice。“位置”属性用于使用逻辑信息来定位物理文件。如果“currentLocation”不为空，则表示表中存在具有相同键的记录，而“newLocation”则指定应将传入记录写入何处。“数据”字段是一个通用类型，包含记录的实际字节，也称为有效负载。通常，此属性实现 HoodieRecordPayload ，它指导引擎如何将旧记录与新记录合并。从 0.13.0 版本开始，引入了新的实验接口 HoodieRecordMerger 来替代 HoodieRecordPayload 并作为统一的合并 API。</p>
 </blockquote>
@@ -784,6 +784,18 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
@@ -808,11 +820,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -821,10 +833,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">源码</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -840,11 +848,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -860,6 +868,14 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
               </li>
              
@@ -868,7 +884,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -876,15 +892,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -896,10 +904,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
@@ -908,7 +912,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -920,27 +924,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">java</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -952,11 +940,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -968,15 +972,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Linux</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -984,15 +980,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">ogg</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1004,11 +992,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1016,11 +1004,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1029,6 +1021,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1049,6 +1045,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">persist</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1084,7 +1084,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1136,7 +1136,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
