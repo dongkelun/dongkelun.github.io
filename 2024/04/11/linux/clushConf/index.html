@@ -32,7 +32,7 @@
 <meta property="og:image" content="https://img.dongkelun.com/linux/pssh/p9.png">
 <meta property="og:image" content="https://img.dongkelun.com/linux/pssh/p10.png">
 <meta property="og:image" content="https://img.dongkelun.com/linux/pssh/p11.png">
-<meta property="og:updated_time" content="2025-02-18T06:14:38.440Z">
+<meta property="og:updated_time" content="2025-03-11T06:44:00.812Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="集群管理命令总结">
 <meta name="twitter:description" content="前言在进行TPC性能测试时用到两个集群管理命令：clush 和 pssh，这俩命令都可以在多台服务器上并发执行相同命令，其中个人比较推荐 clush，因为感觉  clush 比较好用，本文来总结一下 clush 和 pssh 的安装配置和使用。 Pythonclush 和 pssh 都是基于Python实现，由于不同的系统默认的Python版本不同，由于 Python3 和 Python2 可能由">
@@ -332,6 +332,7 @@
 <h3 id="python3"><a href="#python3" class="headerlink" title="python3"></a>python3</h3><p>python3 安装完 clush 之后，直接使用会报错</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">clush -a</span><br><span class="line">clush: External error: Group <span class="built_in">source</span> error (GroupResolverSourceError: &lt;default&gt;)</span><br></pre></td></tr></table></figure>
 <p>最开始不止如何解决，所以对于默认安装python3的服务器依旧选择先手动安装python2再用python2安装clush比较麻烦，后来发现异常原因是 python3 安装 clush 时自动创建的配置文件路径不对，修改一下路径即可解决。<br>默认安装路径：/usr/local/etc/clustershell 正确路径：/etc/clustershell 或 /usr/etc/clustershell<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">mv /usr/<span class="built_in">local</span>/etc/clustershell /etc/</span><br><span class="line">``` </span><br><span class="line">![](https://img.dongkelun.com/linux/clush/c7.png)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">### 旧版</span></span><br><span class="line">最开始是基于旧版（1.7.3）安装包离线安装的，这里记录一下。同时对于某些环境可能新版装着有问题也可以使用这种方式。比如对于默认安装Python3的环境，假如Python3安装不上，可以选择手动离线安装Python2，如果离线安装的没有pip或者pip使用起来有问题，可以通过 python setup.py install 的方式安装，有可能安装好的命令不会默认装到/usr/bin 或者 /usr/<span class="built_in">local</span>/bin。我们可以通过添加软连接的形式 ，比如 python2的安装目录为  /usr/<span class="built_in">local</span>/python27，那么clush会安装到 /usr/<span class="built_in">local</span>/python27/bin/clush， 通过软连接 ln -s /usr/<span class="built_in">local</span>/python27/bin/clush /usr/bin/clush，这样就可以使用了。</span><br><span class="line"></span><br><span class="line">1.7.3 版本的安装包：[https://pan.baidu.com/s/1fBD5jzlcFTwle85giNrCMw](https://pan.baidu.com/s/1fBD5jzlcFTwle85giNrCMw)</span><br><span class="line"></span><br><span class="line">安装方法：</span><br><span class="line">```bash</span><br><span class="line"><span class="comment">## 该安装包只能使用Python2安装，Python3装完之后使用起来有问题</span></span><br><span class="line">python2.7 setup.py install</span><br></pre></td></tr></table></figure></p>
+<h3 id="更新"><a href="#更新" class="headerlink" title="更新"></a>更新</h3><p>2025-03-11：<br>  对于使用conda 创建的环境：基于python3 安装完成后，可以直接使用，并没有报错，可能和版本有关。<br>    anaconda 安装包 Anaconda3-2023.03-1-Linux-x86_64.sh   anaconda Command line client (version 1.11.2)<br>    conda 23.3.1<br>    Python 3.10.9<br>    clush 1.9.3<br>  另外通过在conda环境里安装的 clush 对应的配置文件路径为 ：/root/anaconda3/etc/clustershell/   ，也就是 anaconda 安装路径 + /etc/clustershell/</p>
 <h2 id="pssh"><a href="#pssh" class="headerlink" title="pssh"></a>pssh</h2><p>pssh命令是一个用于在多台主机上并行执行ssh命令的工具，全称为parallel-ssh。它使用Python编写，能够方便地对多台Linux主机进行批量管理。PSSH提供了OpenSSH和相关工具的并行版本。包括pssh、pscp、prsync、pnuke和pslurp。该项目包括可以在自定义应用程序中使用的psshlib,源代码使用Python编写的。</p>
 <h3 id="官网-1"><a href="#官网-1" class="headerlink" title="官网"></a>官网</h3><p><a href="https://code.google.com/archive/p/parallel-ssh/" target="_blank" rel="noopener">https://code.google.com/archive/p/parallel-ssh/</a></p>
 <h3 id="安装-1"><a href="#安装-1" class="headerlink" title="安装"></a>安装</h3><p>基于 Python2 进行安装</p>
@@ -545,7 +546,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Python"><span class="toc-number">2.</span> <span class="toc-text">Python</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#clush"><span class="toc-number">3.</span> <span class="toc-text">clush</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#官网"><span class="toc-number">3.1.</span> <span class="toc-text">官网</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#安装"><span class="toc-number">3.2.</span> <span class="toc-text">安装</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#在线安装"><span class="toc-number">3.2.1.</span> <span class="toc-text">在线安装</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#离线安装"><span class="toc-number">3.2.2.</span> <span class="toc-text">离线安装</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#配置"><span class="toc-number">3.3.</span> <span class="toc-text">配置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#简单使用"><span class="toc-number">3.4.</span> <span class="toc-text">简单使用</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#clush-1"><span class="toc-number">3.4.1.</span> <span class="toc-text">clush</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#clubak"><span class="toc-number">3.4.2.</span> <span class="toc-text">clubak</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#scp"><span class="toc-number">3.4.3.</span> <span class="toc-text">scp</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#其他"><span class="toc-number">3.4.4.</span> <span class="toc-text">其他</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#参数"><span class="toc-number">3.5.</span> <span class="toc-text">参数</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#clush-2"><span class="toc-number">3.5.1.</span> <span class="toc-text">clush</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#clubak-1"><span class="toc-number">3.5.2.</span> <span class="toc-text">clubak</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#python3"><span class="toc-number">3.6.</span> <span class="toc-text">python3</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#pssh"><span class="toc-number">4.</span> <span class="toc-text">pssh</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#官网-1"><span class="toc-number">4.1.</span> <span class="toc-text">官网</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#安装-1"><span class="toc-number">4.2.</span> <span class="toc-text">安装</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#在线安装-1"><span class="toc-number">4.2.1.</span> <span class="toc-text">在线安装</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#离线安装-1"><span class="toc-number">4.2.2.</span> <span class="toc-text">离线安装</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#配置-1"><span class="toc-number">4.3.</span> <span class="toc-text">配置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#使用示例"><span class="toc-number">4.4.</span> <span class="toc-text">使用示例</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-1"><span class="toc-number">4.5.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Python3"><span class="toc-number">4.6.</span> <span class="toc-text">Python3</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#No-module-named-‘version’"><span class="toc-number">4.6.1.</span> <span class="toc-text">No module named ‘version’</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#尝试安装-version"><span class="toc-number">4.6.2.</span> <span class="toc-text">尝试安装 version</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#安装Python2"><span class="toc-number">5.</span> <span class="toc-text">安装Python2</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#下载"><span class="toc-number">5.1.</span> <span class="toc-text">下载</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#安装gcc"><span class="toc-number">5.2.</span> <span class="toc-text">安装gcc</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#编译安装"><span class="toc-number">5.3.</span> <span class="toc-text">编译安装</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">6.</span> <span class="toc-text">总结</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Python"><span class="toc-number">2.</span> <span class="toc-text">Python</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#clush"><span class="toc-number">3.</span> <span class="toc-text">clush</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#官网"><span class="toc-number">3.1.</span> <span class="toc-text">官网</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#安装"><span class="toc-number">3.2.</span> <span class="toc-text">安装</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#在线安装"><span class="toc-number">3.2.1.</span> <span class="toc-text">在线安装</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#离线安装"><span class="toc-number">3.2.2.</span> <span class="toc-text">离线安装</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#配置"><span class="toc-number">3.3.</span> <span class="toc-text">配置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#简单使用"><span class="toc-number">3.4.</span> <span class="toc-text">简单使用</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#clush-1"><span class="toc-number">3.4.1.</span> <span class="toc-text">clush</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#clubak"><span class="toc-number">3.4.2.</span> <span class="toc-text">clubak</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#scp"><span class="toc-number">3.4.3.</span> <span class="toc-text">scp</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#其他"><span class="toc-number">3.4.4.</span> <span class="toc-text">其他</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#参数"><span class="toc-number">3.5.</span> <span class="toc-text">参数</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#clush-2"><span class="toc-number">3.5.1.</span> <span class="toc-text">clush</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#clubak-1"><span class="toc-number">3.5.2.</span> <span class="toc-text">clubak</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#python3"><span class="toc-number">3.6.</span> <span class="toc-text">python3</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#更新"><span class="toc-number">3.7.</span> <span class="toc-text">更新</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#pssh"><span class="toc-number">4.</span> <span class="toc-text">pssh</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#官网-1"><span class="toc-number">4.1.</span> <span class="toc-text">官网</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#安装-1"><span class="toc-number">4.2.</span> <span class="toc-text">安装</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#在线安装-1"><span class="toc-number">4.2.1.</span> <span class="toc-text">在线安装</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#离线安装-1"><span class="toc-number">4.2.2.</span> <span class="toc-text">离线安装</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#配置-1"><span class="toc-number">4.3.</span> <span class="toc-text">配置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#使用示例"><span class="toc-number">4.4.</span> <span class="toc-text">使用示例</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#参数-1"><span class="toc-number">4.5.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Python3"><span class="toc-number">4.6.</span> <span class="toc-text">Python3</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#No-module-named-‘version’"><span class="toc-number">4.6.1.</span> <span class="toc-text">No module named ‘version’</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#尝试安装-version"><span class="toc-number">4.6.2.</span> <span class="toc-text">尝试安装 version</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#安装Python2"><span class="toc-number">5.</span> <span class="toc-text">安装Python2</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#下载"><span class="toc-number">5.1.</span> <span class="toc-text">下载</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#安装gcc"><span class="toc-number">5.2.</span> <span class="toc-text">安装gcc</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#编译安装"><span class="toc-number">5.3.</span> <span class="toc-text">编译安装</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">6.</span> <span class="toc-text">总结</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -720,6 +721,14 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -752,11 +761,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -768,10 +773,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
@@ -780,11 +781,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -796,31 +793,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -832,11 +817,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Scala</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -848,15 +845,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Partition</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -872,6 +865,18 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">IDEA</a>
               </li>
              
@@ -880,15 +885,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">java</a>
+                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -900,7 +905,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -912,19 +917,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -936,7 +929,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -944,7 +953,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -953,14 +966,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1000,14 +1005,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
               </li>
              
@@ -1016,11 +1013,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1032,11 +1037,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1044,7 +1053,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1057,22 +1074,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
