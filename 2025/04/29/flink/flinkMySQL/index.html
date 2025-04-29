@@ -21,7 +21,7 @@
 <meta property="og:image" content="https://dongkelun.com/hexo-images/flink/sql/mysql/fm2.jpg">
 <meta property="og:image" content="https://dongkelun.com/hexo-images/flink/sql/mysql/fm3.jpg">
 <meta property="og:image" content="https://dongkelun.com/hexo-images/flink/sql/mysql/fm4.jpg">
-<meta property="og:updated_time" content="2025-04-29T08:01:35.098Z">
+<meta property="og:updated_time" content="2025-04-29T09:27:55.609Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="记录 Flink jdbc、mysql-cdc 连接 mysql8 碰到的适配问题">
 <meta name="twitter:description" content="前言记录 Flink jdbc、mysql-cdc 连接 mysql8 碰到的小问题  版本 Flink 1.15.3 mysql-cdc 2.3.0 MySQL 8.0.27  cdc_mysql2mysqlMySQL5之前主要用 MySQL5 ，下面是 MySQL5 的 sql ,具体见 Flink MySQL CDC 使用总结">
@@ -281,6 +281,10 @@
 <h3 id="MySQL5-1"><a href="#MySQL5-1" class="headerlink" title="MySQL5"></a>MySQL5</h3><p>验证一下 MySQL5 是不是存在和 MySQL8 一样的问题，经验证问题一样，在 MySQL5 中 ts 的类型为bigint 也会报同样的错误，完整的正确 sql 为：</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> yarn.application.name=jdbc_mysql2mysql;</span><br><span class="line"><span class="keyword">set</span> execution.target=yarn-per-job;</span><br><span class="line"></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> mysql_cdc_source (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span> PRIMARY <span class="keyword">KEY</span> <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span>,</span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="built_in">int</span>,</span><br><span class="line">  dt <span class="keyword">string</span></span><br><span class="line">) <span class="keyword">with</span> (</span><br><span class="line"> <span class="string">'connector'</span> = <span class="string">'jdbc'</span>,</span><br><span class="line"> <span class="string">'url'</span> = <span class="string">'jdbc:mysql://192.168.44.128:3306/cdc?useSSL=false&amp;useUnicode=true&amp;characterEncoding=UTF-8&amp;characterSetResults=UTF-8&amp;rewriteBatchedStatements=true'</span>,</span><br><span class="line"> <span class="string">'username'</span> = <span class="string">'root'</span>,</span><br><span class="line"> <span class="string">'password'</span> = <span class="string">'root-123'</span>,</span><br><span class="line"> <span class="string">'table-name'</span> = <span class="string">'mysql_cdc_source'</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> test_sink_mysql (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span> PRIMARY <span class="keyword">KEY</span> <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span>,</span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="built_in">int</span>,</span><br><span class="line">  dt <span class="keyword">string</span></span><br><span class="line">) <span class="keyword">with</span> (</span><br><span class="line"> <span class="string">'connector'</span> = <span class="string">'jdbc'</span>,</span><br><span class="line"> <span class="string">'url'</span> = <span class="string">'jdbc:mysql://192.168.44.128:3306/cdc?useSSL=false&amp;useUnicode=true&amp;characterEncoding=UTF-8&amp;characterSetResults=UTF-8&amp;rewriteBatchedStatements=true'</span>,</span><br><span class="line"> <span class="string">'username'</span> = <span class="string">'root'</span>,</span><br><span class="line"> <span class="string">'password'</span> = <span class="string">'root-123'</span>,</span><br><span class="line"> <span class="string">'table-name'</span> = <span class="string">'test_sink_mysql'</span>,</span><br><span class="line"> <span class="string">'sink.buffer-flush.max-rows'</span> = <span class="string">'1000000'</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test_sink_mysql(<span class="keyword">id</span>,<span class="keyword">name</span>,price,ts,dt) <span class="keyword">select</span> * <span class="keyword">from</span> mysql_cdc_source;</span><br></pre></td></tr></table></figure>
 <h3 id="sink"><a href="#sink" class="headerlink" title="sink"></a>sink</h3><p>在 cdc_mysql2mysql 中 ts bigint 就没问题, 尝试把 sink 表中 ts 的字段类型改为 bigint，最终发现 MySQL5 和 MySQL8 都没问题，也就是只有 jdbc 的 source 表对字段类型限制比较严格。</p>
+<h2 id="driver-参数"><a href="#driver-参数" class="headerlink" title="driver 参数"></a>driver 参数</h2><ul>
+<li>jdbc：MySQL5 添加 driver 参数也可以正常运行，但不是必须的，MySQL8 必须添加 driver 参数，所以无论是 5 还是 8 都加上 driver 参数，这样就不用区分 mysql的版本了。</li>
+<li>cdc : 不支持 driver 参数</li>
+</ul>
 <h2 id="字段类型映射"><a href="#字段类型映射" class="headerlink" title="字段类型映射"></a>字段类型映射</h2><p>官方文档：</p>
 <ul>
 <li>jdbc: <a href="https://nightlies.apache.org/flink/flink-docs-release-2.0/zh/docs/connectors/table/jdbc/#%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B%E6%98%A0%E5%B0%84" target="_blank" rel="noopener">https://nightlies.apache.org/flink/flink-docs-release-2.0/zh/docs/connectors/table/jdbc/#%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B%E6%98%A0%E5%B0%84</a></li>
@@ -442,7 +446,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#版本"><span class="toc-number">2.</span> <span class="toc-text">版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#cdc-mysql2mysql"><span class="toc-number">3.</span> <span class="toc-text">cdc_mysql2mysql</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#MySQL5"><span class="toc-number">3.1.</span> <span class="toc-text">MySQL5</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#MySQL8"><span class="toc-number">3.2.</span> <span class="toc-text">MySQL8</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#jdbc-mysql2mysql"><span class="toc-number">4.</span> <span class="toc-text">jdbc_mysql2mysql</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#MySQL8-1"><span class="toc-number">4.1.</span> <span class="toc-text">MySQL8</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#MySQL5-1"><span class="toc-number">4.2.</span> <span class="toc-text">MySQL5</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#sink"><span class="toc-number">4.3.</span> <span class="toc-text">sink</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#字段类型映射"><span class="toc-number">5.</span> <span class="toc-text">字段类型映射</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#MySQL8-适配"><span class="toc-number">6.</span> <span class="toc-text">MySQL8 适配</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#cdc-版本支持"><span class="toc-number">7.</span> <span class="toc-text">cdc 版本支持</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#版本"><span class="toc-number">2.</span> <span class="toc-text">版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#cdc-mysql2mysql"><span class="toc-number">3.</span> <span class="toc-text">cdc_mysql2mysql</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#MySQL5"><span class="toc-number">3.1.</span> <span class="toc-text">MySQL5</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#MySQL8"><span class="toc-number">3.2.</span> <span class="toc-text">MySQL8</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#jdbc-mysql2mysql"><span class="toc-number">4.</span> <span class="toc-text">jdbc_mysql2mysql</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#MySQL8-1"><span class="toc-number">4.1.</span> <span class="toc-text">MySQL8</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#MySQL5-1"><span class="toc-number">4.2.</span> <span class="toc-text">MySQL5</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#sink"><span class="toc-number">4.3.</span> <span class="toc-text">sink</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#driver-参数"><span class="toc-number">5.</span> <span class="toc-text">driver 参数</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#字段类型映射"><span class="toc-number">6.</span> <span class="toc-text">字段类型映射</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#MySQL8-适配"><span class="toc-number">7.</span> <span class="toc-text">MySQL8 适配</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#cdc-版本支持"><span class="toc-number">8.</span> <span class="toc-text">cdc 版本支持</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -637,15 +641,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">算法</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -661,10 +673,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
@@ -673,27 +681,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -705,15 +693,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -721,11 +721,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -742,6 +746,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -765,14 +773,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">java</a>
               </li>
              
@@ -781,19 +781,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">IDEA</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Maven</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Linux</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -801,7 +793,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -813,19 +809,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -834,18 +834,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -866,6 +854,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -897,7 +889,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -909,15 +909,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
+                <a href="javascript:void(0)" class="js-tag color5">IDEA</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Maven</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -925,7 +925,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -933,15 +941,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -950,14 +958,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Vue</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -970,6 +970,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1001,11 +1005,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">tool</a>
+                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
+                <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
              
               <li class="article-tag-list-item">
