@@ -18,7 +18,7 @@
 <meta property="og:description" content="官方文档https://nightlies.apache.org/flink/flink-cdc-docs-release-3.3/zh/docs/connectors/flink-sources/oracle-cdc/ 版本 Flink 1.15.3 CDC  2.3.0 Oracle 11G 12C （官网说支持19，未测试）Jar包https://repo1.maven.org/maven2">
 <meta property="og:locale" content="cn">
 <meta property="og:image" content="https://dongkelun.com/hexo-images/flink/cdc/oracle/oc1.jpg">
-<meta property="og:updated_time" content="2025-06-23T12:09:24.394Z">
+<meta property="og:updated_time" content="2025-06-25T09:13:24.564Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Flink Oracle CDC 总结">
 <meta name="twitter:description" content="官方文档https://nightlies.apache.org/flink/flink-cdc-docs-release-3.3/zh/docs/connectors/flink-sources/oracle-cdc/ 版本 Flink 1.15.3 CDC  2.3.0 Oracle 11G 12C （官网说支持19，未测试）Jar包https://repo1.maven.org/maven2">
@@ -272,13 +272,13 @@
 <h2 id="创建测试表"><a href="#创建测试表" class="headerlink" title="创建测试表"></a>创建测试表</h2><h3 id="Source"><a href="#Source" class="headerlink" title="Source"></a>Source</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> FLINKUSER.CDC_SOURCE (</span><br><span class="line">	<span class="keyword">ID</span> <span class="built_in">INTEGER</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">	<span class="keyword">NAME</span> VARCHAR2(<span class="number">100</span>),</span><br><span class="line">	<span class="keyword">CONSTRAINT</span> CDC_SOURCE_PK PRIMARY <span class="keyword">KEY</span> (<span class="keyword">ID</span>)</span><br><span class="line">) ;</span><br></pre></td></tr></table></figure>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> FLINKUSER.CDC_SOURCE (<span class="keyword">ID</span>, <span class="keyword">NAME</span> )<span class="keyword">VALUES</span>(<span class="number">1</span>, <span class="string">'1'</span>);</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> FLINKUSER.CDC_SOURCE (<span class="keyword">ID</span>, <span class="keyword">NAME</span> )<span class="keyword">VALUES</span>(<span class="number">2</span>, <span class="string">'2'</span>);</span><br><span class="line">……</span><br></pre></td></tr></table></figure>
 <h3 id="Sink"><a href="#Sink" class="headerlink" title="Sink"></a>Sink</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> FLINKUSER.CDC_SINK (</span><br><span class="line">	<span class="keyword">ID</span> <span class="built_in">INTEGER</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">	<span class="keyword">NAME</span> VARCHAR2(<span class="number">100</span>),</span><br><span class="line">	<span class="keyword">CONSTRAINT</span> CDC_SINK_PK PRIMARY <span class="keyword">KEY</span> (<span class="keyword">ID</span>)</span><br><span class="line">) ;</span><br></pre></td></tr></table></figure>
-<h3 id="CDC-Oracle2Oracle"><a href="#CDC-Oracle2Oracle" class="headerlink" title="CDC Oracle2Oracle"></a>CDC Oracle2Oracle</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> yarn.application.name=cdc_oracle2oracle;</span><br><span class="line"><span class="keyword">set</span> parallelism.default=<span class="number">1</span>;</span><br><span class="line"><span class="keyword">set</span> taskmanager.memory.process.size=<span class="number">3</span>g;</span><br><span class="line"><span class="keyword">set</span> taskmanager.numberOfTaskSlots=<span class="number">1</span>;</span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.interval=<span class="number">1000</span>;</span><br><span class="line"><span class="keyword">set</span> state.checkpoints.dir=hdfs:///flink/checkpoints/cdc_oracle2oracle;</span><br><span class="line"><span class="keyword">set</span> execution.target=yarn-per-job;</span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.externalized-checkpoint-<span class="keyword">retention</span>= RETAIN_ON_CANCELLATION;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> oracle_cdc_source (</span><br><span class="line">   <span class="keyword">ID</span>  <span class="built_in">int</span>  PRIMARY <span class="keyword">KEY</span> <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span>,</span><br><span class="line">   <span class="keyword">NAME</span> <span class="keyword">string</span></span><br><span class="line">) <span class="keyword">WITH</span> (</span><br><span class="line">  <span class="string">'connector'</span> = <span class="string">'oracle-cdc'</span>,</span><br><span class="line">  <span class="string">'url'</span> = <span class="string">'jdbc:oracle:thin:@10.110.8.204:1522:XE'</span>,</span><br><span class="line">  <span class="string">'hostname'</span> = <span class="string">'10.110.8.204'</span>,</span><br><span class="line">  <span class="string">'port'</span> = <span class="string">'1522'</span>,</span><br><span class="line">  <span class="string">'username'</span> = <span class="string">'flinkuser'</span>,</span><br><span class="line">  <span class="string">'password'</span> = <span class="string">'flinkpw'</span>,</span><br><span class="line">  <span class="string">'database-name'</span> = <span class="string">'XE'</span>,</span><br><span class="line">  <span class="string">'schema-name'</span> = <span class="string">'FLINKUSER'</span>,</span><br><span class="line">  <span class="string">'table-name'</span> = <span class="string">'CDC_SOURCE'</span>,</span><br><span class="line">  <span class="string">'debezium.log.mining.strategy'</span> = <span class="string">'online_catalog'</span>,</span><br><span class="line">  <span class="string">'debezium.log.mining.continuous.mine'</span> = <span class="string">'true'</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> oracle_cdc_sink (</span><br><span class="line">  <span class="keyword">ID</span> <span class="built_in">int</span> PRIMARY <span class="keyword">KEY</span> <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span>,</span><br><span class="line">  <span class="keyword">NAME</span> <span class="keyword">string</span></span><br><span class="line">) <span class="keyword">with</span> (</span><br><span class="line"> <span class="string">'connector'</span> = <span class="string">'jdbc'</span>,</span><br><span class="line"> <span class="string">'url'</span> = <span class="string">'jdbc:oracle:thin:@10.110.8.204:1522:XE'</span>,</span><br><span class="line"> <span class="string">'username'</span> = <span class="string">'flinkuser'</span>,</span><br><span class="line"> <span class="string">'password'</span> = <span class="string">'flinkpw'</span>,</span><br><span class="line"> <span class="string">'table-name'</span> = <span class="string">'FLINKUSER.CDC_SINK'</span>,</span><br><span class="line"> <span class="string">'sink.buffer-flush.max-rows'</span> = <span class="string">'1000000'</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> oracle_cdc_sink <span class="keyword">select</span> * <span class="keyword">from</span> oracle_cdc_source;</span><br></pre></td></tr></table></figure>
+<h3 id="CDC-Oracle2Oracle"><a href="#CDC-Oracle2Oracle" class="headerlink" title="CDC Oracle2Oracle"></a>CDC Oracle2Oracle</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> yarn.application.name=cdc_oracle2oracle;</span><br><span class="line"><span class="keyword">set</span> parallelism.default=<span class="number">1</span>;</span><br><span class="line"><span class="keyword">set</span> taskmanager.memory.process.size=<span class="number">3</span>g;</span><br><span class="line"><span class="keyword">set</span> taskmanager.numberOfTaskSlots=<span class="number">1</span>;</span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.interval=<span class="number">1000</span>;</span><br><span class="line"><span class="keyword">set</span> state.checkpoints.dir=hdfs:///flink/checkpoints/cdc_oracle2oracle;</span><br><span class="line"><span class="keyword">set</span> execution.target=yarn-per-job;</span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.externalized-checkpoint-<span class="keyword">retention</span>= RETAIN_ON_CANCELLATION;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> oracle_cdc_source (</span><br><span class="line">   <span class="keyword">ID</span>  <span class="built_in">int</span>  PRIMARY <span class="keyword">KEY</span> <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span>,</span><br><span class="line">   <span class="keyword">NAME</span> <span class="keyword">string</span></span><br><span class="line">) <span class="keyword">WITH</span> (</span><br><span class="line">  <span class="string">'connector'</span> = <span class="string">'oracle-cdc'</span>,</span><br><span class="line">  <span class="string">'url'</span> = <span class="string">'jdbc:oracle:thin:@192.168.44.128:1522:XE'</span>,</span><br><span class="line">  <span class="string">'hostname'</span> = <span class="string">'192.168.44.128'</span>,</span><br><span class="line">  <span class="string">'port'</span> = <span class="string">'1522'</span>,</span><br><span class="line">  <span class="string">'username'</span> = <span class="string">'flinkuser'</span>,</span><br><span class="line">  <span class="string">'password'</span> = <span class="string">'flinkpw'</span>,</span><br><span class="line">  <span class="string">'database-name'</span> = <span class="string">'XE'</span>,</span><br><span class="line">  <span class="string">'schema-name'</span> = <span class="string">'FLINKUSER'</span>,</span><br><span class="line">  <span class="string">'table-name'</span> = <span class="string">'CDC_SOURCE'</span>,</span><br><span class="line">  <span class="string">'debezium.log.mining.strategy'</span> = <span class="string">'online_catalog'</span>,</span><br><span class="line">  <span class="string">'debezium.log.mining.continuous.mine'</span> = <span class="string">'true'</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> oracle_cdc_sink (</span><br><span class="line">  <span class="keyword">ID</span> <span class="built_in">int</span> PRIMARY <span class="keyword">KEY</span> <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span>,</span><br><span class="line">  <span class="keyword">NAME</span> <span class="keyword">string</span></span><br><span class="line">) <span class="keyword">with</span> (</span><br><span class="line"> <span class="string">'connector'</span> = <span class="string">'jdbc'</span>,</span><br><span class="line"> <span class="string">'url'</span> = <span class="string">'jdbc:oracle:thin:@192.168.44.128:1522:XE'</span>,</span><br><span class="line"> <span class="string">'username'</span> = <span class="string">'flinkuser'</span>,</span><br><span class="line"> <span class="string">'password'</span> = <span class="string">'flinkpw'</span>,</span><br><span class="line"> <span class="string">'table-name'</span> = <span class="string">'FLINKUSER.CDC_SINK'</span>,</span><br><span class="line"> <span class="string">'sink.buffer-flush.max-rows'</span> = <span class="string">'1000000'</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> oracle_cdc_sink <span class="keyword">select</span> * <span class="keyword">from</span> oracle_cdc_source;</span><br></pre></td></tr></table></figure>
 <p>注意：</p>
 <ul>
 <li>Oracle CDC SQL 中的 字段名称、database-name、schema-name、table-name都要大写，否则会有问题。</li>
 <li>Source 和 Sink表都要有主键，否则数据量对不上，差异很大，好像有参数能支持没有主键的表，暂时没有验证通。</li>
 </ul>
-<h2 id="异常"><a href="#异常" class="headerlink" title="异常"></a>异常</h2><h3 id="异常1"><a href="#异常1" class="headerlink" title="异常1"></a>异常1</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">org.apache.flink.util.FlinkException: Global failure triggered by OperatorCoordinator <span class="keyword">for</span> <span class="string">'Source: oracle_cdc_source[1] -&gt; DropUpdateBefore[2] -&gt; ConstraintEnforcer[3] -&gt; Sink: oracle_cdc_sink[3]'</span> (operator cbc357ccb763df2852fee8c4fc7d55f2).</span><br><span class="line">	at org.apache.flink.runtime.operators.coordination.OperatorCoordinatorHolder<span class="variable">$LazyInitializedCoordinatorContext</span>.failJob(OperatorCoordinatorHolder.java:556)</span><br><span class="line">	at org.apache.flink.runtime.operators.coordination.RecreateOnResetOperatorCoordinator<span class="variable">$QuiesceableContext</span>.failJob(RecreateOnResetOperatorCoordinator.java:231)</span><br><span class="line">	at org.apache.flink.runtime.source.coordinator.SourceCoordinatorContext.failJob(SourceCoordinatorContext.java:316)</span><br><span class="line">	at org.apache.flink.runtime.source.coordinator.SourceCoordinator.start(SourceCoordinator.java:201)</span><br><span class="line">	at org.apache.flink.runtime.operators.coordination.RecreateOnResetOperatorCoordinator<span class="variable">$DeferrableCoordinator</span>.resetAndStart(RecreateOnResetOperatorCoordinator.java:394)</span><br><span class="line">	at org.apache.flink.runtime.operators.coordination.RecreateOnResetOperatorCoordinator.lambda<span class="variable">$resetToCheckpoint</span><span class="variable">$6</span>(RecreateOnResetOperatorCoordinator.java:144)</span><br><span class="line">	at java.util.concurrent.CompletableFuture.uniWhenComplete(CompletableFuture.java:760)</span><br><span class="line">	at java.util.concurrent.CompletableFuture<span class="variable">$UniWhenComplete</span>.tryFire(CompletableFuture.java:736)</span><br><span class="line">	at java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:474)</span><br><span class="line">	at java.util.concurrent.CompletableFuture.complete(CompletableFuture.java:1962)</span><br><span class="line">	at org.apache.flink.runtime.operators.coordination.ComponentClosingUtils.lambda<span class="variable">$closeAsyncWithTimeout</span><span class="variable">$0</span>(ComponentClosingUtils.java:77)</span><br><span class="line">	at java.lang.Thread.run(Thread.java:748)</span><br><span class="line">Caused by: org.apache.flink.util.FlinkRuntimeException: Failed to discover captured tables <span class="keyword">for</span> enumerator</span><br><span class="line">	at com.ververica.cdc.connectors.base.source.IncrementalSource.createEnumerator(IncrementalSource.java:151)</span><br><span class="line">	at org.apache.flink.runtime.source.coordinator.SourceCoordinator.start(SourceCoordinator.java:197)</span><br><span class="line">	... 8 more</span><br><span class="line">Caused by: java.lang.RuntimeException: Failed to resolve Oracle database version</span><br><span class="line">	at io.debezium.connector.oracle.OracleConnection.resolveOracleDatabaseVersion(OracleConnection.java:159)</span><br><span class="line">	at io.debezium.connector.oracle.OracleConnection.&lt;init&gt;(OracleConnection.java:71)</span><br><span class="line">	at com.ververica.cdc.connectors.oracle.source.utils.OracleConnectionUtils.createOracleConnection(OracleConnectionUtils.java:54)</span><br><span class="line">	at com.ververica.cdc.connectors.oracle.source.OracleDialect.openJdbcConnection(OracleDialect.java:90)</span><br><span class="line">	at com.ververica.cdc.connectors.oracle.source.OracleDialect.discoverDataCollections(OracleDialect.java:107)</span><br><span class="line">	at com.ververica.cdc.connectors.oracle.source.OracleDialect.discoverDataCollections(OracleDialect.java:51)</span><br><span class="line">	at com.ververica.cdc.connectors.base.source.IncrementalSource.createEnumerator(IncrementalSource.java:139)</span><br><span class="line">	... 9 more</span><br><span class="line">Caused by: java.sql.SQLException: No suitable driver found <span class="keyword">for</span> jdbc:oracle:thin:@10.110.8.204:1522:XE</span><br><span class="line"><span class="comment"># 如果没有使用 url 参数</span></span><br><span class="line"><span class="comment"># Caused by: java.sql.SQLException: No suitable driver found for jdbc:oracle:thin:@10.110.8.204:1522/XE</span></span><br><span class="line">	at java.sql.DriverManager.getConnection(DriverManager.java:689)</span><br><span class="line">	at java.sql.DriverManager.getConnection(DriverManager.java:208)</span><br><span class="line">	at io.debezium.jdbc.JdbcConnection.lambda<span class="variable">$patternBasedFactory</span><span class="variable">$0</span>(JdbcConnection.java:184)</span><br><span class="line">	at io.debezium.jdbc.JdbcConnection<span class="variable">$ConnectionFactoryDecorator</span>.connect(JdbcConnection.java:121)</span><br><span class="line">	at io.debezium.jdbc.JdbcConnection.connection(JdbcConnection.java:890)</span><br><span class="line">	at io.debezium.jdbc.JdbcConnection.connection(JdbcConnection.java:885)</span><br><span class="line">	at io.debezium.jdbc.JdbcConnection.queryAndMap(JdbcConnection.java:643)</span><br><span class="line">	at io.debezium.jdbc.JdbcConnection.queryAndMap(JdbcConnection.java:517)</span><br><span class="line">	at io.debezium.connector.oracle.OracleConnection.resolveOracleDatabaseVersion(OracleConnection.java:129)</span><br><span class="line">	... 15 more</span><br></pre></td></tr></table></figure>
+<h2 id="异常"><a href="#异常" class="headerlink" title="异常"></a>异常</h2><h3 id="异常1"><a href="#异常1" class="headerlink" title="异常1"></a>异常1</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">org.apache.flink.util.FlinkException: Global failure triggered by OperatorCoordinator <span class="keyword">for</span> <span class="string">'Source: oracle_cdc_source[1] -&gt; DropUpdateBefore[2] -&gt; ConstraintEnforcer[3] -&gt; Sink: oracle_cdc_sink[3]'</span> (operator cbc357ccb763df2852fee8c4fc7d55f2).</span><br><span class="line">	at org.apache.flink.runtime.operators.coordination.OperatorCoordinatorHolder<span class="variable">$LazyInitializedCoordinatorContext</span>.failJob(OperatorCoordinatorHolder.java:556)</span><br><span class="line">	at org.apache.flink.runtime.operators.coordination.RecreateOnResetOperatorCoordinator<span class="variable">$QuiesceableContext</span>.failJob(RecreateOnResetOperatorCoordinator.java:231)</span><br><span class="line">	at org.apache.flink.runtime.source.coordinator.SourceCoordinatorContext.failJob(SourceCoordinatorContext.java:316)</span><br><span class="line">	at org.apache.flink.runtime.source.coordinator.SourceCoordinator.start(SourceCoordinator.java:201)</span><br><span class="line">	at org.apache.flink.runtime.operators.coordination.RecreateOnResetOperatorCoordinator<span class="variable">$DeferrableCoordinator</span>.resetAndStart(RecreateOnResetOperatorCoordinator.java:394)</span><br><span class="line">	at org.apache.flink.runtime.operators.coordination.RecreateOnResetOperatorCoordinator.lambda<span class="variable">$resetToCheckpoint</span><span class="variable">$6</span>(RecreateOnResetOperatorCoordinator.java:144)</span><br><span class="line">	at java.util.concurrent.CompletableFuture.uniWhenComplete(CompletableFuture.java:760)</span><br><span class="line">	at java.util.concurrent.CompletableFuture<span class="variable">$UniWhenComplete</span>.tryFire(CompletableFuture.java:736)</span><br><span class="line">	at java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:474)</span><br><span class="line">	at java.util.concurrent.CompletableFuture.complete(CompletableFuture.java:1962)</span><br><span class="line">	at org.apache.flink.runtime.operators.coordination.ComponentClosingUtils.lambda<span class="variable">$closeAsyncWithTimeout</span><span class="variable">$0</span>(ComponentClosingUtils.java:77)</span><br><span class="line">	at java.lang.Thread.run(Thread.java:748)</span><br><span class="line">Caused by: org.apache.flink.util.FlinkRuntimeException: Failed to discover captured tables <span class="keyword">for</span> enumerator</span><br><span class="line">	at com.ververica.cdc.connectors.base.source.IncrementalSource.createEnumerator(IncrementalSource.java:151)</span><br><span class="line">	at org.apache.flink.runtime.source.coordinator.SourceCoordinator.start(SourceCoordinator.java:197)</span><br><span class="line">	... 8 more</span><br><span class="line">Caused by: java.lang.RuntimeException: Failed to resolve Oracle database version</span><br><span class="line">	at io.debezium.connector.oracle.OracleConnection.resolveOracleDatabaseVersion(OracleConnection.java:159)</span><br><span class="line">	at io.debezium.connector.oracle.OracleConnection.&lt;init&gt;(OracleConnection.java:71)</span><br><span class="line">	at com.ververica.cdc.connectors.oracle.source.utils.OracleConnectionUtils.createOracleConnection(OracleConnectionUtils.java:54)</span><br><span class="line">	at com.ververica.cdc.connectors.oracle.source.OracleDialect.openJdbcConnection(OracleDialect.java:90)</span><br><span class="line">	at com.ververica.cdc.connectors.oracle.source.OracleDialect.discoverDataCollections(OracleDialect.java:107)</span><br><span class="line">	at com.ververica.cdc.connectors.oracle.source.OracleDialect.discoverDataCollections(OracleDialect.java:51)</span><br><span class="line">	at com.ververica.cdc.connectors.base.source.IncrementalSource.createEnumerator(IncrementalSource.java:139)</span><br><span class="line">	... 9 more</span><br><span class="line">Caused by: java.sql.SQLException: No suitable driver found <span class="keyword">for</span> jdbc:oracle:thin:@192.168.44.128:1522:XE</span><br><span class="line"><span class="comment"># 如果没有使用 url 参数</span></span><br><span class="line"><span class="comment"># Caused by: java.sql.SQLException: No suitable driver found for jdbc:oracle:thin:@192.168.44.128:1522/XE</span></span><br><span class="line">	at java.sql.DriverManager.getConnection(DriverManager.java:689)</span><br><span class="line">	at java.sql.DriverManager.getConnection(DriverManager.java:208)</span><br><span class="line">	at io.debezium.jdbc.JdbcConnection.lambda<span class="variable">$patternBasedFactory</span><span class="variable">$0</span>(JdbcConnection.java:184)</span><br><span class="line">	at io.debezium.jdbc.JdbcConnection<span class="variable">$ConnectionFactoryDecorator</span>.connect(JdbcConnection.java:121)</span><br><span class="line">	at io.debezium.jdbc.JdbcConnection.connection(JdbcConnection.java:890)</span><br><span class="line">	at io.debezium.jdbc.JdbcConnection.connection(JdbcConnection.java:885)</span><br><span class="line">	at io.debezium.jdbc.JdbcConnection.queryAndMap(JdbcConnection.java:643)</span><br><span class="line">	at io.debezium.jdbc.JdbcConnection.queryAndMap(JdbcConnection.java:517)</span><br><span class="line">	at io.debezium.connector.oracle.OracleConnection.resolveOracleDatabaseVersion(OracleConnection.java:129)</span><br><span class="line">	... 15 more</span><br></pre></td></tr></table></figure>
 <ul>
 <li>jar 冲突：calcite-core-1.10.0.jar.</li>
 <li>移除 flink lib下该包</li>
@@ -639,23 +639,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -664,6 +652,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -679,34 +671,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
               </li>
              
@@ -715,11 +679,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -731,11 +707,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Flink</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -747,15 +735,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Scala</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -783,19 +775,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">IDEA</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Maven</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -807,11 +791,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
+                <a href="javascript:void(0)" class="js-tag color5">IDEA</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+                <a href="javascript:void(0)" class="js-tag color1">Maven</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -819,11 +811,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
+                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -835,19 +839,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -859,15 +855,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -880,6 +876,18 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -899,14 +907,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">压缩文件</a>
               </li>
              
@@ -919,11 +919,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -931,7 +927,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+                <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -951,6 +951,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
@@ -960,10 +964,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -999,7 +999,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
+                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1007,11 +1007,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">extraMetadata</a>
+                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Hudi CLI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">extraMetadata</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1028,10 +1032,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">VPN</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
               </li>
              
               <li class="article-tag-list-item">
