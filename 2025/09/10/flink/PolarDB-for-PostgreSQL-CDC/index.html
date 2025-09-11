@@ -17,7 +17,7 @@
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="版本 Flink 1.15.3 CDC 2.3.0 PolarDB-for-PostgreSQL 11.22  CDC Jar包https://repo1.maven.org/maven2/com/ververica/flink-sql-connector-postgres-cdc/2.3.0/ PolarDB-for-PostgreSQL 安装PolarDB-for-PostgreSQL 安装配">
 <meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2025-09-10T09:34:52.962Z">
+<meta property="og:updated_time" content="2025-09-11T09:13:54.653Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="PolarDB-for-PostgreSQL CDC 总结">
 <meta name="twitter:description" content="版本 Flink 1.15.3 CDC 2.3.0 PolarDB-for-PostgreSQL 11.22  CDC Jar包https://repo1.maven.org/maven2/com/ververica/flink-sql-connector-postgres-cdc/2.3.0/ PolarDB-for-PostgreSQL 安装PolarDB-for-PostgreSQL 安装配">
@@ -265,10 +265,10 @@
 <a id="more"></a>
 <h2 id="PostgreSQL-配置"><a href="#PostgreSQL-配置" class="headerlink" title="PostgreSQL 配置"></a>PostgreSQL 配置</h2><h3 id="启用逻辑解码"><a href="#启用逻辑解码" class="headerlink" title="启用逻辑解码"></a>启用逻辑解码</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi /var/lib/polardb/data/postgresql.conf</span><br></pre></td></tr></table></figure>
 <!-- more -->
-<p>添加 / 调整以下参数:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 开启逻辑解码（必须，CDC 依赖此功能获取增量变更）</span></span><br><span class="line">wal_level = logical</span><br><span class="line"><span class="comment"># 设置 WAL 发送进程数量（需大于 0，根据业务并发调整，如 50 ）</span></span><br><span class="line">max_wal_senders = 50</span><br><span class="line"><span class="comment"># 保留 WAL 段数量（控制日志保留时长，根据业务需求调整，如 64 ，每个段默认 16MB ）</span></span><br><span class="line">wal_keep_segments = 64</span><br><span class="line"><span class="comment"># 可选：设置复制槽最大数量（若用多个 CDC 任务，需大于任务数，如 50 ）</span></span><br><span class="line">max_replication_slots = 50</span><br></pre></td></tr></table></figure></p>
+<p>添加 / 调整以下参数:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 开启逻辑解码（必须，CDC 依赖此功能获取增量变更）</span></span><br><span class="line">wal_level = logical</span><br><span class="line"><span class="comment"># 设置 WAL 发送进程数量（需大于 0，根据业务并发调整，如 50 ）</span></span><br><span class="line">max_wal_senders = 50</span><br><span class="line"><span class="comment"># 保留 WAL 段数量（控制日志保留时长，根据业务需求调整，如 64 ，每个段默认 16MB ）</span></span><br><span class="line">wal_keep_segments = 64</span><br><span class="line"><span class="comment"># 可选：设置复制槽最大数量（若用多个 CDC 任务，需大于任务数，如 50，默认值10 ）</span></span><br><span class="line">max_replication_slots = 50</span><br></pre></td></tr></table></figure></p>
 <p>这些参数调整后，<strong>必须重启 PostgreSQL 服务</strong>才能生效：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pg_ctl -D /var/lib/polardb/data restart</span><br></pre></td></tr></table></figure></p>
 <h3 id="权限与用户配置"><a href="#权限与用户配置" class="headerlink" title="权限与用户配置"></a>权限与用户配置</h3><h4 id="配置客户端访问权限"><a href="#配置客户端访问权限" class="headerlink" title="配置客户端访问权限"></a>配置客户端访问权限</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi /var/lib/polardb/data/pg_hba.conf</span><br></pre></td></tr></table></figure>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 允许 cdc_user 用户从所有 IP 通过密码认证访问（开发环境临时用，生产环境要限定特定IP）</span></span><br><span class="line">host    replication     cdc_user    0.0.0.0/0    md5</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 允许 cdc_user 用户从所有 IP 通过密码认证访问（开发环境临时用，生产环境要限定特定IP）</span></span><br><span class="line"><span class="comment"># 经测试，该配置非必须，默认就有权限创建，可能和具体版本有关</span></span><br><span class="line">host    replication     cdc_user    0.0.0.0/0    md5</span><br></pre></td></tr></table></figure>
 <p>说明：</p>
 <ul>
 <li>replication 用于创建复制槽等操作；</li>
@@ -278,16 +278,23 @@
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 创建带复制权限的用户（根据实际需求改用户名、密码）</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">USER</span> cdc_user <span class="keyword">WITH</span> <span class="keyword">REPLICATION</span> LOGIN ENCRYPTED <span class="keyword">PASSWORD</span> <span class="string">'cdc_password'</span>;  </span><br><span class="line"><span class="comment">-- 可选：赋予访问特定数据库、模式、表的权限（如允许访问 testdb 的所有表）</span></span><br><span class="line"><span class="keyword">GRANT</span> <span class="keyword">CONNECT</span> <span class="keyword">ON</span> <span class="keyword">DATABASE</span> testdb <span class="keyword">TO</span> cdc_user;</span><br><span class="line"><span class="comment">-- 切换到 testdb 数据库</span></span><br><span class="line">\c testdb;</span><br><span class="line"><span class="keyword">GRANT</span> <span class="keyword">USAGE</span> <span class="keyword">ON</span> <span class="keyword">SCHEMA</span> <span class="keyword">public</span> <span class="keyword">TO</span> cdc_user;</span><br><span class="line"><span class="keyword">GRANT</span> <span class="keyword">SELECT</span> <span class="keyword">ON</span> ALL <span class="keyword">TABLES</span> <span class="keyword">IN</span> <span class="keyword">SCHEMA</span> <span class="keyword">public</span> <span class="keyword">TO</span> cdc_user;</span><br></pre></td></tr></table></figure>
 <p>说明：REPLICATION 权限是创建复制槽的必要条件，后续 CDC 工具需用该用户连接。</p>
 <p>我们在 <a href="https://mp.weixin.qq.com/s/i2sONlhY-irV8UXxM9FG4g" target="_blank" rel="noopener">PolarDB-for-PostgreSQL 安装配置</a> 已经创建了 cdc_user ，当时的权限是不足的，要让 cdc_user 支持基于逻辑解码的 CDC（如 Flink CDC、Debezium），需补充：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 1. 复制协议权限（必配）</span></span><br><span class="line"><span class="comment">-- 赋予复制权限（创建/使用逻辑复制槽的基础）</span></span><br><span class="line"><span class="comment">-- 作用：允许用户通过复制协议连接数据库，创建 / 占用逻辑复制槽，拉取 WAL 日志解析变更。</span></span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">USER</span> cdc_user <span class="keyword">WITH</span> <span class="keyword">REPLICATION</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 2. 授予数据库 CREATE 权限（非必须）</span></span><br><span class="line"><span class="comment">-- 登录 PostgreSQL 超级用户（如 postgres），为 cdc_user 授予 testdb 数据库的 CREATE 权限：</span></span><br><span class="line"></span><br><span class="line"><span class="comment">-- 切换到 testdb 数据库（发布需要在目标数据库中创建）</span></span><br><span class="line">\c testdb;</span><br><span class="line"><span class="comment">-- 授予 cdc_user 在 testdb 中创建对象的权限</span></span><br><span class="line"><span class="keyword">GRANT</span> <span class="keyword">CREATE</span> <span class="keyword">ON</span> <span class="keyword">DATABASE</span> testdb <span class="keyword">TO</span> cdc_user;</span><br></pre></td></tr></table></figure>
-<p>如果没有 CREATE 权限 并且没有手动提前创建 dbz_publication ：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">2025-08-29 16:32:15.613 CST [11787] STATEMENT:  CREATE PUBLICATION dbz_publication FOR ALL TABLES;</span><br><span class="line">2025-08-29 16:32:16.711 CST [11828] ERROR:  permission denied <span class="keyword">for</span> database testdb</span><br></pre></td></tr></table></figure></p>
-<ol>
+<ul>
+<li><p>复制协议权限（必配）</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 赋予复制权限（创建/使用逻辑复制槽的基础）</span></span><br><span class="line"><span class="comment">-- 作用：允许用户通过复制协议连接数据库，创建 / 占用逻辑复制槽，拉取 WAL 日志解析变更。</span></span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">USER</span> cdc_user <span class="keyword">WITH</span> <span class="keyword">REPLICATION</span>;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>授予数据库 CREATE 权限（非必须）</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 登录 PostgreSQL 超级用户（如 postgres），为 cdc_user 授予 testdb 数据库的 CREATE 权限：</span></span><br><span class="line"><span class="comment">-- 切换到 testdb 数据库（发布需要在目标数据库中创建）</span></span><br><span class="line">\c testdb;</span><br><span class="line"><span class="comment">-- 授予 cdc_user 在 testdb 中创建对象的权限</span></span><br><span class="line"><span class="keyword">GRANT</span> <span class="keyword">CREATE</span> <span class="keyword">ON</span> <span class="keyword">DATABASE</span> testdb <span class="keyword">TO</span> cdc_user;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>如果没有 CREATE 权限 并且没有手动提前创建 dbz_publication , 会报错：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">2025-08-29 16:32:15.613 CST [11787] STATEMENT:  CREATE PUBLICATION dbz_publication FOR ALL TABLES;</span><br><span class="line">2025-08-29 16:32:16.711 CST [11828] ERROR:  permission denied <span class="keyword">for</span> database testdb</span><br></pre></td></tr></table></figure></p>
+<ul>
 <li>模式（Schema）权限（按需）<br>若表在自定义模式（如 my_schema）下，需授权模式访问：</li>
-</ol>
+</ul>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 允许访问模式下的对象（如查询表、使用序列）</span></span><br><span class="line"><span class="keyword">GRANT</span> <span class="keyword">USAGE</span> <span class="keyword">ON</span> <span class="keyword">SCHEMA</span> my_schema <span class="keyword">TO</span> cdc_user;</span><br></pre></td></tr></table></figure>
-<h2 id="cdc-pg2hudi"><a href="#cdc-pg2hudi" class="headerlink" title="cdc_pg2hudi"></a>cdc_pg2hudi</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> yarn.application.name=cdc_pg2mysql;</span><br><span class="line"><span class="keyword">set</span> execution.target=yarn-per-job;</span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.interval=<span class="number">1000</span>;</span><br><span class="line"><span class="keyword">set</span> state.checkpoints.dir=hdfs:///flink/checkpoints/cdc_pg2mysql;</span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.externalized-checkpoint-<span class="keyword">retention</span>= RETAIN_ON_CANCELLATION;</span><br><span class="line"><span class="keyword">SET</span> <span class="string">'table.dml-sync'</span> = <span class="string">'true'</span>;</span><br><span class="line"><span class="keyword">set</span> pipeline.operator-chaining=<span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> postgres_cdc_source (</span><br><span class="line">    <span class="keyword">id</span> <span class="built_in">INT</span>,</span><br><span class="line">    <span class="keyword">name</span> <span class="keyword">STRING</span>,</span><br><span class="line">    PRIMARY <span class="keyword">KEY</span> (<span class="keyword">id</span>) <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span></span><br><span class="line">) <span class="keyword">WITH</span> (</span><br><span class="line">    <span class="string">'connector'</span> = <span class="string">'postgres-cdc'</span>,</span><br><span class="line">    <span class="string">'hostname'</span> = <span class="string">'192.168.1.1'</span>,</span><br><span class="line">    <span class="string">'port'</span> = <span class="string">'5432'</span>,</span><br><span class="line">    <span class="string">'username'</span> = <span class="string">'cdc_user'</span>,</span><br><span class="line">    <span class="string">'password'</span> = <span class="string">'cdc_password'</span>,</span><br><span class="line">    <span class="string">'database-name'</span> = <span class="string">'testdb'</span>,</span><br><span class="line">    <span class="string">'schema-name'</span> = <span class="string">'public'</span>,</span><br><span class="line">    <span class="string">'table-name'</span> = <span class="string">'test_cdc'</span>,</span><br><span class="line">    <span class="string">'decoding.plugin.name'</span> = <span class="string">'pgoutput'</span>,</span><br><span class="line">    <span class="string">'slot.name'</span> = <span class="string">'cdc_slot'</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> test_sink_mysql (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span> PRIMARY <span class="keyword">KEY</span> <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span>,</span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span></span><br><span class="line">) <span class="keyword">with</span> (</span><br><span class="line"> <span class="string">'connector'</span> = <span class="string">'jdbc'</span>,</span><br><span class="line"> <span class="string">'url'</span> = <span class="string">'jdbc:mysql://192.168.1.2:3306/cdc?useSSL=false&amp;useUnicode=true&amp;characterEncoding=UTF-8&amp;characterSetResults=UTF-8&amp;rewriteBatchedStatements=true'</span>,</span><br><span class="line"> <span class="string">'driver'</span> = <span class="string">'com.mysql.cj.jdbc.Driver'</span>,</span><br><span class="line"> <span class="string">'username'</span> = <span class="string">'root'</span>,</span><br><span class="line"> <span class="string">'password'</span> = <span class="string">'Root-123'</span>,</span><br><span class="line"> <span class="string">'table-name'</span> = <span class="string">'test_sink_mysql_pg'</span>,</span><br><span class="line"> <span class="string">'sink.buffer-flush.max-rows'</span> = <span class="string">'1000000'</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test_sink_mysql(<span class="keyword">id</span>,<span class="keyword">name</span>) <span class="keyword">select</span> * <span class="keyword">from</span> postgres_cdc_source;</span><br></pre></td></tr></table></figure>
-<h3 id="逻辑解码插件"><a href="#逻辑解码插件" class="headerlink" title="逻辑解码插件"></a>逻辑解码插件</h3><p>上面 CDC SQL中的参数 decoding.plugin.name 对应的是逻辑解码插件。逻辑解码插件是 PostgreSQL 实现逻辑复制和变更数据捕获（CDC）的核心组件，其核心作用是将数据库的物理 WAL（Write-Ahead Log，预写日志）转换为可读性强、结构化的逻辑变更数据（如 INSERT/UPDATE/DELETE 操作详情）。</p>
+<h2 id="cdc-pg2mysql"><a href="#cdc-pg2mysql" class="headerlink" title="cdc_pg2mysql"></a>cdc_pg2mysql</h2><p>具体参数可以查看官网：<a href="https://nightlies.apache.org/flink/flink-cdc-docs-release-3.1/docs/connectors/flink-sources/postgres-cdc/" target="_blank" rel="noopener">https://nightlies.apache.org/flink/flink-cdc-docs-release-3.1/docs/connectors/flink-sources/postgres-cdc/</a><br>备注：上面的官网文档是 3.1 版本，有的参数在 2.3 版本是没有的<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> yarn.application.name=cdc_pg2mysql;</span><br><span class="line"><span class="keyword">set</span> execution.target=yarn-per-job;</span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.interval=<span class="number">1000</span>;</span><br><span class="line"><span class="keyword">set</span> state.checkpoints.dir=hdfs:///flink/checkpoints/cdc_pg2mysql;</span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.externalized-checkpoint-<span class="keyword">retention</span>= RETAIN_ON_CANCELLATION;</span><br><span class="line"><span class="keyword">SET</span> <span class="string">'table.dml-sync'</span> = <span class="string">'true'</span>;</span><br><span class="line"><span class="keyword">set</span> pipeline.operator-chaining=<span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> postgres_cdc_source (</span><br><span class="line">    <span class="keyword">id</span> <span class="built_in">INT</span>,</span><br><span class="line">    <span class="keyword">name</span> <span class="keyword">STRING</span>,</span><br><span class="line">    PRIMARY <span class="keyword">KEY</span> (<span class="keyword">id</span>) <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span></span><br><span class="line">) <span class="keyword">WITH</span> (</span><br><span class="line">    <span class="string">'connector'</span> = <span class="string">'postgres-cdc'</span>,</span><br><span class="line">    <span class="string">'hostname'</span> = <span class="string">'192.168.1.1'</span>,</span><br><span class="line">    <span class="string">'port'</span> = <span class="string">'5432'</span>,</span><br><span class="line">    <span class="string">'username'</span> = <span class="string">'cdc_user'</span>,</span><br><span class="line">    <span class="string">'password'</span> = <span class="string">'cdc_password'</span>,</span><br><span class="line">    <span class="string">'database-name'</span> = <span class="string">'testdb'</span>,</span><br><span class="line">    <span class="string">'schema-name'</span> = <span class="string">'public'</span>,</span><br><span class="line">    <span class="string">'table-name'</span> = <span class="string">'test_cdc'</span>,</span><br><span class="line">    <span class="string">'decoding.plugin.name'</span> = <span class="string">'pgoutput'</span>,</span><br><span class="line">    <span class="string">'slot.name'</span> = <span class="string">'cdc_slot'</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> test_sink_mysql (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span> PRIMARY <span class="keyword">KEY</span> <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span>,</span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span></span><br><span class="line">) <span class="keyword">with</span> (</span><br><span class="line"> <span class="string">'connector'</span> = <span class="string">'jdbc'</span>,</span><br><span class="line"> <span class="string">'url'</span> = <span class="string">'jdbc:mysql://192.168.1.2:3306/cdc?useSSL=false&amp;useUnicode=true&amp;characterEncoding=UTF-8&amp;characterSetResults=UTF-8&amp;rewriteBatchedStatements=true'</span>,</span><br><span class="line"> <span class="string">'driver'</span> = <span class="string">'com.mysql.cj.jdbc.Driver'</span>,</span><br><span class="line"> <span class="string">'username'</span> = <span class="string">'root'</span>,</span><br><span class="line"> <span class="string">'password'</span> = <span class="string">'Root-123'</span>,</span><br><span class="line"> <span class="string">'table-name'</span> = <span class="string">'test_sink_mysql_pg'</span>,</span><br><span class="line"> <span class="string">'sink.buffer-flush.max-rows'</span> = <span class="string">'1000000'</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test_sink_mysql(<span class="keyword">id</span>,<span class="keyword">name</span>) <span class="keyword">select</span> * <span class="keyword">from</span> postgres_cdc_source;</span><br></pre></td></tr></table></figure></p>
+<h3 id="逻辑解码插件"><a href="#逻辑解码插件" class="headerlink" title="逻辑解码插件"></a>逻辑解码插件</h3><p>上面 CDC SQL中的参数 decoding.plugin.name 对应的是逻辑解码插件, 默认值 decoderbufs。逻辑解码插件是 PostgreSQL 实现逻辑复制和变更数据捕获（CDC）的核心组件，其核心作用是将数据库的物理 WAL（Write-Ahead Log，预写日志）转换为可读性强、结构化的逻辑变更数据（如 INSERT/UPDATE/DELETE 操作详情）。</p>
 <p>简单来说，WAL 是 PostgreSQL 用于崩溃恢复的物理日志，记录的是数据块级别的修改，人类无法直接理解；而逻辑解码插件的作用就是 “翻译” 这些物理日志，生成能被外部系统（如复制工具、CDC 工具）识别的逻辑变更信息（例如 “在表 t 中插入了一条 id=1、name=’xxx’ 的记录”）。</p>
-<h4 id="官方内置的逻辑解码插件"><a href="#官方内置的逻辑解码插件" class="headerlink" title="官方内置的逻辑解码插件"></a>官方内置的逻辑解码插件</h4><p>在 PostgreSQL 10 及以上版本中，官方内置的逻辑解码插件主要有 test_decoding 和 pgoutput 两个，两者的核心功能都是将数据库的物理 WAL（Write-Ahead Log）转换为可读的逻辑变更数据，但在设计目标、功能特性和适用场景上有明显区别，具体对比如下：</p>
+<h4 id="官方内置的逻辑解码插件"><a href="#官方内置的逻辑解码插件" class="headerlink" title="官方内置的逻辑解码插件"></a>官方内置的逻辑解码插件</h4><p>在 PostgreSQL 10 及以上版本中，官方内置的逻辑解码插件主要有 test_decoding 和 pgoutput 两个（经测试 PolarDB-for-PostgreSQL 只有 pgoutput），两者的核心功能都是将数据库的物理 WAL（Write-Ahead Log）转换为可读的逻辑变更数据，但在设计目标、功能特性和适用场景上有明显区别，具体对比如下：</p>
 <table>
 <thead>
 <tr>
@@ -374,6 +381,7 @@
 <li>生产环境中应严格遵循最小权限原则，避免使用超级用户运行 CDC 工具。</li>
 <li>通过方案 2，既能满足 CDC 需求，又能保证数据库安全，是推荐的解决方式。</li>
 </ul>
+<h4 id="修改默认发布"><a href="#修改默认发布" class="headerlink" title="修改默认发布"></a>修改默认发布</h4><p>Flink CDC 使用的默认发布为 dbz_publication ，可以通过参数修改它的默认值：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">'debezium.publication.name' = 'order_publication'</span><br></pre></td></tr></table></figure></p>
 <h3 id="logical-decoding-requires-wal-level-gt-logical"><a href="#logical-decoding-requires-wal-level-gt-logical" class="headerlink" title="logical decoding requires wal_level &gt;= logical"></a>logical decoding requires wal_level &gt;= logical</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">io.debezium.DebeziumException: Creation of replication slot failed</span><br><span class="line">	at io.debezium.connector.postgresql.PostgresConnectorTask.start(PostgresConnectorTask.java:<span class="number">141</span>)</span><br><span class="line">	at io.debezium.connector.common.BaseSourceTask.start(BaseSourceTask.java:<span class="number">130</span>)</span><br><span class="line">	at io.debezium.embedded.EmbeddedEngine.run(EmbeddedEngine.java:<span class="number">759</span>)</span><br><span class="line">	at io.debezium.embedded.ConvertingEngineBuilder$<span class="number">2</span>.run(ConvertingEngineBuilder.java:<span class="number">188</span>)</span><br><span class="line">	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:<span class="number">1149</span>)</span><br><span class="line">	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:<span class="number">624</span>)</span><br><span class="line">	at java.lang.Thread.run(Thread.java:<span class="number">748</span>)</span><br><span class="line">Caused by: org.postgresql.util.PSQLException: ERROR: logical decoding <span class="keyword">requires</span> wal_level &gt;= logical</span><br></pre></td></tr></table></figure>
 <p>wal_level 默认值为 replica ，应当配置为 logical ，我们在前面已经配置过了，但是需要重启</p>
 <p>可以通过下面的 SQL 查看当前 wal_level 配置<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SHOW</span> wal_level;</span><br></pre></td></tr></table></figure></p>
@@ -431,6 +439,15 @@
 </ul>
 <h3 id="replication-slot-“cdc-slot”-is-active-for-PID-2538084"><a href="#replication-slot-“cdc-slot”-is-active-for-PID-2538084" class="headerlink" title="replication slot “cdc_slot” is active for PID 2538084"></a>replication slot “cdc_slot” is active for PID 2538084</h3><p>原因：两个任务使用了相同的逻辑复制槽<br>解决：为该任务指定别的逻辑复制槽名称</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">com.ververica.cdc.connectors.shaded.org.apache.kafka.connect.errors.ConnectException: An exception occurred in the change event producer. This connector will be stopped.</span><br><span class="line">	at io.debezium.pipeline.ErrorHandler.setProducerThrowable(ErrorHandler.java:<span class="number">42</span>)</span><br><span class="line">	at io.debezium.connector.postgresql.PostgresStreamingChangeEventSource.execute(PostgresStreamingChangeEventSource.java:<span class="number">168</span>)</span><br><span class="line">	at io.debezium.connector.postgresql.PostgresStreamingChangeEventSource.execute(PostgresStreamingChangeEventSource.java:<span class="number">40</span>)</span><br><span class="line">	at io.debezium.pipeline.ChangeEventSourceCoordinator.streamEvents(ChangeEventSourceCoordinator.java:<span class="number">160</span>)</span><br><span class="line">	at io.debezium.pipeline.ChangeEventSourceCoordinator.lambda$start$<span class="number">0</span>(ChangeEventSourceCoordinator.java:<span class="number">122</span>)</span><br><span class="line">	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:<span class="number">511</span>)</span><br><span class="line">	at java.util.concurrent.FutureTask.run(FutureTask.java:<span class="number">266</span>)</span><br><span class="line">	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:<span class="number">1149</span>)</span><br><span class="line">	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:<span class="number">624</span>)</span><br><span class="line">	at java.lang.Thread.run(Thread.java:<span class="number">748</span>)</span><br><span class="line">Caused by: io.debezium.DebeziumException: Failed to start replication stream at LSN&#123;<span class="number">0</span>/<span class="number">16251F</span>8&#125;; when setting up multiple connectors <span class="keyword">for</span> the same database host, please make sure to use a distinct replication slot name <span class="keyword">for</span> each.</span><br><span class="line">	at io.debezium.connector.postgresql.connection.PostgresReplicationConnection.startStreaming(PostgresReplicationConnection.java:<span class="number">312</span>)</span><br><span class="line">	at io.debezium.connector.postgresql.PostgresStreamingChangeEventSource.execute(PostgresStreamingChangeEventSource.java:<span class="number">125</span>)</span><br><span class="line">	... <span class="number">8</span> more</span><br><span class="line">Caused by: org.postgresql.util.PSQLException: ERROR: replication slot <span class="string">"cdc_slot"</span> is active <span class="keyword">for</span> PID <span class="number">2538084</span></span><br><span class="line">	at org.postgresql.core.v3.QueryExecutorImpl.receiveErrorResponse(QueryExecutorImpl.java:<span class="number">2565</span>)</span><br><span class="line">	at org.postgresql.core.v3.QueryExecutorImpl.processCopyResults(QueryExecutorImpl.java:<span class="number">1224</span>)</span><br><span class="line">	at org.postgresql.core.v3.QueryExecutorImpl.startCopy(QueryExecutorImpl.java:<span class="number">906</span>)</span><br><span class="line">	at org.postgresql.core.v3.replication.V3ReplicationProtocol.initializeReplication(V3ReplicationProtocol.java:<span class="number">60</span>)</span><br><span class="line">	at org.postgresql.core.v3.replication.V3ReplicationProtocol.startLogical(V3ReplicationProtocol.java:<span class="number">44</span>)</span><br><span class="line">	at org.postgresql.replication.fluent.ReplicationStreamBuilder$<span class="number">1</span>.start(ReplicationStreamBuilder.java:<span class="number">38</span>)</span><br><span class="line">	at org.postgresql.replication.fluent.logical.LogicalStreamBuilder.start(LogicalStreamBuilder.java:<span class="number">41</span>)</span><br><span class="line">	at io.debezium.connector.postgresql.connection.PostgresReplicationConnection.startPgReplicationStream(PostgresReplicationConnection.java:<span class="number">582</span>)</span><br><span class="line">	at io.debezium.connector.postgresql.connection.PostgresReplicationConnection.createReplicationStream(PostgresReplicationConnection.java:<span class="number">417</span>)</span><br><span class="line">	at io.debezium.connector.postgresql.connection.PostgresReplicationConnection.startStreaming(PostgresReplicationConnection.java:<span class="number">304</span>)</span><br><span class="line">	... <span class="number">9</span> more</span><br></pre></td></tr></table></figure>
+<h3 id="superuser-reserved-connections-3-plus-max-wal-senders-100-must-be-less-than-max-connections-100"><a href="#superuser-reserved-connections-3-plus-max-wal-senders-100-must-be-less-than-max-connections-100" class="headerlink" title="superuser_reserved_connections (3) plus max_wal_senders (100) must be less than max_connections (100)"></a>superuser_reserved_connections (3) plus max_wal_senders (100) must be less than max_connections (100)</h3><p>PostgreSQL 配置中存在参数冲突，具体是：</p>
+<p><code>superuser_reserved_connections</code>（超级用户预留连接数） + <code>max_wal_senders</code>（WAL 发送进程数）的值，必须小于 <code>max_connections</code>（最大连接数）</p>
+<p>当前配置:</p>
+<ul>
+<li>superuser_reserved_connections = 3， 默认值 3,为超级用户预留的连接数（即使连接数达到上限，超级用户仍能登录） </li>
+<li>max_wal_senders = 100 默认值10，用于流复制的 WAL 发送进程最大数量（逻辑复制和物理复制都会占用）</li>
+<li>max_connections = 100 ，默认值 100, 数据库允许的最大并发连接数</li>
+</ul>
+
       
 
       
@@ -577,7 +594,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#版本"><span class="toc-number">1.</span> <span class="toc-text">版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#CDC-Jar包"><span class="toc-number">2.</span> <span class="toc-text">CDC Jar包</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#PolarDB-for-PostgreSQL-安装"><span class="toc-number">3.</span> <span class="toc-text">PolarDB-for-PostgreSQL 安装</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#PostgreSQL-配置"><span class="toc-number">4.</span> <span class="toc-text">PostgreSQL 配置</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#启用逻辑解码"><span class="toc-number">4.1.</span> <span class="toc-text">启用逻辑解码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#权限与用户配置"><span class="toc-number">4.2.</span> <span class="toc-text">权限与用户配置</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#配置客户端访问权限"><span class="toc-number">4.2.1.</span> <span class="toc-text">配置客户端访问权限</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#创建-CDC-专用用户并赋权"><span class="toc-number">4.2.2.</span> <span class="toc-text">创建 CDC 专用用户并赋权</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#cdc-pg2hudi"><span class="toc-number">5.</span> <span class="toc-text">cdc_pg2hudi</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#逻辑解码插件"><span class="toc-number">5.1.</span> <span class="toc-text">逻辑解码插件</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#官方内置的逻辑解码插件"><span class="toc-number">5.1.1.</span> <span class="toc-text">官方内置的逻辑解码插件</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#逻辑复制槽"><span class="toc-number">5.2.</span> <span class="toc-text">逻辑复制槽</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#核心作用"><span class="toc-number">5.2.1.</span> <span class="toc-text">核心作用</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#常用操作-SQL"><span class="toc-number">5.2.2.</span> <span class="toc-text">常用操作 SQL</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#创建逻辑复制槽"><span class="toc-number">5.2.2.1.</span> <span class="toc-text">创建逻辑复制槽</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#查看所有复制槽："><span class="toc-number">5.2.2.2.</span> <span class="toc-text">查看所有复制槽：</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#删除复制槽："><span class="toc-number">5.2.2.3.</span> <span class="toc-text">删除复制槽：</span></a></li></ol></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#异常解决"><span class="toc-number">6.</span> <span class="toc-text">异常解决</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#must-be-superuser-to-create-FOR-ALL-TABLES-publication"><span class="toc-number">6.1.</span> <span class="toc-text">must be superuser to create FOR ALL TABLES publication</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#原因解析"><span class="toc-number">6.1.1.</span> <span class="toc-text">原因解析</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#方案-1：使用超级用户运行-Debezium（不推荐生产环境）"><span class="toc-number">6.1.2.</span> <span class="toc-text">方案 1：使用超级用户运行 Debezium（不推荐生产环境）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#方案-2：创建指定表的发布（推荐生产环境）"><span class="toc-number">6.1.3.</span> <span class="toc-text">方案 2：创建指定表的发布（推荐生产环境）</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#logical-decoding-requires-wal-level-gt-logical"><span class="toc-number">6.2.</span> <span class="toc-text">logical decoding requires wal_level &gt;= logical</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#ERROR-replication-slot-“cdc-slot”-already-exists"><span class="toc-number">6.3.</span> <span class="toc-text">ERROR: replication slot “cdc_slot” already exists</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#The-“before”-field-of-UPDATE-DELETE-message-is-null"><span class="toc-number">6.4.</span> <span class="toc-text">The “before” field of UPDATE/DELETE message is null</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#错误根源：REPLICA-IDENTITY-配置"><span class="toc-number">6.4.1.</span> <span class="toc-text">错误根源：REPLICA IDENTITY 配置</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#解决方法：修改表的-REPLICA-IDENTITY-为-FULL"><span class="toc-number">6.4.2.</span> <span class="toc-text">解决方法：修改表的 REPLICA IDENTITY 为 FULL</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#REPLICA-IDENTITY-各级别说明"><span class="toc-number">6.4.3.</span> <span class="toc-text">REPLICA IDENTITY 各级别说明</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#验证设置是否生效"><span class="toc-number">6.4.4.</span> <span class="toc-text">验证设置是否生效</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#注意事项"><span class="toc-number">6.4.5.</span> <span class="toc-text">注意事项</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#replication-slot-“cdc-slot”-is-active-for-PID-2538084"><span class="toc-number">6.5.</span> <span class="toc-text">replication slot “cdc_slot” is active for PID 2538084</span></a></li></ol></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#版本"><span class="toc-number">1.</span> <span class="toc-text">版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#CDC-Jar包"><span class="toc-number">2.</span> <span class="toc-text">CDC Jar包</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#PolarDB-for-PostgreSQL-安装"><span class="toc-number">3.</span> <span class="toc-text">PolarDB-for-PostgreSQL 安装</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#PostgreSQL-配置"><span class="toc-number">4.</span> <span class="toc-text">PostgreSQL 配置</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#启用逻辑解码"><span class="toc-number">4.1.</span> <span class="toc-text">启用逻辑解码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#权限与用户配置"><span class="toc-number">4.2.</span> <span class="toc-text">权限与用户配置</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#配置客户端访问权限"><span class="toc-number">4.2.1.</span> <span class="toc-text">配置客户端访问权限</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#创建-CDC-专用用户并赋权"><span class="toc-number">4.2.2.</span> <span class="toc-text">创建 CDC 专用用户并赋权</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#cdc-pg2mysql"><span class="toc-number">5.</span> <span class="toc-text">cdc_pg2mysql</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#逻辑解码插件"><span class="toc-number">5.1.</span> <span class="toc-text">逻辑解码插件</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#官方内置的逻辑解码插件"><span class="toc-number">5.1.1.</span> <span class="toc-text">官方内置的逻辑解码插件</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#逻辑复制槽"><span class="toc-number">5.2.</span> <span class="toc-text">逻辑复制槽</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#核心作用"><span class="toc-number">5.2.1.</span> <span class="toc-text">核心作用</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#常用操作-SQL"><span class="toc-number">5.2.2.</span> <span class="toc-text">常用操作 SQL</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#创建逻辑复制槽"><span class="toc-number">5.2.2.1.</span> <span class="toc-text">创建逻辑复制槽</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#查看所有复制槽："><span class="toc-number">5.2.2.2.</span> <span class="toc-text">查看所有复制槽：</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#删除复制槽："><span class="toc-number">5.2.2.3.</span> <span class="toc-text">删除复制槽：</span></a></li></ol></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#异常解决"><span class="toc-number">6.</span> <span class="toc-text">异常解决</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#must-be-superuser-to-create-FOR-ALL-TABLES-publication"><span class="toc-number">6.1.</span> <span class="toc-text">must be superuser to create FOR ALL TABLES publication</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#原因解析"><span class="toc-number">6.1.1.</span> <span class="toc-text">原因解析</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#方案-1：使用超级用户运行-Debezium（不推荐生产环境）"><span class="toc-number">6.1.2.</span> <span class="toc-text">方案 1：使用超级用户运行 Debezium（不推荐生产环境）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#方案-2：创建指定表的发布（推荐生产环境）"><span class="toc-number">6.1.3.</span> <span class="toc-text">方案 2：创建指定表的发布（推荐生产环境）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#修改默认发布"><span class="toc-number">6.1.4.</span> <span class="toc-text">修改默认发布</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#logical-decoding-requires-wal-level-gt-logical"><span class="toc-number">6.2.</span> <span class="toc-text">logical decoding requires wal_level &gt;= logical</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#ERROR-replication-slot-“cdc-slot”-already-exists"><span class="toc-number">6.3.</span> <span class="toc-text">ERROR: replication slot “cdc_slot” already exists</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#The-“before”-field-of-UPDATE-DELETE-message-is-null"><span class="toc-number">6.4.</span> <span class="toc-text">The “before” field of UPDATE/DELETE message is null</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#错误根源：REPLICA-IDENTITY-配置"><span class="toc-number">6.4.1.</span> <span class="toc-text">错误根源：REPLICA IDENTITY 配置</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#解决方法：修改表的-REPLICA-IDENTITY-为-FULL"><span class="toc-number">6.4.2.</span> <span class="toc-text">解决方法：修改表的 REPLICA IDENTITY 为 FULL</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#REPLICA-IDENTITY-各级别说明"><span class="toc-number">6.4.3.</span> <span class="toc-text">REPLICA IDENTITY 各级别说明</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#验证设置是否生效"><span class="toc-number">6.4.4.</span> <span class="toc-text">验证设置是否生效</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#注意事项"><span class="toc-number">6.4.5.</span> <span class="toc-text">注意事项</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#replication-slot-“cdc-slot”-is-active-for-PID-2538084"><span class="toc-number">6.5.</span> <span class="toc-text">replication slot “cdc_slot” is active for PID 2538084</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#superuser-reserved-connections-3-plus-max-wal-senders-100-must-be-less-than-max-connections-100"><span class="toc-number">6.6.</span> <span class="toc-text">superuser_reserved_connections (3) plus max_wal_senders (100) must be less than max_connections (100)</span></a></li></ol></li></ol>
                     </div>
                 </span>
             </div>
@@ -760,14 +777,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
@@ -776,15 +785,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -793,6 +794,18 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -812,7 +825,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -825,22 +858,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -872,7 +889,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -884,11 +901,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -952,15 +965,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -968,11 +977,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -984,15 +989,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">scala</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">日期</a>
+                <a href="javascript:void(0)" class="js-tag color1">scala</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1001,6 +1010,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">原理</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">日期</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1020,6 +1033,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">压缩文件</a>
               </li>
              
@@ -1028,15 +1045,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1056,15 +1069,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1088,6 +1101,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">vue</a>
               </li>
              
@@ -1100,7 +1117,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1120,15 +1137,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">RPC</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">HBase</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1152,6 +1169,14 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Minio</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">OSS</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Conda</a>
               </li>
              
@@ -1165,14 +1190,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ZooKeeper</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Minio</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">OSS</a>
               </li>
              
               <li class="article-tag-list-item">
