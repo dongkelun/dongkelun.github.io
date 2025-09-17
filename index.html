@@ -202,6 +202,99 @@
           <div id="js-content" class="content-ll">
             
   
+    <article id="post-hadoop/yarnKerberosException" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2025/09/17/hadoop/yarnKerberosException/">异常解决记录 | Yarn NodeManager 注册异常</a>
+    </h1>
+  
+
+        
+        <a href="/2025/09/17/hadoop/yarnKerberosException/" class="archive-article-date">
+  	<time datetime="2025-09-16T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2025-09-17</time>
+</a>
+        
+      </header>
+	    
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>该异常发生背景：</p>
+<ul>
+<li>项目上的同事之前已部署了8个节点均正常</li>
+<li>项目上的同事后面又扩容了8个节点均异常</li>
+<li>Yarn ResourceManager 配置了 HA</li>
+<li>Hadoop 版本： 3.1.1</li>
+</ul>
+<h2 id="具体异常"><a href="#具体异常" class="headerlink" title="具体异常"></a>具体异常</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">2025</span>-<span class="number">09</span>-<span class="number">17</span> <span class="number">09</span>:<span class="number">30</span>:<span class="number">00</span>,<span class="number">869</span> INFO  client.ConfiguredRMFailoverProxyProvider (ConfiguredRMFailoverProxyProvider.java:performFailover(<span class="number">100</span>)) - Failing over to rm2</span><br><span class="line">2025-09-17 09:30:01,043 INFO  retry.RetryInvocationHandler (RetryInvocationHandler.java:log(411)) - org.apache.hadoop.security.authorize.AuthorizationException: User nm/indata-192-168-1-3.indata.com@INDATA.COM  (auth:KERBEROS) is not authorized for protocol interface org.apache.hadoop.yarn.server.api.ResourceTrackerPB: this service is only accessible by nm/192.168.1.3@INDATA.COM, while invoking ResourceTrackerPBClientImpl.registerNodeManager over rm2 after 1 failover attempts. Trying to failover after sleeping for 21498ms.</span><br><span class="line"><span class="number">2025</span>-<span class="number">09</span>-<span class="number">17</span> <span class="number">09</span>:<span class="number">30</span>:<span class="number">22</span>,<span class="number">541</span> INFO  client.ConfiguredRMFailoverProxyProvider (ConfiguredRMFailoverProxyProvider.java:performFailover(<span class="number">100</span>)) - Failing over to rm1</span><br><span class="line"><span class="number">2025</span>-<span class="number">09</span>-<span class="number">17</span> <span class="number">09</span>:<span class="number">30</span>:<span class="number">22</span>,<span class="number">545</span> INFO  retry.RetryInvocationHandler (RetryInvocationHandler.java:log(<span class="number">411</span>)) - java.net.ConnectException: Call From indata-<span class="number">192</span>-<span class="number">168</span>-<span class="number">1</span>-<span class="number">3</span>.indata.com/<span class="number">192.168</span>.1.3 to indata-<span class="number">192</span>-<span class="number">168</span>-<span class="number">1</span>-<span class="number">1</span>.indata.com:<span class="number">8031</span> failed on connection exception: java.net.ConnectException: Connection refused; For more details see:  http:<span class="comment">//wiki.apache.org/hadoop/ConnectionRefused, while invoking ResourceTrackerPBClientImpl.registerNodeManager over rm1 after 2 failover attempts. Trying to failover after sleeping for 33407ms.</span></span><br><span class="line"><span class="number">2025</span>-<span class="number">09</span>-<span class="number">17</span> <span class="number">09</span>:<span class="number">30</span>:<span class="number">55</span>,<span class="number">953</span> INFO  client.ConfiguredRMFailoverProxyProvider (ConfiguredRMFailoverProxyProvider.java:performFailover(<span class="number">100</span>)) - Failing over to rm2</span><br><span class="line">2025-09-17 09:30:55,992 INFO  retry.RetryInvocationHandler (RetryInvocationHandler.java:log(411)) - org.apache.hadoop.security.authorize.AuthorizationException: User nm/indata-192-168-1-3.indata.com@INDATA.COM  (auth:KERBEROS) is not authorized for protocol interface org.apache.hadoop.yarn.server.api.ResourceTrackerPB: this service is only accessible by nm/192.168.1.3@INDATA.COM, while invoking ResourceTrackerPBClientImpl.registerNodeManager over rm2 after 3 failover attempts. Trying to failover after sleeping for 44974ms.</span><br><span class="line"><span class="number">2025</span>-<span class="number">09</span>-<span class="number">17</span> <span class="number">09</span>:<span class="number">31</span>:<span class="number">40</span>,<span class="number">967</span> INFO  client.ConfiguredRMFailoverProxyProvider (ConfiguredRMFailoverProxyProvider.java:performFailover(<span class="number">100</span>)) - Failing over to rm1</span><br><span class="line"><span class="number">2025</span>-<span class="number">09</span>-<span class="number">17</span> <span class="number">09</span>:<span class="number">31</span>:<span class="number">40</span>,<span class="number">971</span> INFO  retry.RetryInvocationHandler (RetryInvocationHandler.java:log(<span class="number">411</span>)) - java.net.ConnectException: Call From indata-<span class="number">192</span>-<span class="number">168</span>-<span class="number">1</span>-<span class="number">3</span>.indata.com/<span class="number">192.168</span>.1.3 to indata-<span class="number">192</span>-<span class="number">168</span>-<span class="number">1</span>-<span class="number">1</span>.indata.com:<span class="number">8031</span> failed on connection exception: java.net.ConnectException: Connection refused; For more details see:  http:<span class="comment">//wiki.apache.org/hadoop/ConnectionRefused, while invoking ResourceTrackerPBClientImpl.registerNodeManager over rm1 after 4 failover attempts. Trying to failover after sleeping for 15164ms.</span></span><br><span class="line"><span class="number">2025</span>-<span class="number">09</span>-<span class="number">17</span> <span class="number">09</span>:<span class="number">31</span>:<span class="number">56</span>,<span class="number">136</span> INFO  client.ConfiguredRMFailoverProxyProvider (ConfiguredRMFailoverProxyProvider.java:performFailover(<span class="number">100</span>)) - Failing over to rm2</span><br><span class="line">2025-09-17 09:31:56,181 INFO  retry.RetryInvocationHandler (RetryInvocationHandler.java:log(411)) - org.apache.hadoop.security.authorize.AuthorizationException: User nm/indata-192-168-1-3.indata.com@INDATA.COM  (auth:KERBEROS) is not authorized for protocol interface org.apache.hadoop.yarn.server.api.ResourceTrackerPB: this service is only accessible by nm/192.168.1.3@INDATA.COM, while invoking ResourceTrackerPBClientImpl.registerNodeManager over rm2 after 5 failover attempts. Trying to failover after sleeping for 27554ms.</span><br><span class="line"><span class="number">2025</span>-<span class="number">09</span>-<span class="number">17</span> <span class="number">09</span>:<span class="number">32</span>:<span class="number">23</span>,<span class="number">741</span> INFO  client.ConfiguredRMFailoverProxyProvider (ConfiguredRMFailoverProxyProvider.java:performFailover(<span class="number">100</span>)) - Failing over to rm1</span><br><span class="line"><span class="number">2025</span>-<span class="number">09</span>-<span class="number">17</span> <span class="number">09</span>:<span class="number">32</span>:<span class="number">23</span>,<span class="number">749</span> INFO  retry.RetryInvocationHandler (RetryInvocationHandler.java:log(<span class="number">411</span>)) - java.net.ConnectException: Call From indata-<span class="number">192</span>-<span class="number">168</span>-<span class="number">1</span>-<span class="number">3</span>.indata.com/<span class="number">192.168</span>.1.3 to indata-<span class="number">192</span>-<span class="number">168</span>-<span class="number">1</span>-<span class="number">1</span>.indata.com:<span class="number">8031</span> failed on connection exception: java.net.ConnectException: Connection refused; For more details see:  http:<span class="comment">//wiki.apache.org/hadoop/ConnectionRefused, while invoking ResourceTrackerPBClientImpl.registerNodeManager over rm1 after 6 failover attempts. Trying to failover after sleeping for 35229ms.</span></span><br></pre></td></tr></table></figure>
+        
+          <a class="article-more-a" href="/2025/09/17/hadoop/yarnKerberosException/#more">more >></a>
+        
+      
+
+      
+	  
+    </div>
+    <div class="article-info article-info-index">
+      
+	   
+		  
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">Hadoop</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Yarn</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+		  
+
+	  
+	 
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2025/09/17/hadoop/yarnKerberosException/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
     <article id="post-flink/PolarDB-for-PostgreSQL-CDC" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -569,101 +662,6 @@
 
 
   
-    <article id="post-s3/minioClusterConf" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2025/08/05/s3/minioClusterConf/">Minio 分布式集群安装配置</a>
-    </h1>
-  
-
-        
-        <a href="/2025/08/05/s3/minioClusterConf/" class="archive-article-date">
-  	<time datetime="2025-08-04T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2025-08-05</time>
-</a>
-        
-      </header>
-	    
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-      
-        <h2 id="目录创建"><a href="#目录创建" class="headerlink" title="目录创建"></a>目录创建</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p /opt/minio/run &amp;&amp; mkdir -p /etc/minio &amp;&amp; mkdir -p /indata/disk_0/minio/data</span><br></pre></td></tr></table></figure>
-<ul>
-<li>run：启动脚本及二进制文件目录</li>
-<li>/etc/minio：配置文件目录</li>
-<li>data：数据存储目录</li>
-</ul>
-        
-          <a class="article-more-a" href="/2025/08/05/s3/minioClusterConf/#more">more >></a>
-        
-      
-
-      
-	  
-    </div>
-    <div class="article-info article-info-index">
-      
-	   
-		  
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">S3</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Minio</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">OSS</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-		  
-
-	  
-	 
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2025/08/05/s3/minioClusterConf/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
   
     <nav id="page-nav">
       <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/40/">40</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
@@ -820,23 +818,15 @@ var _hmt = _hmt || [];
           <ul class="article-tag-list" q-show="showTags">
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">english</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">english</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -852,15 +842,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">SQL</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -872,11 +862,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -888,11 +878,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -904,11 +894,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -924,15 +918,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -941,10 +939,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -957,6 +951,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -992,6 +994,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Linux</a>
               </li>
              
@@ -1001,10 +1007,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1020,19 +1022,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1044,11 +1042,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1060,15 +1058,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">日期</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1088,10 +1090,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">压缩文件</a>
               </li>
              
@@ -1100,11 +1098,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1113,6 +1107,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1128,10 +1130,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
@@ -1140,11 +1138,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1169,10 +1171,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1216,11 +1214,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Netty</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
+                <a href="javascript:void(0)" class="js-tag color1">Conda</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1232,15 +1234,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Conda</a>
+                <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">VPN</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
              
               <li class="article-tag-list-item">
