@@ -33,7 +33,7 @@
 <meta property="og:image" content="https://dongkelun.com/hexo-images/hive/conf/hive-conf14.jpg">
 <meta property="og:image" content="https://dongkelun.com/hexo-images/hive/conf/hive-conf15.jpg">
 <meta property="og:image" content="https://dongkelun.com/hexo-images/hive/conf/hive-conf16.jpg">
-<meta property="og:updated_time" content="2025-11-13T07:37:36.552Z">
+<meta property="og:updated_time" content="2025-11-14T01:59:56.724Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Hive 集群安装配置">
 <meta name="twitter:description" content="前言接Zookeeper 安装配置 和 Hadoop HA 集群安装配置，本文继续总结 Hive 集群安装配置。其实之前的文章中已经总结过部分，但是不全面：  Centos7 hive 单机模式安装配置 ： 单机版元数据库初始化、Hive CLI 使用嵌入式 Metastore 模式连接 Hive 。  Spark连接Hive（spark-shell和Eclipse两种方式）：单机版独立 Meta">
@@ -326,10 +326,10 @@
 <h2 id="Hive-CLI"><a href="#Hive-CLI" class="headerlink" title="Hive CLI"></a>Hive CLI</h2><p>这个时候就可以用 <code>hive</code> 命令行连接了，之后再执行一些基本的 SQL 进行测试。<br><img src="https://dongkelun.com/hexo-images/hive/conf/hive-conf1.jpg" alt=""></p>
 <p>这里其实 Hive CLI 会通过读取 Hive 配置文件中的参数，建立与 Metastore 的通信连接，以获取元数据（如表结构、分区信息等），但是目前为止我们前面的配置并没有显示配置 Hive Metastore 的地址（通过 hive.metastore.uris 指定），也没有启动 Hive Metastore 服务。那么它是怎么实现的呢？</p>
 <h2 id="嵌入式-Metastore"><a href="#嵌入式-Metastore" class="headerlink" title="嵌入式 Metastore"></a>嵌入式 Metastore</h2><p>如果未配置 hive.metastore.uris，Hive CLI 会默认采用嵌入式 Metastore 模式（Embedded Metastore Mode），而非连接独立的 Metastore 服务</p>
-<h2 id="独立-Metastore"><a href="#独立-Metastore" class="headerlink" title="独立 Metastore"></a>独立 Metastore</h2><p>若要使用独立的 Metastore 服务（推荐生产环境），只需在 hive-site.xml 中配置 hive.metastore.uris 并启动 Metastore 服务：</p>
 <blockquote>
 <p>嵌入式 Metastore 模式存在明显缺陷，仅适合本地测试或临时操作，不适合生产环境</p>
 </blockquote>
+<h2 id="独立-Metastore"><a href="#独立-Metastore" class="headerlink" title="独立 Metastore"></a>独立 Metastore</h2><p>若要使用独立的 Metastore 服务（推荐生产环境），只需在 hive-site.xml 中配置 hive.metastore.uris 并启动 Metastore 服务：</p>
 <h3 id="配置-Metastore-地址："><a href="#配置-Metastore-地址：" class="headerlink" title="配置 Metastore 地址："></a>配置 Metastore 地址：</h3><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">name</span>&gt;</span>hive.metastore.uris<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">value</span>&gt;</span>thrift://indata-192-168-1-1.indata.com:9083<span class="tag">&lt;/<span class="name">value</span>&gt;</span> <span class="comment">&lt;!-- 独立Metastore服务地址 --&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br></pre></td></tr></table></figure>
 <h3 id="启动独立-Metastore-服务："><a href="#启动独立-Metastore-服务：" class="headerlink" title="启动独立 Metastore 服务："></a>启动独立 Metastore 服务：</h3><p>前台启动（便于查看日志，按 Ctrl+C 停止）：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hive --service metastore</span><br></pre></td></tr></table></figure></p>
 <p>后台启动（生产环境常用）:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p /var/<span class="built_in">log</span>/hive</span><br><span class="line">nohup hive --service metastore &gt; /var/<span class="built_in">log</span>/hive/hive-metastore.log 2&gt;&amp;1 &amp;</span><br><span class="line">nohup hive --service metastore --hiveconf hive.root.logger=INFO,console &gt; /var/<span class="built_in">log</span>/hive/hive-metastore.log 2&gt;&amp;1 &amp;</span><br></pre></td></tr></table></figure></p>
@@ -390,7 +390,7 @@
 <figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">name</span>&gt;</span>beeline.hs2.connection.url<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">value</span>&gt;</span>jdbc:hive2://indata-192-168-1-1.indata.com:2181,indata-192-168-1-2.indata.com:2181,indata-192-168-1-3.indata.com:2181/default;serviceDiscoveryMode=zooKeeper;zooKeeperNamespace=hiveserver2<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">name</span>&gt;</span>beeline.hs2.jdbc.url.default<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">value</span>&gt;</span>jdbc:hive2://indata-192-168-1-1.indata.com:2181,indata-192-168-1-2.indata.com:2181,indata-192-168-1-3.indata.com:2181/default;serviceDiscoveryMode=zooKeeper;zooKeeperNamespace=hiveserver2<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br></pre></td></tr></table></figure>
 <p>但是在 hive-site.xml 添加后并没有生效，然后 查到一个配置文件 <code>beeline-site.xml</code> , 新建该配置文件，添加上面两个任何一个配置 ， beeline 都会默认连接 HA 地址，但是需要用户名密码（实际只需要输入两次回车就行）：</p>
 <p><img src="https://dongkelun.com/hexo-images/hive/conf/hive-conf15.jpg" alt=""></p>
-<p>后来发现，其实只要有 <code>beeline-site.xml</code> 这个文件，即使内容为空，beeline 都会默认连接 HA 地址 。</p>
+<p>（后来发现，其实只要有 <code>beeline-site.xml</code> 这个文件，即使内容为空，beeline 都会默认连接 HA 地址 ）</p>
 <p>然后通过博客：<a href="https://blog.csdn.net/caolijun1166/article/details/81705586" target="_blank" rel="noopener">https://blog.csdn.net/caolijun1166/article/details/81705586</a>，发现通过新建 <code>beeline-hs2-connection.xml</code> ，然后添加<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">name</span>&gt;</span>beeline.hs2.connection.user<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">value</span>&gt;</span>root<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">description</span>&gt;</span>根据实际情况修改，主要涉及 HDFS 目录权限问题<span class="tag">&lt;/<span class="name">description</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">name</span>&gt;</span>beeline.hs2.connection.password<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">value</span>&gt;</span>password<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
 <p>就不需要输入用户名密码了，另外和 <code>beeline-site.xml</code> 文件一样，只要有 <code>beeline-hs2-connection.xml</code> 即使内容为空，beeline 都会默认连接 HA 地址<br><img src="https://dongkelun.com/hexo-images/hive/conf/hive-conf16.jpg" alt=""></p>
 <h2 id="完整配置"><a href="#完整配置" class="headerlink" title="完整配置"></a>完整配置</h2><p><code>hive-site.xml</code> 完整配置：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">name</span>&gt;</span>javax.jdo.option.ConnectionURL<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">value</span>&gt;</span>jdbc:mysql://192.168.1.1:3306/hive_metadata?&amp;amp;createDatabaseIfNotExist=true&amp;amp;characterEncoding=UTF-8&amp;amp;useSSL=false<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">name</span>&gt;</span>javax.jdo.option.ConnectionUserName<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">value</span>&gt;</span>hive<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">name</span>&gt;</span>javax.jdo.option.ConnectionPassword<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">value</span>&gt;</span>Hive-123<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">name</span>&gt;</span>javax.jdo.option.ConnectionDriverName<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">value</span>&gt;</span>com.mysql.cj.jdbc.Driver<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">name</span>&gt;</span>datanucleus.schema.autoCreateAll<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">value</span>&gt;</span>true<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">name</span>&gt;</span>hive.server2.thrift.port<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">value</span>&gt;</span>10000<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">name</span>&gt;</span>hive.metastore.event.db.notification.api.auth<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">value</span>&gt;</span>false<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;<span class="name">description</span>&gt;</span>禁用权限校验<span class="tag">&lt;/<span class="name">description</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">name</span>&gt;</span>hive.metastore.uris<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">value</span>&gt;</span>thrift://indata-192-168-1-1.indata.com:9083,thrift://indata-192-168-1-2.indata.com:9083<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">description</span>&gt;</span>格式：thrift://host1:port1,thrift://host2:port2<span class="tag">&lt;/<span class="name">description</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">name</span>&gt;</span>hive.server2.support.dynamic.service.discovery<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">value</span>&gt;</span>true<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">description</span>&gt;</span>控制 HiveServer2（HS2）是否支持动态服务发现<span class="tag">&lt;/<span class="name">description</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">name</span>&gt;</span>hive.server2.zookeeper.namespace<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">value</span>&gt;</span>hiveserver2<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">description</span>&gt;</span>ZooKeeper中的命名空间<span class="tag">&lt;/<span class="name">description</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">property</span>&gt;</span>  </span><br><span class="line">  <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">name</span>&gt;</span>hive.zookeeper.quorum<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">value</span>&gt;</span>indata-192-168-1-1.indata.com,indata-192-168-1-2.indata.com,indata-192-168-1-3.indata.com<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">description</span>&gt;</span>ZooKeeper集群节点<span class="tag">&lt;/<span class="name">description</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">property</span>&gt;</span>  </span><br><span class="line">  <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">name</span>&gt;</span>hive.zookeeper.client.port<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">value</span>&gt;</span>2181<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">description</span>&gt;</span>ZooKeeper端口<span class="tag">&lt;/<span class="name">description</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
@@ -512,6 +512,15 @@
   
 <nav id="article-nav">
   
+    <a href="/2026/03/04/flink/flinkDataStream2Table/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          Flink DataStream2Table 总结
+        
+      </div>
+    </a>
+  
   
     <a href="/2025/09/26/python/rayClusterConf/" id="article-nav-older" class="article-nav-link-wrap">
       <div class="article-nav-title">Ray 集群安装配置</div>
@@ -572,7 +581,7 @@
   
     <div id="footer-info">
     	<div class="footer-left">
-    		&copy; 2025 董可伦
+    		&copy; 2026 董可伦
 			<span id="busuanzi_container_site_uv"> 
 				本站访客数<span id="busuanzi_value_site_uv"></span>人次
 			</span>
@@ -716,22 +725,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -744,19 +737,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -768,11 +753,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -784,11 +785,27 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -800,19 +817,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -824,7 +829,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">front-end</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -836,10 +845,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
@@ -848,11 +853,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -876,6 +885,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">IDEA</a>
               </li>
              
@@ -884,19 +897,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">kerberos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Linux</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -912,15 +921,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -940,15 +945,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -957,6 +966,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -980,10 +993,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">压缩文件</a>
               </li>
              
@@ -992,19 +1001,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1016,11 +1013,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1028,11 +1033,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+                <a href="javascript:void(0)" class="js-tag color4">SparkSQL</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1040,7 +1041,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1048,11 +1049,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+                <a href="javascript:void(0)" class="js-tag color1">UNION</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1068,11 +1073,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">AI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">amazon</a>
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1085,6 +1086,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">AI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">amazon</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1108,6 +1117,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Netty</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Docker</a>
               </li>
              
@@ -1116,19 +1129,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Netty</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Ray</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Minio</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">OSS</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Ray</a>
               </li>
              
               <li class="article-tag-list-item">
