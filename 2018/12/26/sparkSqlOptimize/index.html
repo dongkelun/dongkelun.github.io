@@ -10,17 +10,18 @@
   <title>Spark SQL 优化笔记 | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="前言记录自己在工作开发中遇到的SQL优化问题 1、避免用in 和 not in解决方案： 用exists 和 not exists代替 用join代替  not exists示例not in:1select stepId,province_code,polyline from route_step where stepId not in (select stepId from stepIds) n">
-<meta name="keywords" content="Spark,SQL">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Spark SQL 优化笔记">
 <meta property="og:url" content="https://dongkelun.com/2018/12/26/sparkSqlOptimize/index.html">
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言记录自己在工作开发中遇到的SQL优化问题 1、避免用in 和 not in解决方案： 用exists 和 not exists代替 用join代替  not exists示例not in:1select stepId,province_code,polyline from route_step where stepId not in (select stepId from stepIds) n">
-<meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2019-08-13T12:20:53.564Z">
+<meta property="og:locale">
+<meta property="article:published_time" content="2018-12-25T16:00:00.000Z">
+<meta property="article:modified_time" content="2019-08-13T12:20:53.564Z">
+<meta property="article:author" content="董可伦">
+<meta property="article:tag" content="SQL">
+<meta property="article:tag" content="Spark">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Spark SQL 优化笔记">
-<meta name="twitter:description" content="前言记录自己在工作开发中遇到的SQL优化问题 1、避免用in 和 not in解决方案： 用exists 和 not exists代替 用join代替  not exists示例not in:1select stepId,province_code,polyline from route_step where stepId not in (select stepId from stepIds) n">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -38,7 +39,7 @@
 
   
 
-</head>
+<meta name="generator" content="Hexo 8.1.1"></head>
 
 <body>
   <div id="container" q-class="show:isCtnShow">
@@ -68,7 +69,7 @@
 			<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 		</a>
 		<hgroup>
-		  <h1 class="header-author"><a href="/">董可伦</a></h1>
+		  <h1 class="header-author"><a href="/"></a></h1>
 		</hgroup>
 		
 
@@ -140,7 +141,7 @@
 				<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 			</div>
 			<hgroup>
-			  <h1 class="header-author js-header-author">董可伦</h1>
+			  <h1 class="header-author js-header-author"></h1>
 			</hgroup>
 			
 			
@@ -261,43 +262,37 @@
 <li>用join代替</li>
 </ul>
 <h3 id="not-exists示例"><a href="#not-exists示例" class="headerlink" title="not exists示例"></a>not exists示例</h3><p>not in:<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> stepId,province_code,polyline <span class="keyword">from</span> route_step <span class="keyword">where</span> stepId <span class="keyword">not</span> <span class="keyword">in</span> (<span class="keyword">select</span> stepId <span class="keyword">from</span> stepIds)</span><br></pre></td></tr></table></figure></p>
-<p>not exists:<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> stepId,province_code,polyline <span class="keyword">from</span> route_step <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span> (<span class="keyword">select</span> stepId <span class="keyword">from</span> stepIds <span class="keyword">where</span> route_step.stepId = stepIds.stepId)</span><br></pre></td></tr></table></figure></p>
-<a id="more"></a>
-<h3 id="自己遇到的问题"><a href="#自己遇到的问题" class="headerlink" title="自己遇到的问题"></a>自己遇到的问题</h3><p>上面not in会抛出异常<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">18/12/26 11:20:26 WARN TaskSetManager: Stage 3 contains a task of very large size (17358 KB). The maximum recommended task size is 100 KB.</span><br><span class="line">Exception in thread &quot;dispatcher-event-loop-11&quot; java.lang.OutOfMemoryError: Java heap space</span><br></pre></td></tr></table></figure></p>
-<p>首先会导致某个task数量很大，且总task数量很少（task数目不等于rdd或df的分区数，目前不知道原因），接着报java.lang.OutOfMemoryError，试了很多方法，最后用not exists，没有上面的异常</p>
+<p>not exists:<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> stepId,province_code,polyline <span class="keyword">from</span> route_step <span class="keyword">where</span> <span class="keyword">not</span> <span class="keyword">exists</span> (<span class="keyword">select</span> stepId <span class="keyword">from</span> stepIds <span class="keyword">where</span> route_step.stepId <span class="operator">=</span> stepIds.stepId)</span><br></pre></td></tr></table></figure><br><span id="more"></span></p>
+<h3 id="自己遇到的问题"><a href="#自己遇到的问题" class="headerlink" title="自己遇到的问题"></a>自己遇到的问题</h3><p>上面not in会抛出异常<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">18/12/26 11:20:26 WARN TaskSetManager: Stage 3 contains a task of very large size (17358 KB). The maximum recommended task size is 100 KB.</span><br><span class="line">Exception in thread &quot;dispatcher-event-loop-11&quot; java.lang.OutOfMemoryError: Java heap space</span><br></pre></td></tr></table></figure><br>首先会导致某个task数量很大，且总task数量很少（task数目不等于rdd或df的分区数，目前不知道原因），接着报java.lang.OutOfMemoryError，试了很多方法，最后用not exists，没有上面的异常</p>
 <h3 id="效率"><a href="#效率" class="headerlink" title="效率"></a>效率</h3><p>not in慢的原因是 not in不走索引</p>
 <p>疑问：not in是非相关子查询，not exists是相关子查询，而从理论上来说非相关子查询比相关子查询效率高（看下面的参考），但是这里却相反，矛盾，不知道为啥~</p>
 <h3 id="参考博客："><a href="#参考博客：" class="headerlink" title="参考博客："></a>参考博客：</h3><ul>
-<li><a href="http://www.cnblogs.com/hydor/p/5391556.html" target="_blank" rel="noopener">[笔记] SQL性能优化 - 避免使用 IN 和 NOT IN</a></li>
-<li><a href="https://blog.csdn.net/zxu_1995/article/details/82388395" target="_blank" rel="noopener">SQL优化——避免使用Not IN</a></li>
-<li><a href="https://blog.csdn.net/qq_26937525/article/details/53930498" target="_blank" rel="noopener">嵌套查询：相关子查询和非相关子查询</a></li>
+<li><a href="http://www.cnblogs.com/hydor/p/5391556.html">[笔记] SQL性能优化 - 避免使用 IN 和 NOT IN</a></li>
+<li><a href="https://blog.csdn.net/zxu_1995/article/details/82388395">SQL优化——避免使用Not IN</a></li>
+<li><a href="https://blog.csdn.net/qq_26937525/article/details/53930498">嵌套查询：相关子查询和非相关子查询</a></li>
 </ul>
-<h2 id="2、in-会导致数据倾斜"><a href="#2、in-会导致数据倾斜" class="headerlink" title="2、in 会导致数据倾斜"></a>2、in 会导致数据倾斜</h2><p>longitudeAndLatitudes和lineIds都有160个分区，且数据平衡（每个分区的数目差不多），但是下面的语句则有问题<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> longitudeAndLatitudes <span class="keyword">where</span> lineId  <span class="keyword">in</span> (<span class="keyword">select</span> lineId <span class="keyword">from</span> lineIds)</span><br></pre></td></tr></table></figure></p>
-<p>虽然分区数还是160，但是只有两三个分区有数，其他分区的数量都为0，这样就导致数据倾斜，程序执行很慢，如果非要用in的话，那么需要repartition一下</p>
+<h2 id="2、in-会导致数据倾斜"><a href="#2、in-会导致数据倾斜" class="headerlink" title="2、in 会导致数据倾斜"></a>2、in 会导致数据倾斜</h2><p>longitudeAndLatitudes和lineIds都有160个分区，且数据平衡（每个分区的数目差不多），但是下面的语句则有问题<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> longitudeAndLatitudes <span class="keyword">where</span> lineId  <span class="keyword">in</span> (<span class="keyword">select</span> lineId <span class="keyword">from</span> lineIds)</span><br></pre></td></tr></table></figure><br>虽然分区数还是160，但是只有两三个分区有数，其他分区的数量都为0，这样就导致数据倾斜，程序执行很慢，如果非要用in的话，那么需要repartition一下</p>
 <h2 id="3、大表join小表"><a href="#3、大表join小表" class="headerlink" title="3、大表join小表"></a>3、大表join小表</h2><blockquote>
 <p>策略：将小表广播（broadcast）<br>参数：spark.sql.autoBroadcastJoinThreshold 默认值10485760（10M）,当小表或df的大小小于此值，Spark会自动的将该表广播到每个节点上<br>原理：join是个shuffle类算子，shuffle时，各个节点上会先将相同的key写到本地磁盘，之后再通过网络传输从其他节点的磁盘文件在拉取相同的key，因此shuffle可能会发生大量的磁盘IO和网络传输，性能很低，而broadcast先将小表广播到每个节点，这样join时都是在本地完成，不需要网络传输，所以会提升性能</p>
 <ul>
 <li>注意：broadcast join 也称为replicated join 或者 map-side join</li>
 </ul>
 </blockquote>
-<h3 id="具体操作"><a href="#具体操作" class="headerlink" title="具体操作"></a>具体操作</h3><p>提交代码时适当调大阈值，如将阈值修改为100M,具体看自己环境的内存限制和小表的大小<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">--conf spark.sql.autoBroadcastJoinThreshold=104857600</span><br></pre></td></tr></table></figure></p>
+<h3 id="具体操作"><a href="#具体操作" class="headerlink" title="具体操作"></a>具体操作</h3><p>提交代码时适当调大阈值，如将阈值修改为100M,具体看自己环境的内存限制和小表的大小<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">--conf spark.sql.autoBroadcastJoinThreshold=104857600</span><br></pre></td></tr></table></figure></p>
 <p>如何看是否进行了broadcast join：<br>以df为例（df是join之后的结果）</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">df.explain</span><br></pre></td></tr></table></figure>
-<p>如果为broadcast join，则打印：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">== Physical Plan ==</span><br><span class="line">*(14) Project [lineId#81, stepIds#85, userId#1, freq#2]</span><br><span class="line">+- *(14) BroadcastHashJoin [lineId#81], [lineId#42], Inner, BuildLeft</span><br><span class="line">...</span><br></pre></td></tr></table></figure></p>
-<p>能看到关键字BroadcastHashJoin即可，否则打印：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">== Physical Plan ==</span><br><span class="line">*(17) Project [lineId#42, stepIds#85, freq#2, userId#1]</span><br><span class="line">+- *(17) SortMergeJoin [lineId#42], [lineId#81], Inner</span><br><span class="line">...</span><br></pre></td></tr></table></figure></p>
-<p>能看到SortMergeJoin即可</p>
-<p>查看阈值：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">val threshold =  spark.conf.get(&quot;spark.sql.autoBroadcastJoinThreshold&quot;).toInt</span><br><span class="line">threshold / 1024 / 1024</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">df.explain</span><br></pre></td></tr></table></figure>
+<p>如果为broadcast join，则打印：<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">== Physical Plan ==</span><br><span class="line">*(14) Project [lineId#81, stepIds#85, userId#1, freq#2]</span><br><span class="line">+- *(14) BroadcastHashJoin [lineId#81], [lineId#42], Inner, BuildLeft</span><br><span class="line">...</span><br></pre></td></tr></table></figure><br>能看到关键字BroadcastHashJoin即可，否则打印：<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">== Physical Plan ==</span><br><span class="line">*(17) Project [lineId#42, stepIds#85, freq#2, userId#1]</span><br><span class="line">+- *(17) SortMergeJoin [lineId#42], [lineId#81], Inner</span><br><span class="line">...</span><br></pre></td></tr></table></figure><br>能看到SortMergeJoin即可</p>
+<p>查看阈值：<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">val threshold =  spark.conf.get(&quot;spark.sql.autoBroadcastJoinThreshold&quot;).toInt</span><br><span class="line">threshold / 1024 / 1024</span><br></pre></td></tr></table></figure></p>
 <h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
-<li><a href="https://blog.csdn.net/u010834071/article/details/80670097" target="_blank" rel="noopener">SparkSQL之broadcast join</a></li>
-<li><a href="https://blog.csdn.net/ChaosJ/article/details/52964436" target="_blank" rel="noopener">Spark-sql Join优化=&gt;(cache+BroadCast)</a><h2 id="4、写MySQL慢"><a href="#4、写MySQL慢" class="headerlink" title="4、写MySQL慢"></a>4、写MySQL慢</h2>Spark df批量写MySQL很慢，如我900万条数据写需要5-10个小时<br>解决办法:在url后面加上<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&amp;rewriteBatchedStatements=true</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<p>加上之后，写数据10分钟左右，快很多。</p>
-<blockquote>
+<li><a href="https://blog.csdn.net/u010834071/article/details/80670097">SparkSQL之broadcast join</a></li>
+<li><a href="https://blog.csdn.net/ChaosJ/article/details/52964436">Spark-sql Join优化=&gt;(cache+BroadCast)</a><h2 id="4、写MySQL慢"><a href="#4、写MySQL慢" class="headerlink" title="4、写MySQL慢"></a>4、写MySQL慢</h2>Spark df批量写MySQL很慢，如我900万条数据写需要5-10个小时<br>解决办法:在url后面加上<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&amp;rewriteBatchedStatements=true</span><br></pre></td></tr></table></figure>
+加上之后，写数据10分钟左右，快很多。<blockquote>
 <p>个人环境经验：MySQL不用加就没问题，MariaDB需要加，也就是不同的MySQL版本不一样</p>
 </blockquote>
+</li>
+</ul>
 <h2 id="5、run-at-ThreadPoolExecutor-java-1149"><a href="#5、run-at-ThreadPoolExecutor-java-1149" class="headerlink" title="5、run at ThreadPoolExecutor.java:1149"></a>5、run at ThreadPoolExecutor.java:1149</h2><blockquote>
-<p>之前就在Spark Web UI经常看到这个描述，但不知道是干啥，现在在总结上面的broadcast join发现了规律:当两个表join，如果为BroadcastHashJoin则有这个描述，如果为SortMergeJoin则没有。<br>BroadcastHashJoin 用ThreadPool进行异步广播 源码见:<a href="https://github.com/apache/spark/blob/master/sql/core/src/main/scala/org/apache/spark/sql/execution/joins/BroadcastHashJoinExec.scala#L67" target="_blank" rel="noopener">BroadcastHashJoinExec</a>和<a href="https://github.com/apache/spark/blob/master/sql/core/src/main/scala/org/apache/spark/sql/execution/exchange/BroadcastExchangeExec.scala?utf8=%E2%9C%93#L66" target="_blank" rel="noopener">BroadcastExchangeExec</a><br>参考：<a href="https://stackoverflow.com/questions/40852622/what-are-threadpoolexecutors-jobs-in-web-uis-spark-jobs" target="_blank" rel="noopener">What are ThreadPoolExecutors jobs in web UI’s Spark Jobs?</a></p>
+<p>之前就在Spark Web UI经常看到这个描述，但不知道是干啥，现在在总结上面的broadcast join发现了规律:当两个表join，如果为BroadcastHashJoin则有这个描述，如果为SortMergeJoin则没有。<br>BroadcastHashJoin 用ThreadPool进行异步广播 源码见:<a href="https://github.com/apache/spark/blob/master/sql/core/src/main/scala/org/apache/spark/sql/execution/joins/BroadcastHashJoinExec.scala#L67">BroadcastHashJoinExec</a>和<a href="https://github.com/apache/spark/blob/master/sql/core/src/main/scala/org/apache/spark/sql/execution/exchange/BroadcastExchangeExec.scala?utf8=%E2%9C%93#L66">BroadcastExchangeExec</a><br>参考：<a href="https://stackoverflow.com/questions/40852622/what-are-threadpoolexecutors-jobs-in-web-uis-spark-jobs">What are ThreadPoolExecutors jobs in web UI’s Spark Jobs?</a></p>
 </blockquote>
 
       
@@ -455,7 +450,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1、避免用in-和-not-in"><span class="toc-number">2.</span> <span class="toc-text">1、避免用in 和 not in</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#解决方案："><span class="toc-number">2.1.</span> <span class="toc-text">解决方案：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#not-exists示例"><span class="toc-number">2.2.</span> <span class="toc-text">not exists示例</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#自己遇到的问题"><span class="toc-number">2.3.</span> <span class="toc-text">自己遇到的问题</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#效率"><span class="toc-number">2.4.</span> <span class="toc-text">效率</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#参考博客："><span class="toc-number">2.5.</span> <span class="toc-text">参考博客：</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2、in-会导致数据倾斜"><span class="toc-number">3.</span> <span class="toc-text">2、in 会导致数据倾斜</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3、大表join小表"><span class="toc-number">4.</span> <span class="toc-text">3、大表join小表</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#具体操作"><span class="toc-number">4.1.</span> <span class="toc-text">具体操作</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#参考"><span class="toc-number">4.2.</span> <span class="toc-text">参考</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4、写MySQL慢"><span class="toc-number">5.</span> <span class="toc-text">4、写MySQL慢</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5、run-at-ThreadPoolExecutor-java-1149"><span class="toc-number">6.</span> <span class="toc-text">5、run at ThreadPoolExecutor.java:1149</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1%E3%80%81%E9%81%BF%E5%85%8D%E7%94%A8in-%E5%92%8C-not-in"><span class="toc-number">2.</span> <span class="toc-text">1、避免用in 和 not in</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%EF%BC%9A"><span class="toc-number">2.1.</span> <span class="toc-text">解决方案：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#not-exists%E7%A4%BA%E4%BE%8B"><span class="toc-number">2.2.</span> <span class="toc-text">not exists示例</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%87%AA%E5%B7%B1%E9%81%87%E5%88%B0%E7%9A%84%E9%97%AE%E9%A2%98"><span class="toc-number">2.3.</span> <span class="toc-text">自己遇到的问题</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%95%88%E7%8E%87"><span class="toc-number">2.4.</span> <span class="toc-text">效率</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E5%8D%9A%E5%AE%A2%EF%BC%9A"><span class="toc-number">2.5.</span> <span class="toc-text">参考博客：</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2%E3%80%81in-%E4%BC%9A%E5%AF%BC%E8%87%B4%E6%95%B0%E6%8D%AE%E5%80%BE%E6%96%9C"><span class="toc-number">3.</span> <span class="toc-text">2、in 会导致数据倾斜</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3%E3%80%81%E5%A4%A7%E8%A1%A8join%E5%B0%8F%E8%A1%A8"><span class="toc-number">4.</span> <span class="toc-text">3、大表join小表</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%B7%E4%BD%93%E6%93%8D%E4%BD%9C"><span class="toc-number">4.1.</span> <span class="toc-text">具体操作</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">4.2.</span> <span class="toc-text">参考</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4%E3%80%81%E5%86%99MySQL%E6%85%A2"><span class="toc-number">5.</span> <span class="toc-text">4、写MySQL慢</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5%E3%80%81run-at-ThreadPoolExecutor-java-1149"><span class="toc-number">6.</span> <span class="toc-text">5、run at ThreadPoolExecutor.java:1149</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -630,14 +625,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -647,6 +634,22 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -662,14 +665,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
@@ -682,23 +677,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -718,7 +697,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -730,15 +721,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -774,11 +761,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -810,15 +797,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -830,7 +809,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -838,7 +817,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -850,7 +829,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -858,11 +841,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -871,6 +854,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -886,15 +877,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -903,6 +890,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -915,10 +906,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -938,10 +925,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
@@ -950,7 +933,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -958,11 +941,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -990,7 +977,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1006,7 +1009,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
+                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1014,11 +1017,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1038,23 +1037,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ZooKeeper</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1063,6 +1054,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ollama</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
             
             <div class="clearfix"></div>

@@ -10,17 +10,19 @@
   <title>Kyuubi 安装配置总结 | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="前言前段时间研究了一下Kyuubi，主要是安装配置，适配Spark版本，验证Spark Server HA 的功能，基本都验证通过，但是后续没有实际使用，现在回忆总结一下，避免遗忘。主要适配Spark2.4.5 以及 Spark3.1.2版本，同时验证是否支持Hudi。 版本说明 目前Kyuubi最新版本为1.4，Kyuubi 1.x 默认不支持Spark2，1.4版本默认Spark版本3.1.2">
-<meta name="keywords" content="Spark,Hudi,Kyuubi">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Kyuubi 安装配置总结">
 <meta property="og:url" content="https://dongkelun.com/2022/03/25/kyuubiConf/index.html">
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言前段时间研究了一下Kyuubi，主要是安装配置，适配Spark版本，验证Spark Server HA 的功能，基本都验证通过，但是后续没有实际使用，现在回忆总结一下，避免遗忘。主要适配Spark2.4.5 以及 Spark3.1.2版本，同时验证是否支持Hudi。 版本说明 目前Kyuubi最新版本为1.4，Kyuubi 1.x 默认不支持Spark2，1.4版本默认Spark版本3.1.2">
-<meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2022-03-25T09:48:52.111Z">
+<meta property="og:locale">
+<meta property="article:published_time" content="2022-03-24T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-03-25T09:48:52.111Z">
+<meta property="article:author" content="董可伦">
+<meta property="article:tag" content="Hudi">
+<meta property="article:tag" content="Kyuubi">
+<meta property="article:tag" content="Spark">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Kyuubi 安装配置总结">
-<meta name="twitter:description" content="前言前段时间研究了一下Kyuubi，主要是安装配置，适配Spark版本，验证Spark Server HA 的功能，基本都验证通过，但是后续没有实际使用，现在回忆总结一下，避免遗忘。主要适配Spark2.4.5 以及 Spark3.1.2版本，同时验证是否支持Hudi。 版本说明 目前Kyuubi最新版本为1.4，Kyuubi 1.x 默认不支持Spark2，1.4版本默认Spark版本3.1.2">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -38,7 +40,7 @@
 
   
 
-</head>
+<meta name="generator" content="Hexo 8.1.1"></head>
 
 <body>
   <div id="container" q-class="show:isCtnShow">
@@ -68,7 +70,7 @@
 			<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 		</a>
 		<hgroup>
-		  <h1 class="header-author"><a href="/">董可伦</a></h1>
+		  <h1 class="header-author"><a href="/"></a></h1>
 		</hgroup>
 		
 
@@ -140,7 +142,7 @@
 				<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 			</div>
 			<hgroup>
-			  <h1 class="header-author js-header-author">董可伦</h1>
+			  <h1 class="header-author js-header-author"></h1>
 			</hgroup>
 			
 			
@@ -261,48 +263,45 @@
       
         <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>前段时间研究了一下Kyuubi，主要是安装配置，适配Spark版本，验证Spark Server HA 的功能，基本都验证通过，但是后续没有实际使用，现在回忆总结一下，避免遗忘。<br>主要适配Spark2.4.5 以及 Spark3.1.2版本，同时验证是否支持Hudi。</p>
 <h2 id="版本说明"><a href="#版本说明" class="headerlink" title="版本说明"></a>版本说明</h2><blockquote>
-<p>目前Kyuubi最新版本为1.4，Kyuubi 1.x 默认不支持Spark2，1.4版本默认Spark版本3.1.2,并且默认支持Hudi,但是因hudi0.9版本不支持Spark3.1.2，所以需要hudi0.10.1<br>hudi0.10.1 已经发布，可以通过 Mvn 下载：<a href="https://repo1.maven.org/maven2/org/apache/hudi/hudi-spark3.1.2-bundle_2.12/0.10.1/hudi-spark3.1.2-bundle_2.12-0.10.1.jar" target="_blank" rel="noopener">https://repo1.maven.org/maven2/org/apache/hudi/hudi-spark3.1.2-bundle_2.12/0.10.1/hudi-spark3.1.2-bundle_2.12-0.10.1.jar</a><br>也可以自己打包<br>要想支持Spark2可以选择Kyuubi0.7，两个Kyuubi 版本都支持HA，但是0.7版本默认不支持hudi</p>
+<p>目前Kyuubi最新版本为1.4，Kyuubi 1.x 默认不支持Spark2，1.4版本默认Spark版本3.1.2,并且默认支持Hudi,但是因hudi0.9版本不支持Spark3.1.2，所以需要hudi0.10.1<br>hudi0.10.1 已经发布，可以通过 Mvn 下载：<a href="https://repo1.maven.org/maven2/org/apache/hudi/hudi-spark3.1.2-bundle_2.12/0.10.1/hudi-spark3.1.2-bundle_2.12-0.10.1.jar">https://repo1.maven.org/maven2/org/apache/hudi/hudi-spark3.1.2-bundle_2.12/0.10.1/hudi-spark3.1.2-bundle_2.12-0.10.1.jar</a><br>也可以自己打包<br>要想支持Spark2可以选择Kyuubi0.7，两个Kyuubi 版本都支持HA，但是0.7版本默认不支持hudi</p>
 </blockquote>
 <p>0.7版本打包: git 切换到branch-0.7<br>修改pom,添加<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">profile</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">id</span>&gt;</span>spark-2.4.5<span class="tag">&lt;/<span class="name">id</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">properties</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">spark.version</span>&gt;</span>2.4.5<span class="tag">&lt;/<span class="name">spark.version</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">scalatest.version</span>&gt;</span>3.0.3<span class="tag">&lt;/<span class="name">scalatest.version</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">properties</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">profile</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
-<p>然后执行打包命令<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./build/dist --tgz  -P spark-2.4.5</span><br></pre></td></tr></table></figure></p>
-<p>打包完成后，生成<code>kyuubi-0.7.0-SNAPSHOT-bin-spark-2.4.5.tar.gz</code></p>
-<a id="more"></a>
+<p>然后执行打包命令<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./build/dist --tgz  -P spark-2.4.5</span><br></pre></td></tr></table></figure><br>打包完成后，生成<code>kyuubi-0.7.0-SNAPSHOT-bin-spark-2.4.5.tar.gz</code></p>
+<span id="more"></span>
 <h2 id="Kyuubi1-4"><a href="#Kyuubi1-4" class="headerlink" title="Kyuubi1.4"></a>Kyuubi1.4</h2><h3 id="下载"><a href="#下载" class="headerlink" title="下载"></a>下载</h3><p>下载apache-kyuubi-1.4.0-incubating-bin.tgz</p>
 <h3 id="解压"><a href="#解压" class="headerlink" title="解压"></a>解压</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tar -zxvf apache-kyuubi-1.4.0-incubating-bin.tgz -C /opt/</span><br></pre></td></tr></table></figure>
 <p>这里的路径为 <code>/opt/apache-kyuubi-1.4.0-incubating-bin</code></p>
-<h3 id="验证Spark"><a href="#验证Spark" class="headerlink" title="验证Spark"></a>验证Spark</h3><p>首先确保安装的Spark版本为 spark3.1.2<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Welcome to</span><br><span class="line">      ____              __</span><br><span class="line">     / __/__  ___ _____/ /__</span><br><span class="line">    _\ \/ _ \/ _ `/ __/  &apos;_/</span><br><span class="line">   /___/ .__/\_,_/_/ /_/\_\   version 3.1.2</span><br><span class="line">      /_/</span><br></pre></td></tr></table></figure></p>
-<p>测试Hadoop/Spark环境<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">/usr/hdp/3.1.0.0-78/spark3/bin/spark-submit \</span><br><span class="line">--master yarn \</span><br><span class="line">--class org.apache.spark.examples.SparkPi \</span><br><span class="line">/usr/hdp/3.1.0.0-78/spark3/examples/jars/spark-examples_2.12-3.1.2.jar \</span><br><span class="line">10</span><br></pre></td></tr></table></figure></p>
+<h3 id="验证Spark"><a href="#验证Spark" class="headerlink" title="验证Spark"></a>验证Spark</h3><p>首先确保安装的Spark版本为 spark3.1.2<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Welcome to</span><br><span class="line">      ____              __</span><br><span class="line">     / __/__  ___ _____/ /__</span><br><span class="line">    _\ \/ _ \/ _ `/ __/  &#x27;_/</span><br><span class="line">   /___/ .__/\_,_/_/ /_/\_\   version 3.1.2</span><br><span class="line">      /_/</span><br><span class="line"></span><br></pre></td></tr></table></figure><br>测试Hadoop/Spark环境<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">/usr/hdp/3.1.0.0-78/spark3/bin/spark-submit \</span><br><span class="line">--master yarn \</span><br><span class="line">--class org.apache.spark.examples.SparkPi \</span><br><span class="line">/usr/hdp/3.1.0.0-78/spark3/examples/jars/spark-examples_2.12-3.1.2.jar \</span><br><span class="line">10</span><br></pre></td></tr></table></figure></p>
 <p>输出结果</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Pi is roughly 3.138211138211138</span><br></pre></td></tr></table></figure>
-<h3 id="修改Kyuubi配置"><a href="#修改Kyuubi配置" class="headerlink" title="修改Kyuubi配置"></a>修改Kyuubi配置</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cd /opt/apache-kyuubi-1.4.0-incubating-bin/conf/</span><br></pre></td></tr></table></figure>
-<h4 id="kyuubi-env-sh"><a href="#kyuubi-env-sh" class="headerlink" title="kyuubi-env.sh"></a>kyuubi-env.sh</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">cp kyuubi-env.sh.template kyuubi-env.sh</span><br><span class="line">vi kyuubi-env.sh</span><br><span class="line"></span><br><span class="line"><span class="built_in">export</span> JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64</span><br><span class="line"><span class="built_in">export</span> SPARK_HOME=/usr/hdp/3.1.0.0-78/spark3</span><br><span class="line"><span class="built_in">export</span> HADOOP_CONF_DIR=/usr/hdp/3.1.0.0-78/hadoop/etc/hadoop</span><br><span class="line"><span class="built_in">export</span> KYUUBI_JAVA_OPTS=<span class="string">"-Xmx10g -XX:+UnlockDiagnosticVMOptions -XX:ParGCCardsPerStrideChunk=4096 -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:+CMSConcurrentMTEnabled -XX:CMSInitiatingOccupancyFraction=70 -XX:+UseCMSInitiatingOccupancyOnly -XX:+CMSClassUnloadingEnabled -XX:+CMSParallelRemarkEnabled -XX:+UseCondCardMark -XX:MaxDirectMemorySize=1024m  -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=./logs -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintTenuringDistribution -Xloggc:./logs/kyuubi-server-gc-%t.log -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=5M -XX:NewRatio=3 -XX:MetaspaceSize=512m"</span></span><br></pre></td></tr></table></figure>
-<h4 id="kyuubi-defaults-conf"><a href="#kyuubi-defaults-conf" class="headerlink" title="kyuubi-defaults.conf"></a>kyuubi-defaults.conf</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">cp kyuubi-defaults.conf.template kyuubi-defaults.conf</span><br><span class="line"></span><br><span class="line">vi kyuubi-defaults.conf</span><br><span class="line"></span><br><span class="line">kyuubi.frontend.bind.host       indata-192-168-44-128.indata.com</span><br><span class="line">kyuubi.frontend.bind.port       10009</span><br><span class="line"></span><br><span class="line">#kerberos</span><br><span class="line">kyuubi.authentication   KERBEROS</span><br><span class="line">kyuubi.kinit.principal  hive/indata-192-168-44-128.indata.com@INDATA.COM</span><br><span class="line">kyuubi.kinit.keytab     /etc/security/keytabs/hive.service.keytab</span><br></pre></td></tr></table></figure>
-<h4 id="配置环境变量"><a href="#配置环境变量" class="headerlink" title="配置环境变量"></a>配置环境变量</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">vi ~/.bashrc</span><br><span class="line"></span><br><span class="line">export KYUUBI_HOME=/opt/kyuubi/apache-kyuubi-1.4.0-incubating-bin</span><br><span class="line">export PATH=$KYUUBI_HOME/bin:$PATH</span><br><span class="line"></span><br><span class="line">source ~/.bashrc</span><br></pre></td></tr></table></figure>
-<h3 id="启停Kyuubi"><a href="#启停Kyuubi" class="headerlink" title="启停Kyuubi"></a>启停Kyuubi</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">bin/kyuubi start</span><br><span class="line"></span><br><span class="line">bin/kyuubi stop</span><br></pre></td></tr></table></figure>
-<h3 id="端口冲突"><a href="#端口冲突" class="headerlink" title="端口冲突"></a>端口冲突</h3><p>引用：<a href="https://mp.weixin.qq.com/s/ZQdGe7O_6QAO2M3yVHvRRg" target="_blank" rel="noopener">放弃Spark Thrift Server吧，你需要的是Apache Kyuubi！</a></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">cat logs/kyuubi-root-org.apache.kyuubi.server.KyuubiServer-indata-*.indata.com.out</span><br><span class="line">22/03/21 09:56:37 WARN util.NativeCodeLoader: Unable to load native-hadoop library <span class="keyword">for</span> your platform... using <span class="built_in">builtin</span>-java classes <span class="built_in">where</span> applicable</span><br><span class="line">Exception <span class="keyword">in</span> thread <span class="string">"main"</span> java.net.BindException: Address already <span class="keyword">in</span> use</span><br><span class="line">        at sun.nio.ch.Net.bind0(Native Method)</span><br><span class="line">        at sun.nio.ch.Net.bind(Net.java:433)</span><br><span class="line">        at sun.nio.ch.Net.bind(Net.java:425)</span><br><span class="line">        at sun.nio.ch.ServerSocketChannelImpl.bind(ServerSocketChannelImpl.java:223)</span><br><span class="line">        at sun.nio.ch.ServerSocketAdaptor.bind(ServerSocketAdaptor.java:74)</span><br><span class="line">        at sun.nio.ch.ServerSocketAdaptor.bind(ServerSocketAdaptor.java:67)</span><br><span class="line">        at org.apache.zookeeper.server.NIOServerCnxnFactory.configure(NIOServerCnxnFactory.java:90)</span><br><span class="line">        at org.apache.kyuubi.zookeeper.EmbeddedZookeeper.initialize(EmbeddedZookeeper.scala:53)</span><br><span class="line">        at org.apache.kyuubi.server.KyuubiServer$.startServer(KyuubiServer.scala:48)</span><br><span class="line">        at org.apache.kyuubi.server.KyuubiServer$.main(KyuubiServer.scala:121)</span><br><span class="line">        at org.apache.kyuubi.server.KyuubiServer.main(KyuubiServer.scala)</span><br></pre></td></tr></table></figure>
-<p>发现KyuubiServer报错端口占用，但不知道占用的是哪个端口。看下源码，<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">private val zkServer = new EmbeddedZookeeper()</span><br><span class="line"></span><br><span class="line">def startServer(conf: KyuubiConf): KyuubiServer = &#123;</span><br><span class="line">  if (!ServiceDiscovery.supportServiceDiscovery(conf)) &#123;</span><br><span class="line">    zkServer.initialize(conf)</span><br><span class="line">    zkServer.start()</span><br><span class="line">    conf.set(HA_ZK_QUORUM, zkServer.getConnectString)</span><br><span class="line">    conf.set(HA_ZK_ACL_ENABLED, false)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  val server = new KyuubiServer()</span><br><span class="line">  server.initialize(conf)</span><br><span class="line">  server.start()</span><br><span class="line">  Utils.addShutdownHook(new Runnable &#123;</span><br><span class="line">    override def run(): Unit = server.stop()</span><br><span class="line">  &#125;, Utils.SERVER_SHUTDOWN_PRIORITY)</span><br><span class="line">  server</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>看下源码，如果检测到没有配置服务发现，就会默认使用的是内嵌的ZooKeeper。当前，我们并没有开启HA模式。所以，会启动一个本地的ZK，而我们当前测试环境已经部署了ZK。所以，基于此，我们还是配置好HA。这样，也可以让我们Kyuubi服务更加可靠。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Pi is roughly 3.138211138211138</span><br></pre></td></tr></table></figure>
+<h3 id="修改Kyuubi配置"><a href="#修改Kyuubi配置" class="headerlink" title="修改Kyuubi配置"></a>修改Kyuubi配置</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cd /opt/apache-kyuubi-1.4.0-incubating-bin/conf/</span><br></pre></td></tr></table></figure>
+<h4 id="kyuubi-env-sh"><a href="#kyuubi-env-sh" class="headerlink" title="kyuubi-env.sh"></a>kyuubi-env.sh</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cp</span> kyuubi-env.sh.template kyuubi-env.sh</span><br><span class="line">vi kyuubi-env.sh</span><br><span class="line"></span><br><span class="line"><span class="built_in">export</span> JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64</span><br><span class="line"><span class="built_in">export</span> SPARK_HOME=/usr/hdp/3.1.0.0-78/spark3</span><br><span class="line"><span class="built_in">export</span> HADOOP_CONF_DIR=/usr/hdp/3.1.0.0-78/hadoop/etc/hadoop</span><br><span class="line"><span class="built_in">export</span> KYUUBI_JAVA_OPTS=<span class="string">&quot;-Xmx10g -XX:+UnlockDiagnosticVMOptions -XX:ParGCCardsPerStrideChunk=4096 -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:+CMSConcurrentMTEnabled -XX:CMSInitiatingOccupancyFraction=70 -XX:+UseCMSInitiatingOccupancyOnly -XX:+CMSClassUnloadingEnabled -XX:+CMSParallelRemarkEnabled -XX:+UseCondCardMark -XX:MaxDirectMemorySize=1024m  -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=./logs -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintTenuringDistribution -Xloggc:./logs/kyuubi-server-gc-%t.log -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=5M -XX:NewRatio=3 -XX:MetaspaceSize=512m&quot;</span></span><br></pre></td></tr></table></figure>
+<h4 id="kyuubi-defaults-conf"><a href="#kyuubi-defaults-conf" class="headerlink" title="kyuubi-defaults.conf"></a>kyuubi-defaults.conf</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">cp kyuubi-defaults.conf.template kyuubi-defaults.conf</span><br><span class="line"></span><br><span class="line">vi kyuubi-defaults.conf</span><br><span class="line"></span><br><span class="line">kyuubi.frontend.bind.host       indata-192-168-44-128.indata.com</span><br><span class="line">kyuubi.frontend.bind.port       10009</span><br><span class="line"></span><br><span class="line">#kerberos</span><br><span class="line">kyuubi.authentication   KERBEROS</span><br><span class="line">kyuubi.kinit.principal  hive/indata-192-168-44-128.indata.com@INDATA.COM</span><br><span class="line">kyuubi.kinit.keytab     /etc/security/keytabs/hive.service.keytab</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h4 id="配置环境变量"><a href="#配置环境变量" class="headerlink" title="配置环境变量"></a>配置环境变量</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">vi ~/.bashrc</span><br><span class="line"></span><br><span class="line">export KYUUBI_HOME=/opt/kyuubi/apache-kyuubi-1.4.0-incubating-bin</span><br><span class="line">export PATH=$KYUUBI_HOME/bin:$PATH</span><br><span class="line"></span><br><span class="line">source ~/.bashrc</span><br></pre></td></tr></table></figure>
+<h3 id="启停Kyuubi"><a href="#启停Kyuubi" class="headerlink" title="启停Kyuubi"></a>启停Kyuubi</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">bin/kyuubi start</span><br><span class="line"></span><br><span class="line">bin/kyuubi stop</span><br></pre></td></tr></table></figure>
+<h3 id="端口冲突"><a href="#端口冲突" class="headerlink" title="端口冲突"></a>端口冲突</h3><p>引用：<a href="https://mp.weixin.qq.com/s/ZQdGe7O_6QAO2M3yVHvRRg">放弃Spark Thrift Server吧，你需要的是Apache Kyuubi！</a></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cat</span> logs/kyuubi-root-org.apache.kyuubi.server.KyuubiServer-indata-*.indata.com.out</span><br><span class="line">22/03/21 09:56:37 WARN util.NativeCodeLoader: Unable to load native-hadoop library <span class="keyword">for</span> your platform... using builtin-java classes <span class="built_in">where</span> applicable</span><br><span class="line">Exception <span class="keyword">in</span> thread <span class="string">&quot;main&quot;</span> java.net.BindException: Address already <span class="keyword">in</span> use</span><br><span class="line">        at sun.nio.ch.Net.bind0(Native Method)</span><br><span class="line">        at sun.nio.ch.Net.<span class="built_in">bind</span>(Net.java:433)</span><br><span class="line">        at sun.nio.ch.Net.<span class="built_in">bind</span>(Net.java:425)</span><br><span class="line">        at sun.nio.ch.ServerSocketChannelImpl.<span class="built_in">bind</span>(ServerSocketChannelImpl.java:223)</span><br><span class="line">        at sun.nio.ch.ServerSocketAdaptor.<span class="built_in">bind</span>(ServerSocketAdaptor.java:74)</span><br><span class="line">        at sun.nio.ch.ServerSocketAdaptor.<span class="built_in">bind</span>(ServerSocketAdaptor.java:67)</span><br><span class="line">        at org.apache.zookeeper.server.NIOServerCnxnFactory.configure(NIOServerCnxnFactory.java:90)</span><br><span class="line">        at org.apache.kyuubi.zookeeper.EmbeddedZookeeper.initialize(EmbeddedZookeeper.scala:53)</span><br><span class="line">        at org.apache.kyuubi.server.KyuubiServer$.startServer(KyuubiServer.scala:48)</span><br><span class="line">        at org.apache.kyuubi.server.KyuubiServer$.main(KyuubiServer.scala:121)</span><br><span class="line">        at org.apache.kyuubi.server.KyuubiServer.main(KyuubiServer.scala)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>发现KyuubiServer报错端口占用，但不知道占用的是哪个端口。看下源码，<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">private val zkServer = new EmbeddedZookeeper()</span><br><span class="line"></span><br><span class="line">def startServer(conf: KyuubiConf): KyuubiServer = &#123;</span><br><span class="line">  if (!ServiceDiscovery.supportServiceDiscovery(conf)) &#123;</span><br><span class="line">    zkServer.initialize(conf)</span><br><span class="line">    zkServer.start()</span><br><span class="line">    conf.set(HA_ZK_QUORUM, zkServer.getConnectString)</span><br><span class="line">    conf.set(HA_ZK_ACL_ENABLED, false)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  val server = new KyuubiServer()</span><br><span class="line">  server.initialize(conf)</span><br><span class="line">  server.start()</span><br><span class="line">  Utils.addShutdownHook(new Runnable &#123;</span><br><span class="line">    override def run(): Unit = server.stop()</span><br><span class="line">  &#125;, Utils.SERVER_SHUTDOWN_PRIORITY)</span><br><span class="line">  server</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>看下源码，如果检测到没有配置服务发现，就会默认使用的是内嵌的ZooKeeper。当前，我们并没有开启HA模式。所以，会启动一个本地的ZK，而我们当前测试环境已经部署了ZK。所以，基于此，我们还是配置好HA。这样，也可以让我们Kyuubi服务更加可靠。</p>
 <p>当然其实我们本来就是要配置HA的</p>
-<h2 id="配置Kyuubi-HA"><a href="#配置Kyuubi-HA" class="headerlink" title="配置Kyuubi HA"></a>配置Kyuubi HA</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">kyuubi.ha.enabled true</span><br><span class="line">kyuubi.ha.zookeeper.quorum indata-192-168-44-128.indata.com,indata-192-168-44-129.indata.com,indata-192-168-44-130.indata.com</span><br><span class="line">kyuubi.ha.zookeeper.client.port 2181</span><br><span class="line">kyuubi.ha.zookeeper.session.timeout 600000</span><br></pre></td></tr></table></figure>
+<h2 id="配置Kyuubi-HA"><a href="#配置Kyuubi-HA" class="headerlink" title="配置Kyuubi HA"></a>配置Kyuubi HA</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">kyuubi.ha.enabled true</span><br><span class="line">kyuubi.ha.zookeeper.quorum indata-192-168-44-128.indata.com,indata-192-168-44-129.indata.com,indata-192-168-44-130.indata.com</span><br><span class="line">kyuubi.ha.zookeeper.client.port 2181</span><br><span class="line">kyuubi.ha.zookeeper.session.timeout 600000</span><br></pre></td></tr></table></figure>
 <h3 id="beeline连接"><a href="#beeline连接" class="headerlink" title="beeline连接"></a>beeline连接</h3><h4 id="非HA"><a href="#非HA" class="headerlink" title="非HA"></a>非HA</h4><p>首先以非HA，即IP:Port的形式测试连接</p>
 <p>这里用spark3 beeline,hive beeline不兼容</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">/usr/hdp/3.1.0.0-78/spark3/bin/beeline</span><br><span class="line">Beeline version 2.3.7 by Apache Hive</span><br><span class="line">beeline&gt; !connect jdbc:hive2://indata-192-168-44-130.indata.com:10009/;principal=hive/indata-192-168-44-130.indata.com@INDATA.COM;hive.server2.proxy.user=spark</span><br><span class="line">Connecting to jdbc:hive2://indata-192-168-44-130.indata.com:10009/;principal=hive/indata-192-168-44-130.indata.com@INDATA.COM;hive.server2.proxy.user=spark</span><br><span class="line">22/03/22 19:53:39 INFO Utils: Supplied authorities: indata-192-168-44-130.indata.com:10009</span><br><span class="line">22/03/22 19:53:39 INFO Utils: Resolved authority: indata-192-168-44-130.indata.com:10009</span><br><span class="line">22/03/22 19:53:39 WARN NativeCodeLoader: Unable to load native-hadoop library <span class="keyword">for</span> your platform... using <span class="built_in">builtin</span>-java classes <span class="built_in">where</span> applicable</span><br><span class="line">Connected to: Apache Kyuubi (Incubating) (version 1.4.0-incubating)</span><br><span class="line">Driver: Hive JDBC (version 2.3.7)</span><br><span class="line">Transaction isolation: TRANSACTION_REPEATABLE_READ</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">0: jdbc:hive2://indata-192-168-44-130.indata.&gt; !connect jdbc:hive2://indata-192-168-44-130.indata.com:10009/;principal=hive/indata-192-168-44-130.indata.com@INDATA.COM;hive.server2.proxy.user=hive</span><br><span class="line">Connecting to jdbc:hive2://indata-192-168-44-130.indata.com:10009/;principal=hive/indata-192-168-44-130.indata.com@INDATA.COM;hive.server2.proxy.user=hive</span><br><span class="line">22/03/22 19:54:03 INFO Utils: Supplied authorities: indata-192-168-44-130.indata.com:10009</span><br><span class="line">22/03/22 19:54:03 INFO Utils: Resolved authority: indata-192-168-44-130.indata.com:10009</span><br><span class="line">Connected to: Apache Kyuubi (Incubating) (version 1.4.0-incubating)</span><br><span class="line">Driver: Hive JDBC (version 2.3.7)</span><br><span class="line">Transaction isolation: TRANSACTION_REPEATABLE_READ</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">/usr/hdp/3.1.0.0-78/spark3/bin/beeline</span><br><span class="line">Beeline version 2.3.7 by Apache Hive</span><br><span class="line">beeline&gt; !connect jdbc:hive2://indata-192-168-44-130.indata.com:10009/;principal=hive/indata-192-168-44-130.indata.com@INDATA.COM;hive.server2.proxy.user=spark</span><br><span class="line">Connecting to jdbc:hive2://indata-192-168-44-130.indata.com:10009/;principal=hive/indata-192-168-44-130.indata.com@INDATA.COM;hive.server2.proxy.user=spark</span><br><span class="line">22/03/22 19:53:39 INFO Utils: Supplied authorities: indata-192-168-44-130.indata.com:10009</span><br><span class="line">22/03/22 19:53:39 INFO Utils: Resolved authority: indata-192-168-44-130.indata.com:10009</span><br><span class="line">22/03/22 19:53:39 WARN NativeCodeLoader: Unable to load native-hadoop library <span class="keyword">for</span> your platform... using builtin-java classes <span class="built_in">where</span> applicable</span><br><span class="line">Connected to: Apache Kyuubi (Incubating) (version 1.4.0-incubating)</span><br><span class="line">Driver: Hive JDBC (version 2.3.7)</span><br><span class="line">Transaction isolation: TRANSACTION_REPEATABLE_READ</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">0: jdbc:hive2://indata-192-168-44-130.indata.&gt; !connect jdbc:hive2://indata-192-168-44-130.indata.com:10009/;principal=hive/indata-192-168-44-130.indata.com@INDATA.COM;hive.server2.proxy.user=hive</span><br><span class="line">Connecting to jdbc:hive2://indata-192-168-44-130.indata.com:10009/;principal=hive/indata-192-168-44-130.indata.com@INDATA.COM;hive.server2.proxy.user=hive</span><br><span class="line">22/03/22 19:54:03 INFO Utils: Supplied authorities: indata-192-168-44-130.indata.com:10009</span><br><span class="line">22/03/22 19:54:03 INFO Utils: Resolved authority: indata-192-168-44-130.indata.com:10009</span><br><span class="line">Connected to: Apache Kyuubi (Incubating) (version 1.4.0-incubating)</span><br><span class="line">Driver: Hive JDBC (version 2.3.7)</span><br><span class="line">Transaction isolation: TRANSACTION_REPEATABLE_READ</span><br></pre></td></tr></table></figure>
 <p>这里分别以spark用户和hive用户起了两个程序</p>
 <h4 id="HA"><a href="#HA" class="headerlink" title="HA"></a>HA</h4><p>HA连接方式是指，通过Zookeeper地址发现的方式,Kyuubi 1.4 zooKeeperNamespace默认值为kyuubi</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">/usr/hdp/3.1.0.0-78/spark3/bin/beeline</span><br><span class="line">!connect jdbc:hive2://indata-192-168-44-128.indata.com,indata-192-168-44-129.indata.com,indata-192-168-44-130.indata.com/default;serviceDiscoveryMode=zooKeeper;zooKeeperNamespace=kyuubi;hive.server2.proxy.user=spark</span><br><span class="line"></span><br><span class="line">Connecting to jdbc:hive2://indata-192-168-44-128.indata.com,indata-192-168-44-129.indata.com,indata-192-168-44-130.indata.com/default;serviceDiscoveryMode=zooKeeper;zooKeeperNamespace=kyuubi;hive.server2.proxy.user=spark</span><br><span class="line">Enter username <span class="keyword">for</span> jdbc:hive2://indata-192-168-44-128.indata.com,indata-192-168-44-129.indata.com,indata-192-168-44-130.indata.com/default:</span><br><span class="line">Enter password <span class="keyword">for</span> jdbc:hive2://indata-192-168-44-128.indata.com,indata-192-168-44-129.indata.com,indata-192-168-44-130.indata.com/default:</span><br><span class="line">22/03/23 09:56:30 INFO Utils: Supplied authorities: indata-192-168-44-128.indata.com,indata-192-168-44-129.indata.com,indata-192-168-44-130.indata.com</span><br><span class="line">22/03/23 09:56:30 INFO CuratorFrameworkImpl: Starting</span><br><span class="line">22/03/23 09:56:30 INFO ZooKeeper: Initiating client connection, connectString=indata-192-168-44-128.indata.com,indata-192-168-44-129.indata.com,indata-192-168-44-130.indata.com sessionTimeout=60000 watcher=org.apache.curator.ConnectionState@1224144a</span><br><span class="line">22/03/23 09:56:30 INFO ClientCnxn: Opening socket connection to server indata-192-168-44-130.indata.com/192.168.44.130:2181. Will not attempt to authenticate using SASL (unknown error)</span><br><span class="line">22/03/23 09:56:30 INFO ClientCnxn: Socket connection established, initiating session, client: /192.168.44.130:59044, server: indata-192-168-44-130.indata.com/192.168.44.130:2181</span><br><span class="line">22/03/23 09:56:30 INFO ClientCnxn: Session establishment complete on server indata-192-168-44-130.indata.com/192.168.44.130:2181, sessionid = 0x37f2e7f62d60ba1, negotiated timeout = 60000</span><br><span class="line">22/03/23 09:56:30 INFO ConnectionStateManager: State change: CONNECTED</span><br><span class="line">22/03/23 09:56:30 INFO ZooKeeper: Session: 0x37f2e7f62d60ba1 closed</span><br><span class="line">22/03/23 09:56:30 INFO ClientCnxn: EventThread shut down</span><br><span class="line">22/03/23 09:56:30 INFO Utils: Resolved authority: indata-192-168-44-130.indata.com:10009</span><br><span class="line">22/03/23 09:56:30 INFO HiveConnection: Connected to indata-192-168-44-130.indata.com:10009</span><br><span class="line">Connected to: Apache Kyuubi (Incubating) (version 1.4.0-incubating)</span><br><span class="line">Driver: Hive JDBC (version 2.3.7)</span><br><span class="line">Transaction isolation: TRANSACTION_REPEATABLE_READ</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">/usr/hdp/3.1.0.0-78/spark3/bin/beeline</span><br><span class="line">!connect jdbc:hive2://indata-192-168-44-128.indata.com,indata-192-168-44-129.indata.com,indata-192-168-44-130.indata.com/default;serviceDiscoveryMode=zooKeeper;zooKeeperNamespace=kyuubi;hive.server2.proxy.user=spark</span><br><span class="line"></span><br><span class="line">Connecting to jdbc:hive2://indata-192-168-44-128.indata.com,indata-192-168-44-129.indata.com,indata-192-168-44-130.indata.com/default;serviceDiscoveryMode=zooKeeper;zooKeeperNamespace=kyuubi;hive.server2.proxy.user=spark</span><br><span class="line">Enter username <span class="keyword">for</span> jdbc:hive2://indata-192-168-44-128.indata.com,indata-192-168-44-129.indata.com,indata-192-168-44-130.indata.com/default:</span><br><span class="line">Enter password <span class="keyword">for</span> jdbc:hive2://indata-192-168-44-128.indata.com,indata-192-168-44-129.indata.com,indata-192-168-44-130.indata.com/default:</span><br><span class="line">22/03/23 09:56:30 INFO Utils: Supplied authorities: indata-192-168-44-128.indata.com,indata-192-168-44-129.indata.com,indata-192-168-44-130.indata.com</span><br><span class="line">22/03/23 09:56:30 INFO CuratorFrameworkImpl: Starting</span><br><span class="line">22/03/23 09:56:30 INFO ZooKeeper: Initiating client connection, connectString=indata-192-168-44-128.indata.com,indata-192-168-44-129.indata.com,indata-192-168-44-130.indata.com sessionTimeout=60000 watcher=org.apache.curator.ConnectionState@1224144a</span><br><span class="line">22/03/23 09:56:30 INFO ClientCnxn: Opening socket connection to server indata-192-168-44-130.indata.com/192.168.44.130:2181. Will not attempt to authenticate using SASL (unknown error)</span><br><span class="line">22/03/23 09:56:30 INFO ClientCnxn: Socket connection established, initiating session, client: /192.168.44.130:59044, server: indata-192-168-44-130.indata.com/192.168.44.130:2181</span><br><span class="line">22/03/23 09:56:30 INFO ClientCnxn: Session establishment complete on server indata-192-168-44-130.indata.com/192.168.44.130:2181, sessionid = 0x37f2e7f62d60ba1, negotiated <span class="built_in">timeout</span> = 60000</span><br><span class="line">22/03/23 09:56:30 INFO ConnectionStateManager: State change: CONNECTED</span><br><span class="line">22/03/23 09:56:30 INFO ZooKeeper: Session: 0x37f2e7f62d60ba1 closed</span><br><span class="line">22/03/23 09:56:30 INFO ClientCnxn: EventThread shut down</span><br><span class="line">22/03/23 09:56:30 INFO Utils: Resolved authority: indata-192-168-44-130.indata.com:10009</span><br><span class="line">22/03/23 09:56:30 INFO HiveConnection: Connected to indata-192-168-44-130.indata.com:10009</span><br><span class="line">Connected to: Apache Kyuubi (Incubating) (version 1.4.0-incubating)</span><br><span class="line">Driver: Hive JDBC (version 2.3.7)</span><br><span class="line">Transaction isolation: TRANSACTION_REPEATABLE_READ</span><br></pre></td></tr></table></figure>
 <p>根据日志，可以看到，我们的jdbc链接地址为zookeeper，通过zookeeper解析zooKeeperNamespace获取到kyuubi server真正的地址为indata-192-168-44-130.indata.com:10009<br>实际上，当我们配置了HA参数，启动Kyuubi Server时会在zookeeper创建一个地址/kyuubi,让我们来看一下，在zookeeper上存的是什么信息</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">/usr/hdp/3.1.0.0-78/zookeeper/bin/zkCli.sh -server indata-192-168-44-130.indata.com:2181</span><br><span class="line">ls /kyuubi</span><br><span class="line">[serviceUri=indata-192-168-44-130.indata.com:10009;version=1.4.0-incubating;sequence=0000000007]</span><br><span class="line">get /kyuubi/serviceUri=indata-192-168-44-130.indata.com:10009;version=1.4.0-incubating;sequence=0000000007</span><br><span class="line">hive.server2.thrift.sasl.qop=auth;hive.server2.thrift.bind.host=indata-192-168-44-130.indata.com;hive.server2.transport.mode=binary;hive.server2.authentication=KERBEROS;hive.server2.thrift.port=10009;hive.server2.authentication.kerberos.principal=hive/indata-192-168-44-130.indata.com@INDATA.COM</span><br><span class="line">cZxid = 0x300029a08</span><br><span class="line">ctime = Tue Mar 22 19:57:36 CST 2022</span><br><span class="line">mZxid = 0x300029a08</span><br><span class="line">mtime = Tue Mar 22 19:57:36 CST 2022</span><br><span class="line">pZxid = 0x300029a08</span><br><span class="line">cversion = 0</span><br><span class="line">dataVersion = 0</span><br><span class="line">aclVersion = 0</span><br><span class="line">ephemeralOwner = 0x37f2e7f62d60b64</span><br><span class="line">dataLength = 295</span><br><span class="line">numChildren = 0</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">/usr/hdp/3.1.0.0-78/zookeeper/bin/zkCli.sh -server indata-192-168-44-130.indata.com:2181</span><br><span class="line"><span class="built_in">ls</span> /kyuubi</span><br><span class="line">[serviceUri=indata-192-168-44-130.indata.com:10009;version=1.4.0-incubating;sequence=0000000007]</span><br><span class="line">get /kyuubi/serviceUri=indata-192-168-44-130.indata.com:10009;version=1.4.0-incubating;sequence=0000000007</span><br><span class="line">hive.server2.thrift.sasl.qop=auth;hive.server2.thrift.bind.host=indata-192-168-44-130.indata.com;hive.server2.transport.mode=binary;hive.server2.authentication=KERBEROS;hive.server2.thrift.port=10009;hive.server2.authentication.kerberos.principal=hive/indata-192-168-44-130.indata.com@INDATA.COM</span><br><span class="line">cZxid = 0x300029a08</span><br><span class="line">ctime = Tue Mar 22 19:57:36 CST 2022</span><br><span class="line">mZxid = 0x300029a08</span><br><span class="line">mtime = Tue Mar 22 19:57:36 CST 2022</span><br><span class="line">pZxid = 0x300029a08</span><br><span class="line">cversion = 0</span><br><span class="line">dataVersion = 0</span><br><span class="line">aclVersion = 0</span><br><span class="line">ephemeralOwner = 0x37f2e7f62d60b64</span><br><span class="line">dataLength = 295</span><br><span class="line">numChildren = 0</span><br></pre></td></tr></table></figure>
 <p>可以看到，不仅保存了kyuubi server的ip、端口，还保存了kerberos票据等信息。<br>zooKeeperNamespace默认值为kyuubi，我们可以通过修改配置参数更改它</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">vi conf/kyuubi-defaults.conf</span><br><span class="line"></span><br><span class="line">kyuubi.ha.zookeeper.namespace=kyuubi_cluster001</span><br><span class="line">kyuubi.session.engine.initialize.timeout=180000</span><br></pre></td></tr></table></figure>
 <p>重启kyuubi server,在通过zk查看，发现原来的/kyuubi内容为空，新建了一个/kyuubi_cluster001,内容和之前一样。</p>
 <p>再另一台机器再起一个kyuubi server,这样才能达到真正的HA效果，再在zk看一下,我们发现，内容已经变成两个kyuubi server了</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ls /kyuubi_cluster001</span><br><span class="line">[serviceUri=indata-192-168-44-130.indata.com:10009;version=1.4.0-incubating;sequence=0000000006, serviceUri=indata-192-168-44-129.indata.com:10009;version=1.4.0-incubating;sequence=0000000009]</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">ls</span> /kyuubi_cluster001</span><br><span class="line">[serviceUri=indata-192-168-44-130.indata.com:10009;version=1.4.0-incubating;sequence=0000000006, serviceUri=indata-192-168-44-129.indata.com:10009;version=1.4.0-incubating;sequence=0000000009]</span><br></pre></td></tr></table></figure>
 <p>查看具体内容，需要以逗号分隔，分开查看，这里就不贴详细信息了</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">get /kyuubi_cluster001/serviceUri=indata-192-168-44-130.indata.com:10009;version=1.4.0-incubating;sequence=0000000006</span><br><span class="line">get /kyuubi_cluster001/serviceUri=indata-192-168-44-129.indata.com:10009;version=1.4.0-incubating;sequence=0000000009</span><br></pre></td></tr></table></figure>
 <p>beeline 多登陆几次，就会发现，会随机选择两个kyuubi server中的一个，这样就做到了HA,主要这里的zooKeeperNamespac改为了kyuubi_cluster001<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">!connect jdbc:hive2://indata-192-168-44-128.indata.com,indata-192-168-44-129.indata.com,indata-192-168-44-130.indata.com/default;serviceDiscoveryMode=zooKeeper;zooKeeperNamespace=kyuubi_cluster001;hive.server2.proxy.user=spark</span><br><span class="line"></span><br><span class="line">22/03/23 11:51:43 INFO Utils: Resolved authority: indata-192-168-44-130.indata.com:10009</span><br><span class="line">22/03/23 11:51:43 INFO HiveConnection: Connected to indata-192-168-44-130.indata.com:10009</span><br><span class="line"></span><br><span class="line">22/03/23 13:53:19 INFO Utils: Resolved authority: indata-192-168-44-129.indata.com:10009</span><br><span class="line">22/03/23 13:53:19 INFO HiveConnection: Connected to indata-192-168-44-129.indata.com:10009</span><br></pre></td></tr></table></figure></p>
 <h4 id="支持hudi"><a href="#支持hudi" class="headerlink" title="支持hudi"></a>支持hudi</h4><p>注意首先配好 spark hudi环境，这里的hudi jar包需要适配spark3.1.2，开头有说明</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">!connect jdbc:hive2://indata-192-168-44-128.indata.com,indata-192-168-44-129.indata.com,indata-192-168-44-130.indata.com/default;serviceDiscoveryMode=zooKeeper;zooKeeperNamespace=kyuubi_cluster001;hive.server2.proxy.user=spark<span class="comment">#spark.yarn.queue=default;spark.sql.extensions=org.apache.spark.sql.hudi.HoodieSparkSessionExtension;spark.serializer=org.apache.spark.serializer.KryoSerializer;spark.executor.instances=1;spark.executor.memory=1g;kyuubi.engine.share.level=CONNECTION</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">!connect jdbc:hive2://indata-192-168-44-128.indata.com,indata-192-168-44-129.indata.com,indata-192-168-44-130.indata.com/default;serviceDiscoveryMode=zooKeeper;zooKeeperNamespace=kyuubi_cluster001;hive.server2.proxy.user=spark#spark.yarn.queue=default;spark.sql.extensions=org.apache.spark.sql.hudi.HoodieSparkSessionExtension;spark.serializer=org.apache.spark.serializer.KryoSerializer;spark.executor.instances=1;spark.executor.memory=1g;kyuubi.engine.share.level=CONNECTION</span><br></pre></td></tr></table></figure>
 <p>通过jdbc_url中指定spark的参数</p>
 <ul>
 <li>spark.yarn.queue 队列</li>
@@ -311,7 +310,7 @@
 <li>kyuubi.engine.share.level kyuubi的级别,默认user<br>支持hudi是通过这俩参数：<code>spark.sql.extensions=org.apache.spark.sql.hudi.HoodieSparkSessionExtension;spark.serializer=org.apache.spark.serializer.KryoSerializer</code></li>
 </ul>
 <p>通过上面的参数连接kyuubi server并启动spark server程序后，验证hudi sql功能</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> test_hudi_table (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span>,</span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="keyword">long</span>,</span><br><span class="line">  dt <span class="keyword">string</span></span><br><span class="line">) <span class="keyword">using</span> hudi</span><br><span class="line"> partitioned <span class="keyword">by</span> (dt)</span><br><span class="line"> options (</span><br><span class="line">  primaryKey = <span class="string">'id'</span>,</span><br><span class="line">  preCombineField = <span class="string">'ts'</span>,</span><br><span class="line">  <span class="keyword">type</span> = <span class="string">'cow'</span></span><br><span class="line"> );</span><br><span class="line"> <span class="keyword">insert</span> <span class="keyword">into</span> test_hudi_table <span class="keyword">values</span> (<span class="number">1</span>,<span class="string">'hudi'</span>,<span class="number">10</span>,<span class="number">100</span>,<span class="string">'2021-05-05'</span>),(<span class="number">2</span>,<span class="string">'hudi'</span>,<span class="number">10</span>,<span class="number">100</span>,<span class="string">'2021-05-05'</span>);</span><br><span class="line"> <span class="keyword">update</span> test_hudi_table <span class="keyword">set</span> price = <span class="number">20.0</span> <span class="keyword">where</span> <span class="keyword">id</span> = <span class="number">1</span>;</span><br><span class="line"> <span class="keyword">select</span> * <span class="keyword">from</span> test_hudi_table;</span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create table</span> test_hudi_table (</span><br><span class="line">  id <span class="type">int</span>,</span><br><span class="line">  name string,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts long,</span><br><span class="line">  dt string</span><br><span class="line">) <span class="keyword">using</span> hudi</span><br><span class="line"> partitioned <span class="keyword">by</span> (dt)</span><br><span class="line"> options (</span><br><span class="line">  primaryKey <span class="operator">=</span> <span class="string">&#x27;id&#x27;</span>,</span><br><span class="line">  preCombineField <span class="operator">=</span> <span class="string">&#x27;ts&#x27;</span>,</span><br><span class="line">  type <span class="operator">=</span> <span class="string">&#x27;cow&#x27;</span></span><br><span class="line"> );</span><br><span class="line"> <span class="keyword">insert into</span> test_hudi_table <span class="keyword">values</span> (<span class="number">1</span>,<span class="string">&#x27;hudi&#x27;</span>,<span class="number">10</span>,<span class="number">100</span>,<span class="string">&#x27;2021-05-05&#x27;</span>),(<span class="number">2</span>,<span class="string">&#x27;hudi&#x27;</span>,<span class="number">10</span>,<span class="number">100</span>,<span class="string">&#x27;2021-05-05&#x27;</span>);</span><br><span class="line"> <span class="keyword">update</span> test_hudi_table <span class="keyword">set</span> price <span class="operator">=</span> <span class="number">20.0</span> <span class="keyword">where</span> id <span class="operator">=</span> <span class="number">1</span>;</span><br><span class="line"> <span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> test_hudi_table;</span><br></pre></td></tr></table></figure>
 <p>简单的验证一下hudi的sql没有问题就行</p>
 <h2 id="kyuubi-0-7"><a href="#kyuubi-0-7" class="headerlink" title="kyuubi 0.7"></a>kyuubi 0.7</h2><p>这里主要是为了适配spark2, 本人的spark2版本为spark2.4.5,前面有说明如何打包kyuubi 0.7,这里打包完后的包名为：<code>kyuubi-0.7.0-SNAPSHOT-bin-spark-2.4.5.tar.gz</code></p>
 <h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">tar -zxvf kyuubi-0.7.0-SNAPSHOT-bin-spark-2.4.5.tar.gz -C /opt/</span><br><span class="line"><span class="built_in">cd</span> /opt/kyuubi-0.7.0-SNAPSHOT-bin-spark-2.4.5/</span><br><span class="line">vi bin/kyuubi-env.sh</span><br><span class="line"></span><br><span class="line"><span class="built_in">export</span> SPARK_HOME=/usr/hdp/3.1.0.0-78/spark2  <span class="comment">## 注意需要放在# Find the spark-submit之前</span></span><br></pre></td></tr></table></figure>
@@ -319,24 +318,24 @@
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">用vim打开该sh文件，输入：</span><br><span class="line">:<span class="built_in">set</span> ff //回车，显示fileformat=dos</span><br><span class="line">:<span class="built_in">set</span> ff=unix //重新设置下文件格式</span><br><span class="line">:wq //保存退出</span><br><span class="line">再执行，就不会再提示No such file or directory这个问题了。</span><br></pre></td></tr></table></figure>
 <p>bin 目录下面的脚本都执行一遍</p>
 <h3 id="启动Kyuubi-Server"><a href="#启动Kyuubi-Server" class="headerlink" title="启动Kyuubi Server"></a>启动Kyuubi Server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">bin/start-kyuubi.sh --master yarn --deploy-mode client --driver-memory 2g --conf spark.kyuubi.frontend.bind.port=10010 --conf spark.kyuubi.authentication=KERBEROS --conf spark.kyuubi.ha.enabled=<span class="literal">true</span> \</span><br><span class="line">    --conf spark.kyuubi.ha.zk.quorum=indata-192-168-44-128.indata.com,indata-192-168-44-129.indata.com,indata-192-168-44-130.indata.com --conf spark.kyuubi.ha.zk.namespace=kyuubi_cluster002 --conf spark.kyuubi.ha.mode=load-balance \</span><br><span class="line">	--conf spark.kyuubi.frontend.bind.host=indata-192-168-44-130.indata.com --conf spark.yarn.keytab=/etc/security/keytabs/hive.service.keytab --conf spark.yarn.principal=hive/indata-192-168-44-130.indata.com@INDATA.COM</span><br></pre></td></tr></table></figure>
-<h3 id="beeline连接-1"><a href="#beeline连接-1" class="headerlink" title="beeline连接"></a>beeline连接</h3><h4 id="IP-Port"><a href="#IP-Port" class="headerlink" title="IP:Port"></a>IP:Port</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">!connect jdbc:hive2://indata-192-168-44-130.indata.com:10010/;principal=hive/indata-192-168-44-130.indata.com@INDATA.COM;hive.server2.proxy.user=spark</span><br><span class="line"></span><br><span class="line">Connecting to jdbc:hive2://indata-192-168-44-130.indata.com:10010/;principal=hive/indata-192-168-44-130.indata.com@INDATA.COM;hive.server2.proxy.user=spark</span><br><span class="line">Enter username <span class="keyword">for</span> jdbc:hive2://indata-192-168-44-130.indata.com:10010/;principal=hive/indata-192-168-44-130.indata.com@INDATA.COM;hive.server2.proxy.user=spark:</span><br><span class="line">Enter password <span class="keyword">for</span> jdbc:hive2://indata-192-168-44-130.indata.com:10010/;principal=hive/indata-192-168-44-130.indata.com@INDATA.COM;hive.server2.proxy.user=spark:</span><br><span class="line">22/03/25 14:37:25 INFO Utils: Supplied authorities: indata-192-168-44-130.indata.com:10010</span><br><span class="line">22/03/25 14:37:25 INFO Utils: Resolved authority: indata-192-168-44-130.indata.com:10010</span><br><span class="line">22/03/25 14:37:25 INFO HiveConnection: Will try to open client transport with JDBC Uri: jdbc:hive2://indata-192-168-44-130.indata.com:10010/;principal=hive/indata-192-168-44-130.indata.com@INDATA.COM;hive.server2.proxy.user=spark</span><br><span class="line">Connected to: Spark SQL (version 2.4.5)</span><br><span class="line">Driver: Hive JDBC (version 1.2.1)</span><br><span class="line">Transaction isolation: TRANSACTION_REPEATABLE_READ</span><br></pre></td></tr></table></figure>
+<h3 id="beeline连接-1"><a href="#beeline连接-1" class="headerlink" title="beeline连接"></a>beeline连接</h3><h4 id="IP-Port"><a href="#IP-Port" class="headerlink" title="IP:Port"></a>IP:Port</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">!connect jdbc:hive2://indata-192-168-44-130.indata.com:10010/;principal=hive/indata-192-168-44-130.indata.com@INDATA.COM;hive.server2.proxy.user=spark</span><br><span class="line"></span><br><span class="line">Connecting to jdbc:hive2://indata-192-168-44-130.indata.com:10010/;principal=hive/indata-192-168-44-130.indata.com@INDATA.COM;hive.server2.proxy.user=spark</span><br><span class="line">Enter username <span class="keyword">for</span> jdbc:hive2://indata-192-168-44-130.indata.com:10010/;principal=hive/indata-192-168-44-130.indata.com@INDATA.COM;hive.server2.proxy.user=spark:</span><br><span class="line">Enter password <span class="keyword">for</span> jdbc:hive2://indata-192-168-44-130.indata.com:10010/;principal=hive/indata-192-168-44-130.indata.com@INDATA.COM;hive.server2.proxy.user=spark:</span><br><span class="line">22/03/25 14:37:25 INFO Utils: Supplied authorities: indata-192-168-44-130.indata.com:10010</span><br><span class="line">22/03/25 14:37:25 INFO Utils: Resolved authority: indata-192-168-44-130.indata.com:10010</span><br><span class="line">22/03/25 14:37:25 INFO HiveConnection: Will try to open client transport with JDBC Uri: jdbc:hive2://indata-192-168-44-130.indata.com:10010/;principal=hive/indata-192-168-44-130.indata.com@INDATA.COM;hive.server2.proxy.user=spark</span><br><span class="line">Connected to: Spark SQL (version 2.4.5)</span><br><span class="line">Driver: Hive JDBC (version 1.2.1)</span><br><span class="line">Transaction isolation: TRANSACTION_REPEATABLE_READ</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 <h4 id="ZK"><a href="#ZK" class="headerlink" title="ZK"></a>ZK</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">/usr/hdp/3.1.0.0-78/spark2/bin/beeline</span><br><span class="line"></span><br><span class="line">!connect jdbc:hive2://indata-192-168-44-128.indata.com,indata-192-168-44-129.indata.com,indata-192-168-44-130.indata.com/default;principal=hive/indata-192-168-44-130.indata.com@INDATA.COM;serviceDiscoveryMode=zooKeeper;zooKeeperNamespace=kyuubi_cluster002</span><br><span class="line"></span><br><span class="line">22/03/23 17:01:00 INFO Utils: Resolved authority: null:0</span><br><span class="line">22/03/23 17:01:00 INFO ClientCnxn: EventThread shut down <span class="keyword">for</span> session: 0x37f2e7f62d60bdb</span><br><span class="line">22/03/23 17:01:00 INFO HiveConnection: Will try to open client transport with JDBC Uri: jdbc:hive2://null:0/default;principal=hive/indata-192-168-44-130.indata.com@INDATA.COM;serviceDiscoveryMode=zooKeeper;zooKeeperNamespace=kyuubi_cluster002</span><br></pre></td></tr></table></figure>
 <p>然后我们发现没有连接成功，解析zk地址为null:0，我们在zk客户端，发现zk地址里的内容是正确的，那么就是beeline客户端解析有问题，然后我用<a href="https://dongkelun.com/2021/05/10/javaSparkThriftServerWithKerberos/">Java 连接 Kereros认证下的Spark Thrift Server/Hive Server总结</a>连接发现是成功的，只需要将程序中的SPARK_JDBC_URL 改为 jdbc:hive2://indata-192-168-44-128.indata.com,indata-192-168-44-129.indata.com,indata-192-168-44-130.indata.com/default;principal=hive/indata-192-168-44-130.indata.com@INDATA.COM;serviceDiscoveryMode=zooKeeper;zooKeeperNamespace=kyuubi_cluster002，前提pom依赖版本要对应好</p>
 <p>这样进一步验证我们的server没有问题，然后我试着将maven仓库中的<code>hive-jdbc-1.2.1.jar</code>放到 $SPARK_HOME/jars下，然后将原来的<code>hive-jdbc-1.21.2.3.1.0.0-78.jar</code>做一个备份并删掉</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mv hive-jdbc-1.21.2.3.1.0.0-78.jar hive-jdbc-1.21.2.3.1.0.0-78.jar.bak</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mv hive-jdbc-1.21.2.3.1.0.0-78.jar hive-jdbc-1.21.2.3.1.0.0-78.jar.bak</span><br></pre></td></tr></table></figure>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">/usr/hdp/3.1.0.0-78/spark2/bin/beeline</span><br><span class="line">!connect jdbc:hive2://indata-192-168-44-128.indata.com,indata-192-168-44-129.indata.com,indata-192-168-44-130.indata.com/default;principal=hive/indata-192-168-44-130.indata.com@INDATA.COM;serviceDiscoveryMode=zooKeeper;zooKeeperNamespace=kyuubi_cluster002;hive.server2.proxy.user=hive</span><br><span class="line"></span><br><span class="line">Utils: Resolved authority: indata-192-168-44-130.indata.com:10010</span><br><span class="line">22/03/25 14:41:02 INFO HiveConnection: Will try to open client transport with JDBC Uri: jdbc:hive2://indata-192-168-44-130.indata.com:10010/default;principal=hive/indata-192-168-44-130.indata.com@INDATA.COM;serviceDiscoveryMode=zooKeeper;zooKeeperNamespace=kyuubi_cluster002;hive.server2.proxy.user=hive</span><br><span class="line">Connected to: Spark SQL (version 2.4.5)</span><br><span class="line">Driver: Hive JDBC (version 1.2.1)</span><br></pre></td></tr></table></figure>
 <p>然后发现正确解析了zk里面的内容，连接成功！！<br>当然这里碰巧替换了hive-jdbc-1.2.1.jar就成功了，如果不行的话，可以自己下一个开源的spark2.4.5,然后考一个之前的spark备份，试着将备份中所有的jar包都替换为开源版本，再试着用备份路径下的beeline命令</p>
-<p>spark 2.4.5 下载地址：<a href="http://archive.apache.org/dist/spark/spark-2.4.5/" target="_blank" rel="noopener">http://archive.apache.org/dist/spark/spark-2.4.5/</a></p>
+<p>spark 2.4.5 下载地址：<a href="http://archive.apache.org/dist/spark/spark-2.4.5/">http://archive.apache.org/dist/spark/spark-2.4.5/</a></p>
 <h4 id="程序连接异常"><a href="#程序连接异常" class="headerlink" title="程序连接异常"></a>程序连接异常</h4><p>上面的连接串程序运行是正常的，当加了hive.server2.proxy.user=spark时，就会抛出下面的异常</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">org.apache.hive.service.cli.HiveSQLException: Failed to validate proxy privilege of hive <span class="keyword">for</span> spark</span><br><span class="line">	at org.apache.hive.jdbc.Utils.verifySuccess(Utils.java:<span class="number">256</span>)</span><br><span class="line">	at org.apache.hive.jdbc.Utils.verifySuccess(Utils.java:<span class="number">247</span>)</span><br><span class="line">	at org.apache.hive.jdbc.HiveConnection.openSession(HiveConnection.java:<span class="number">586</span>)</span><br><span class="line">	at org.apache.hive.jdbc.HiveConnection.&lt;init&gt;(HiveConnection.java:<span class="number">192</span>)</span><br><span class="line">	at org.apache.hive.jdbc.HiveDriver.connect(HiveDriver.java:<span class="number">105</span>)</span><br><span class="line">	at java.sql.DriverManager.getConnection(DriverManager.java:<span class="number">664</span>)</span><br><span class="line">	at java.sql.DriverManager.getConnection(DriverManager.java:<span class="number">270</span>)</span><br><span class="line">	at com.dkl.blog.SparkThriftServerDemoWithKerberos_2.jdbcDemo(SparkThriftServerDemoWithKerberos_2.java:<span class="number">52</span>)</span><br><span class="line">	at com.dkl.blog.SparkThriftServerDemoWithKerberos_2.main(SparkThriftServerDemoWithKerberos_2.java:<span class="number">46</span>)</span><br><span class="line">Caused by: java.lang.RuntimeException: yaooqinn.kyuubi.KyuubiSQLException:Failed to validate proxy privilege of hive <span class="keyword">for</span> spark</span><br><span class="line">	at yaooqinn.kyuubi.auth.KyuubiAuthFactory$.verifyProxyAccess(KyuubiAuthFactory.scala:<span class="number">190</span>)</span><br><span class="line">	at yaooqinn.kyuubi.server.FrontendService.getProxyUser(FrontendService.scala:<span class="number">210</span>)</span><br><span class="line">	at yaooqinn.kyuubi.server.FrontendService.getUserName(FrontendService.scala:<span class="number">188</span>)</span><br><span class="line">	at yaooqinn.kyuubi.server.FrontendService.getSessionHandle(FrontendService.scala:<span class="number">229</span>)</span><br><span class="line">	at yaooqinn.kyuubi.server.FrontendService.OpenSession(FrontendService.scala:<span class="number">248</span>)</span><br><span class="line">	at org.apache.hive.service.cli.thrift.TCLIService$Processor$OpenSession.getResult(TCLIService.java:<span class="number">1253</span>)</span><br><span class="line">	at org.apache.hive.service.cli.thrift.TCLIService$Processor$OpenSession.getResult(TCLIService.java:<span class="number">1238</span>)</span><br><span class="line">	at org.apache.thrift.ProcessFunction.process(ProcessFunction.java:<span class="number">39</span>)</span><br><span class="line">	at org.apache.thrift.TBaseProcessor.process(TBaseProcessor.java:<span class="number">39</span>)</span><br><span class="line">	at org.apache.hadoop.hive.thrift.HadoopThriftAuthBridge$Server$TUGIAssumingProcessor.process(HadoopThriftAuthBridge.java:<span class="number">692</span>)</span><br><span class="line">	at org.apache.thrift.server.TThreadPoolServer$WorkerProcess.run(TThreadPoolServer.java:<span class="number">286</span>)</span><br><span class="line">	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:<span class="number">1149</span>)</span><br><span class="line">	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:<span class="number">624</span>)</span><br><span class="line">	at java.lang.Thread.run(Thread.java:<span class="number">748</span>)</span><br><span class="line">Caused by: org.apache.hadoop.security.authorize.AuthorizationException: Unauthorized connection <span class="keyword">for</span> <span class="keyword">super</span>-user: hive from IP <span class="number">10.201</span>.30.73</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">org.apache.hive.service.cli.HiveSQLException: Failed to validate proxy privilege of hive <span class="keyword">for</span> spark</span><br><span class="line">	at org.apache.hive.jdbc.Utils.verifySuccess(Utils.java:<span class="number">256</span>)</span><br><span class="line">	at org.apache.hive.jdbc.Utils.verifySuccess(Utils.java:<span class="number">247</span>)</span><br><span class="line">	at org.apache.hive.jdbc.HiveConnection.openSession(HiveConnection.java:<span class="number">586</span>)</span><br><span class="line">	at org.apache.hive.jdbc.HiveConnection.&lt;init&gt;(HiveConnection.java:<span class="number">192</span>)</span><br><span class="line">	at org.apache.hive.jdbc.HiveDriver.connect(HiveDriver.java:<span class="number">105</span>)</span><br><span class="line">	at java.sql.DriverManager.getConnection(DriverManager.java:<span class="number">664</span>)</span><br><span class="line">	at java.sql.DriverManager.getConnection(DriverManager.java:<span class="number">270</span>)</span><br><span class="line">	at com.dkl.blog.SparkThriftServerDemoWithKerberos_2.jdbcDemo(SparkThriftServerDemoWithKerberos_2.java:<span class="number">52</span>)</span><br><span class="line">	at com.dkl.blog.SparkThriftServerDemoWithKerberos_2.main(SparkThriftServerDemoWithKerberos_2.java:<span class="number">46</span>)</span><br><span class="line">Caused by: java.lang.RuntimeException: yaooqinn.kyuubi.KyuubiSQLException:Failed to validate proxy privilege of hive <span class="keyword">for</span> spark</span><br><span class="line">	at yaooqinn.kyuubi.auth.KyuubiAuthFactory$.verifyProxyAccess(KyuubiAuthFactory.scala:<span class="number">190</span>)</span><br><span class="line">	at yaooqinn.kyuubi.server.FrontendService.getProxyUser(FrontendService.scala:<span class="number">210</span>)</span><br><span class="line">	at yaooqinn.kyuubi.server.FrontendService.getUserName(FrontendService.scala:<span class="number">188</span>)</span><br><span class="line">	at yaooqinn.kyuubi.server.FrontendService.getSessionHandle(FrontendService.scala:<span class="number">229</span>)</span><br><span class="line">	at yaooqinn.kyuubi.server.FrontendService.OpenSession(FrontendService.scala:<span class="number">248</span>)</span><br><span class="line">	at org.apache.hive.service.cli.thrift.TCLIService$Processor$OpenSession.getResult(TCLIService.java:<span class="number">1253</span>)</span><br><span class="line">	at org.apache.hive.service.cli.thrift.TCLIService$Processor$OpenSession.getResult(TCLIService.java:<span class="number">1238</span>)</span><br><span class="line">	at org.apache.thrift.ProcessFunction.process(ProcessFunction.java:<span class="number">39</span>)</span><br><span class="line">	at org.apache.thrift.TBaseProcessor.process(TBaseProcessor.java:<span class="number">39</span>)</span><br><span class="line">	at org.apache.hadoop.hive.thrift.HadoopThriftAuthBridge$Server$TUGIAssumingProcessor.process(HadoopThriftAuthBridge.java:<span class="number">692</span>)</span><br><span class="line">	at org.apache.thrift.server.TThreadPoolServer$WorkerProcess.run(TThreadPoolServer.java:<span class="number">286</span>)</span><br><span class="line">	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:<span class="number">1149</span>)</span><br><span class="line">	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:<span class="number">624</span>)</span><br><span class="line">	at java.lang.Thread.run(Thread.java:<span class="number">748</span>)</span><br><span class="line">Caused by: org.apache.hadoop.security.authorize.AuthorizationException: Unauthorized connection <span class="keyword">for</span> <span class="built_in">super</span>-user: hive from IP <span class="number">10.201</span><span class="number">.30</span><span class="number">.73</span></span><br></pre></td></tr></table></figure>
 <p>这是因为我本地机器没有权限</p>
 <p>修改core-site.xml</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hadoop.proxyuser.hive.groups=*</span><br><span class="line">hadoop.proxyuser.hive.hosts=*</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hadoop.proxyuser.hive.groups=*</span><br><span class="line">hadoop.proxyuser.hive.hosts=*</span><br></pre></td></tr></table></figure>
 <p>然后重启HDFS服务，再重新运行程序就可以了<br>当然我这里启动Kyuubi使用的票据为hive用户，就需要修改hive的权限；还有在生产环境不要设置权限为*</p>
 <h4 id="HA-1"><a href="#HA-1" class="headerlink" title="HA"></a>HA</h4><p>在另一台服务器上，配置相同的kyuubi，并启动，<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/start-kyuubi.sh --master yarn --deploy-mode client --driver-memory 2g --conf spark.kyuubi.frontend.bind.port=10010 --conf spark.kyuubi.authentication=KERBEROS --conf spark.kyuubi.ha.enabled=<span class="literal">true</span>     --conf spark.kyuubi.ha.zk.quorum=indata-192-168-44-128.indata.com,indata-192-168-44-129.indata.com,indata-192-168-44-130.indata.com --conf spark.kyuubi.ha.zk.namespace=kyuubi_cluster002 --conf spark.kyuubi.ha.mode=load-balance --conf spark.kyuubi.frontend.bind.host=indata-192-168-44-129.indata.com --conf spark.yarn.keytab=/etc/security/keytabs/hive.service.keytab --conf spark.yarn.principal=hive/indata-192-168-44-129.indata.com@INDATA.COM</span><br></pre></td></tr></table></figure></p>
 <p>然后beeline重新多次连接后，会发现当用这台服务器的principal连接连接另外一台服务器的kyuubi server时，会报kerberos认证的错误，我们只需要将jdbc连接串中的principal改为hive/_HOST@INDATA.COM,就可以成功随机连接其中的一台Kyuubi server了，但是在Kyuubi 1.4 Spark 3.1.2没有这个问题<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">!connect jdbc:hive2://indata-192-168-44-128.indata.com,indata-192-168-44-129.indata.com,indata-192-168-44-130.indata.com/default;principal=hive/_HOST@INDATA.COM;serviceDiscoveryMode=zooKeeper;zooKeeperNamespace=kyuubi_cluster002;hive.server2.proxy.user=hive</span><br></pre></td></tr></table></figure></p>
 <h4 id="停止"><a href="#停止" class="headerlink" title="停止"></a>停止</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/stop-kyuubi.sh</span><br></pre></td></tr></table></figure>
-<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p><a href="https://mp.weixin.qq.com/s/ZQdGe7O_6QAO2M3yVHvRRg" target="_blank" rel="noopener">放弃Spark Thrift Server吧，你需要的是Apache Kyuubi！</a><br><a href="https://mp.weixin.qq.com/s/eUbKqowEFnQZMqsiaA49xw" target="_blank" rel="noopener">Apache Kyuubi(Incubating) 核心功能调研</a></p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p><a href="https://mp.weixin.qq.com/s/ZQdGe7O_6QAO2M3yVHvRRg">放弃Spark Thrift Server吧，你需要的是Apache Kyuubi！</a><br><a href="https://mp.weixin.qq.com/s/eUbKqowEFnQZMqsiaA49xw">Apache Kyuubi(Incubating) 核心功能调研</a></p>
 
       
 
@@ -493,7 +492,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#版本说明"><span class="toc-number">2.</span> <span class="toc-text">版本说明</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Kyuubi1-4"><span class="toc-number">3.</span> <span class="toc-text">Kyuubi1.4</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#下载"><span class="toc-number">3.1.</span> <span class="toc-text">下载</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#解压"><span class="toc-number">3.2.</span> <span class="toc-text">解压</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#验证Spark"><span class="toc-number">3.3.</span> <span class="toc-text">验证Spark</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#修改Kyuubi配置"><span class="toc-number">3.4.</span> <span class="toc-text">修改Kyuubi配置</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#kyuubi-env-sh"><span class="toc-number">3.4.1.</span> <span class="toc-text">kyuubi-env.sh</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#kyuubi-defaults-conf"><span class="toc-number">3.4.2.</span> <span class="toc-text">kyuubi-defaults.conf</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#配置环境变量"><span class="toc-number">3.4.3.</span> <span class="toc-text">配置环境变量</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#启停Kyuubi"><span class="toc-number">3.5.</span> <span class="toc-text">启停Kyuubi</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#端口冲突"><span class="toc-number">3.6.</span> <span class="toc-text">端口冲突</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#配置Kyuubi-HA"><span class="toc-number">4.</span> <span class="toc-text">配置Kyuubi HA</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#beeline连接"><span class="toc-number">4.1.</span> <span class="toc-text">beeline连接</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#非HA"><span class="toc-number">4.1.1.</span> <span class="toc-text">非HA</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#HA"><span class="toc-number">4.1.2.</span> <span class="toc-text">HA</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#支持hudi"><span class="toc-number">4.1.3.</span> <span class="toc-text">支持hudi</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#kyuubi-0-7"><span class="toc-number">5.</span> <span class="toc-text">kyuubi 0.7</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#配置"><span class="toc-number">5.1.</span> <span class="toc-text">配置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#解决-No-such-file-or-directory"><span class="toc-number">5.2.</span> <span class="toc-text">解决: No such file or directory</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#启动Kyuubi-Server"><span class="toc-number">5.3.</span> <span class="toc-text">启动Kyuubi Server</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#beeline连接-1"><span class="toc-number">5.4.</span> <span class="toc-text">beeline连接</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#IP-Port"><span class="toc-number">5.4.1.</span> <span class="toc-text">IP:Port</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#ZK"><span class="toc-number">5.4.2.</span> <span class="toc-text">ZK</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#程序连接异常"><span class="toc-number">5.4.3.</span> <span class="toc-text">程序连接异常</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#HA-1"><span class="toc-number">5.4.4.</span> <span class="toc-text">HA</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#停止"><span class="toc-number">5.4.5.</span> <span class="toc-text">停止</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考"><span class="toc-number">6.</span> <span class="toc-text">参考</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%89%88%E6%9C%AC%E8%AF%B4%E6%98%8E"><span class="toc-number">2.</span> <span class="toc-text">版本说明</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Kyuubi1-4"><span class="toc-number">3.</span> <span class="toc-text">Kyuubi1.4</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%8B%E8%BD%BD"><span class="toc-number">3.1.</span> <span class="toc-text">下载</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E5%8E%8B"><span class="toc-number">3.2.</span> <span class="toc-text">解压</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%AA%8C%E8%AF%81Spark"><span class="toc-number">3.3.</span> <span class="toc-text">验证Spark</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BF%AE%E6%94%B9Kyuubi%E9%85%8D%E7%BD%AE"><span class="toc-number">3.4.</span> <span class="toc-text">修改Kyuubi配置</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#kyuubi-env-sh"><span class="toc-number">3.4.1.</span> <span class="toc-text">kyuubi-env.sh</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#kyuubi-defaults-conf"><span class="toc-number">3.4.2.</span> <span class="toc-text">kyuubi-defaults.conf</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F"><span class="toc-number">3.4.3.</span> <span class="toc-text">配置环境变量</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%90%AF%E5%81%9CKyuubi"><span class="toc-number">3.5.</span> <span class="toc-text">启停Kyuubi</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AB%AF%E5%8F%A3%E5%86%B2%E7%AA%81"><span class="toc-number">3.6.</span> <span class="toc-text">端口冲突</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%85%8D%E7%BD%AEKyuubi-HA"><span class="toc-number">4.</span> <span class="toc-text">配置Kyuubi HA</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#beeline%E8%BF%9E%E6%8E%A5"><span class="toc-number">4.1.</span> <span class="toc-text">beeline连接</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%9D%9EHA"><span class="toc-number">4.1.1.</span> <span class="toc-text">非HA</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#HA"><span class="toc-number">4.1.2.</span> <span class="toc-text">HA</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%94%AF%E6%8C%81hudi"><span class="toc-number">4.1.3.</span> <span class="toc-text">支持hudi</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#kyuubi-0-7"><span class="toc-number">5.</span> <span class="toc-text">kyuubi 0.7</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE"><span class="toc-number">5.1.</span> <span class="toc-text">配置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3-No-such-file-or-directory"><span class="toc-number">5.2.</span> <span class="toc-text">解决: No such file or directory</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%90%AF%E5%8A%A8Kyuubi-Server"><span class="toc-number">5.3.</span> <span class="toc-text">启动Kyuubi Server</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#beeline%E8%BF%9E%E6%8E%A5-1"><span class="toc-number">5.4.</span> <span class="toc-text">beeline连接</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#IP-Port"><span class="toc-number">5.4.1.</span> <span class="toc-text">IP:Port</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#ZK"><span class="toc-number">5.4.2.</span> <span class="toc-text">ZK</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%A8%8B%E5%BA%8F%E8%BF%9E%E6%8E%A5%E5%BC%82%E5%B8%B8"><span class="toc-number">5.4.3.</span> <span class="toc-text">程序连接异常</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#HA-1"><span class="toc-number">5.4.4.</span> <span class="toc-text">HA</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%81%9C%E6%AD%A2"><span class="toc-number">5.4.5.</span> <span class="toc-text">停止</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">6.</span> <span class="toc-text">参考</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -668,14 +667,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -685,6 +676,22 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -700,14 +707,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
@@ -720,23 +719,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -756,7 +739,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -768,15 +763,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -812,11 +803,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -848,15 +839,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -868,7 +851,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -876,7 +859,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -888,7 +871,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -896,11 +883,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -909,6 +896,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -924,15 +919,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -941,6 +932,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -953,10 +948,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -976,10 +967,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
@@ -988,7 +975,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -996,11 +983,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1028,7 +1019,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1044,7 +1051,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
+                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1052,11 +1059,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1076,23 +1079,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ZooKeeper</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1101,6 +1096,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ollama</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
             
             <div class="clearfix"></div>

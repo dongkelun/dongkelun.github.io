@@ -10,13 +10,12 @@
   <title>Spark Standalone 集群配置 | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="前言平时工作中主要用 YARN 模式，最近进行TPC测试用到了 Standalone 模式，便记录总结一下 Standalone 集群相关的配置。 集群管理类型Spark 支持三种集群管理类型：  Standalone - Spark附带的一个简单的集群管理器，可以轻松地设置集群。 Apache Mesos - 一个通用的集群管理器，也可以运行HadoopMapReduce和服务应用程序。（已弃用">
-<meta name="keywords" content="Spark">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Spark Standalone 集群配置">
 <meta property="og:url" content="https://dongkelun.com/2024/02/07/spark/standaloneConf/index.html">
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言平时工作中主要用 YARN 模式，最近进行TPC测试用到了 Standalone 模式，便记录总结一下 Standalone 集群相关的配置。 集群管理类型Spark 支持三种集群管理类型：  Standalone - Spark附带的一个简单的集群管理器，可以轻松地设置集群。 Apache Mesos - 一个通用的集群管理器，也可以运行HadoopMapReduce和服务应用程序。（已弃用">
-<meta property="og:locale" content="cn">
+<meta property="og:locale">
 <meta property="og:image" content="https://img.dongkelun.com/spark/standalone/watermark/s1.png">
 <meta property="og:image" content="https://img.dongkelun.com/spark/standalone/s2.png">
 <meta property="og:image" content="https://img.dongkelun.com/spark/standalone/s3.png">
@@ -26,10 +25,11 @@
 <meta property="og:image" content="https://img.dongkelun.com/spark/standalone/watermark/s6.png">
 <meta property="og:image" content="https://img.dongkelun.com/spark/standalone/watermark/s7.png">
 <meta property="og:image" content="https://img.dongkelun.com/spark/standalone/s8.png">
-<meta property="og:updated_time" content="2025-01-16T07:50:33.508Z">
+<meta property="article:published_time" content="2024-02-06T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-01-16T07:50:33.508Z">
+<meta property="article:author" content="董可伦">
+<meta property="article:tag" content="Spark">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Spark Standalone 集群配置">
-<meta name="twitter:description" content="前言平时工作中主要用 YARN 模式，最近进行TPC测试用到了 Standalone 模式，便记录总结一下 Standalone 集群相关的配置。 集群管理类型Spark 支持三种集群管理类型：  Standalone - Spark附带的一个简单的集群管理器，可以轻松地设置集群。 Apache Mesos - 一个通用的集群管理器，也可以运行HadoopMapReduce和服务应用程序。（已弃用">
 <meta name="twitter:image" content="https://img.dongkelun.com/spark/standalone/watermark/s1.png">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
@@ -48,7 +48,7 @@
 
   
 
-</head>
+<meta name="generator" content="Hexo 8.1.1"></head>
 
 <body>
   <div id="container" q-class="show:isCtnShow">
@@ -78,7 +78,7 @@
 			<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 		</a>
 		<hgroup>
-		  <h1 class="header-author"><a href="/">董可伦</a></h1>
+		  <h1 class="header-author"><a href="/"></a></h1>
 		</hgroup>
 		
 
@@ -150,7 +150,7 @@
 				<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 			</div>
 			<hgroup>
-			  <h1 class="header-author js-header-author">董可伦</h1>
+			  <h1 class="header-author js-header-author"></h1>
 			</hgroup>
 			
 			
@@ -261,33 +261,31 @@
         
         
       
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>平时工作中主要用 YARN 模式，最近进行<a href="https://www.tpc.org/tpcx-hs/results/tpcxhs_perf_results5.asp?version=2" target="_blank" rel="noopener">TPC测试</a>用到了 Standalone 模式，便记录总结一下 Standalone 集群相关的配置。</p>
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>平时工作中主要用 YARN 模式，最近进行<a href="https://www.tpc.org/tpcx-hs/results/tpcxhs_perf_results5.asp?version=2">TPC测试</a>用到了 Standalone 模式，便记录总结一下 Standalone 集群相关的配置。</p>
 <h2 id="集群管理类型"><a href="#集群管理类型" class="headerlink" title="集群管理类型"></a>集群管理类型</h2><p>Spark 支持三种集群管理类型：</p>
 <ul>
 <li>Standalone - Spark附带的一个简单的集群管理器，可以轻松地设置集群。</li>
 <li>Apache Mesos - 一个通用的集群管理器，也可以运行HadoopMapReduce和服务应用程序。（已弃用）</li>
 <li>Hadoop YARN - Hadoop 3中的资源管理器。</li>
-<li>Kubernetes - 一个用于自动化容器化应用程序的部署、扩展和管理的开源系统。<br>官方文档：<a href="https://spark.apache.org/docs/latest/cluster-overview.html" target="_blank" rel="noopener">https://spark.apache.org/docs/latest/cluster-overview.html</a></li>
+<li>Kubernetes - 一个用于自动化容器化应用程序的部署、扩展和管理的开源系统。<br>官方文档：<a href="https://spark.apache.org/docs/latest/cluster-overview.html">https://spark.apache.org/docs/latest/cluster-overview.html</a></li>
 </ul>
-<a id="more"></a>
-<h2 id="官方文档"><a href="#官方文档" class="headerlink" title="官方文档"></a>官方文档</h2><p><a href="https://spark.apache.org/docs/latest/spark-standalone.html" target="_blank" rel="noopener">https://spark.apache.org/docs/latest/spark-standalone.html</a></p>
+<span id="more"></span>
+<h2 id="官方文档"><a href="#官方文档" class="headerlink" title="官方文档"></a>官方文档</h2><p><a href="https://spark.apache.org/docs/latest/spark-standalone.html">https://spark.apache.org/docs/latest/spark-standalone.html</a></p>
 <h2 id="安装包"><a href="#安装包" class="headerlink" title="安装包"></a>安装包</h2><blockquote>
 <p>因为TPC不支持 Spark3 ,所以用的 Spark2.4.8</p>
 </blockquote>
-<p><a href="https://archive.apache.org/dist/spark/spark-2.4.8/spark-2.4.8-bin-hadoop2.7.tgz" target="_blank" rel="noopener">https://archive.apache.org/dist/spark/spark-2.4.8/spark-2.4.8-bin-hadoop2.7.tgz</a></p>
+<p><a href="https://archive.apache.org/dist/spark/spark-2.4.8/spark-2.4.8-bin-hadoop2.7.tgz">https://archive.apache.org/dist/spark/spark-2.4.8/spark-2.4.8-bin-hadoop2.7.tgz</a></p>
 <h2 id="安装目录"><a href="#安装目录" class="headerlink" title="安装目录"></a>安装目录</h2><p>解压到 /opt/spark2</p>
 <h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><p>记录主要配置</p>
 <h3 id="slaves"><a href="#slaves" class="headerlink" title="slaves"></a>slaves</h3><p>配置Worker节点</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">indata-<span class="number">192</span>-<span class="number">168</span>-<span class="number">1</span>-<span class="number">1</span>.indata.com</span><br><span class="line">indata-<span class="number">192</span>-<span class="number">168</span>-<span class="number">1</span>-<span class="number">2</span>.indata.com</span><br><span class="line">indata-<span class="number">192</span>-<span class="number">168</span>-<span class="number">1</span>-<span class="number">3</span>.indata.com</span><br><span class="line">indata-<span class="number">192</span>-<span class="number">168</span>-<span class="number">1</span>-<span class="number">4</span>.indata.com</span><br><span class="line">indata-<span class="number">192</span>-<span class="number">168</span>-<span class="number">1</span>-<span class="number">5</span>.indata.com</span><br><span class="line">indata-<span class="number">192</span>-<span class="number">168</span>-<span class="number">1</span>-<span class="number">6</span>.indata.com</span><br><span class="line">indata-<span class="number">192</span>-<span class="number">168</span>-<span class="number">1</span>-<span class="number">7</span>.indata.com</span><br><span class="line">indata-<span class="number">192</span>-<span class="number">168</span>-<span class="number">1</span>-<span class="number">8</span>.indata.com</span><br><span class="line">indata-<span class="number">192</span>-<span class="number">168</span>-<span class="number">1</span>-<span class="number">9</span>.indata.com</span><br><span class="line">......</span><br></pre></td></tr></table></figure>
-<h3 id="spark-env-sh"><a href="#spark-env-sh" class="headerlink" title="spark-env.sh"></a>spark-env.sh</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> JAVA_HOME=/usr/<span class="built_in">local</span>/jdk</span><br><span class="line"><span class="comment"># export SPARK_LOG_DIR=/var/log/spark</span></span><br><span class="line"><span class="comment"># 设置 NVME 接口可提升性能</span></span><br><span class="line"><span class="built_in">export</span> SPARK_LOG_DIR=/indata/nvme_0/<span class="built_in">log</span>/spark</span><br><span class="line"></span><br><span class="line"><span class="comment"># export SPARK_PID_DIR=/var/run/spark</span></span><br><span class="line"><span class="comment"># 设置 NVME 接口可提升性能</span></span><br><span class="line"><span class="built_in">export</span> SPARK_PID_DIR=/indata/nvme_0/run/spark</span><br><span class="line"></span><br><span class="line"><span class="built_in">export</span> HADOOP_HOME=<span class="variable">$&#123;HADOOP_HOME:-/usr/hdp/3.1.0.0-78/hadoop&#125;</span></span><br><span class="line"><span class="built_in">export</span> HADOOP_CONF_DIR=<span class="variable">$&#123;HADOOP_CONF_DIR:-/usr/hdp/3.1.0.0-78/hadoop/conf&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># ssh端口</span></span><br><span class="line"><span class="built_in">export</span> SPARK_SSH_OPTS=<span class="string">"-p 6233 -o StrictHostKeyChecking=no"</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Worker 的内存，默认使用节点总内存</span></span><br><span class="line"><span class="built_in">export</span> SPARK_WORKER_MEMORY=400G</span><br><span class="line"><span class="comment"># Worker 的 CPU 核数，默认使用节点总CPU数</span></span><br><span class="line"><span class="comment">#export SPARK_WORKER_CORES=100</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">export</span> SPARK_DAEMON_JAVA_OPTS=<span class="string">"-XX:+UseG1GC -XX:+PrintFlagsFinal -verbose:gc -XX:+PrintGCDetails  -XX:+UseAdaptiveSizePolicy -XX:+UnlockDiagnosticVMOptions"</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## History Server UI 端口</span></span><br><span class="line"><span class="built_in">export</span> SPARK_HISTORY_OPTS=<span class="string">"<span class="variable">$SPARK_HISTORY_OPTS</span> -Dspark.history.ui.port=8080"</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## 自定义添加配置，后面修改启动slave脚本时会用到</span></span><br><span class="line"><span class="built_in">export</span> HOST_NAME=`hostname -f`</span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置NVME 接口可提升性能</span></span><br><span class="line"><span class="built_in">export</span> SPARK_WORKER_DIR=/indata/nvme_0/spark/work</span><br><span class="line"><span class="built_in">export</span> SPARK_LOCAL_DIRS=/indata/nvme_0/spark/tmp</span><br></pre></td></tr></table></figure>
-<h3 id="start-slave-sh"><a href="#start-slave-sh" class="headerlink" title="start-slave.sh"></a>start-slave.sh</h3><p>修改 start-slave.sh，将<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">--webui-port <span class="string">"<span class="variable">$WEBUI_PORT</span>"</span> <span class="variable">$PORT_FLAG</span> <span class="variable">$PORT_NUM</span> <span class="variable">$MASTER</span> <span class="string">"<span class="variable">$@</span>"</span></span><br></pre></td></tr></table></figure></p>
-<p>改为<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">--webui-port <span class="string">"<span class="variable">$WEBUI_PORT</span>"</span> <span class="variable">$PORT_FLAG</span> <span class="variable">$PORT_NUM</span> <span class="variable">$MASTER</span> -h <span class="string">"<span class="variable">$&#123;HOST_NAME&#125;</span>"</span></span><br></pre></td></tr></table></figure></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">indata-<span class="number">192</span>-<span class="number">168</span>-<span class="number">1</span>-<span class="number">1.</span>indata.com</span><br><span class="line">indata-<span class="number">192</span>-<span class="number">168</span>-<span class="number">1</span>-<span class="number">2.</span>indata.com</span><br><span class="line">indata-<span class="number">192</span>-<span class="number">168</span>-<span class="number">1</span>-<span class="number">3.</span>indata.com</span><br><span class="line">indata-<span class="number">192</span>-<span class="number">168</span>-<span class="number">1</span>-<span class="number">4.</span>indata.com</span><br><span class="line">indata-<span class="number">192</span>-<span class="number">168</span>-<span class="number">1</span>-<span class="number">5.</span>indata.com</span><br><span class="line">indata-<span class="number">192</span>-<span class="number">168</span>-<span class="number">1</span>-<span class="number">6.</span>indata.com</span><br><span class="line">indata-<span class="number">192</span>-<span class="number">168</span>-<span class="number">1</span>-<span class="number">7.</span>indata.com</span><br><span class="line">indata-<span class="number">192</span>-<span class="number">168</span>-<span class="number">1</span>-<span class="number">8.</span>indata.com</span><br><span class="line">indata-<span class="number">192</span>-<span class="number">168</span>-<span class="number">1</span>-<span class="number">9.</span>indata.com</span><br><span class="line">......</span><br></pre></td></tr></table></figure>
+<h3 id="spark-env-sh"><a href="#spark-env-sh" class="headerlink" title="spark-env.sh"></a>spark-env.sh</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> JAVA_HOME=/usr/local/jdk</span><br><span class="line"><span class="comment"># export SPARK_LOG_DIR=/var/log/spark</span></span><br><span class="line"><span class="comment"># 设置 NVME 接口可提升性能</span></span><br><span class="line"><span class="built_in">export</span> SPARK_LOG_DIR=/indata/nvme_0/log/spark</span><br><span class="line"></span><br><span class="line"><span class="comment"># export SPARK_PID_DIR=/var/run/spark</span></span><br><span class="line"><span class="comment"># 设置 NVME 接口可提升性能</span></span><br><span class="line"><span class="built_in">export</span> SPARK_PID_DIR=/indata/nvme_0/run/spark</span><br><span class="line"></span><br><span class="line"><span class="built_in">export</span> HADOOP_HOME=<span class="variable">$&#123;HADOOP_HOME:-/usr/hdp/3.1.0.0-78/hadoop&#125;</span></span><br><span class="line"><span class="built_in">export</span> HADOOP_CONF_DIR=<span class="variable">$&#123;HADOOP_CONF_DIR:-/usr/hdp/3.1.0.0-78/hadoop/conf&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># ssh端口</span></span><br><span class="line"><span class="built_in">export</span> SPARK_SSH_OPTS=<span class="string">&quot;-p 6233 -o StrictHostKeyChecking=no&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Worker 的内存，默认使用节点总内存</span></span><br><span class="line"><span class="built_in">export</span> SPARK_WORKER_MEMORY=400G</span><br><span class="line"><span class="comment"># Worker 的 CPU 核数，默认使用节点总CPU数</span></span><br><span class="line"><span class="comment">#export SPARK_WORKER_CORES=100</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">export</span> SPARK_DAEMON_JAVA_OPTS=<span class="string">&quot;-XX:+UseG1GC -XX:+PrintFlagsFinal -verbose:gc -XX:+PrintGCDetails  -XX:+UseAdaptiveSizePolicy -XX:+UnlockDiagnosticVMOptions&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## History Server UI 端口</span></span><br><span class="line"><span class="built_in">export</span> SPARK_HISTORY_OPTS=<span class="string">&quot;<span class="variable">$SPARK_HISTORY_OPTS</span> -Dspark.history.ui.port=8080&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## 自定义添加配置，后面修改启动slave脚本时会用到</span></span><br><span class="line"><span class="built_in">export</span> HOST_NAME=`hostname -f`</span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置NVME 接口可提升性能</span></span><br><span class="line"><span class="built_in">export</span> SPARK_WORKER_DIR=/indata/nvme_0/spark/work</span><br><span class="line"><span class="built_in">export</span> SPARK_LOCAL_DIRS=/indata/nvme_0/spark/tmp</span><br></pre></td></tr></table></figure>
+<h3 id="start-slave-sh"><a href="#start-slave-sh" class="headerlink" title="start-slave.sh"></a>start-slave.sh</h3><p>修改 start-slave.sh，将<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">--webui-port <span class="string">&quot;<span class="variable">$WEBUI_PORT</span>&quot;</span> <span class="variable">$PORT_FLAG</span> <span class="variable">$PORT_NUM</span> <span class="variable">$MASTER</span> <span class="string">&quot;<span class="variable">$@</span>&quot;</span></span><br></pre></td></tr></table></figure><br>改为<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">--webui-port <span class="string">&quot;<span class="variable">$WEBUI_PORT</span>&quot;</span> <span class="variable">$PORT_FLAG</span> <span class="variable">$PORT_NUM</span> <span class="variable">$MASTER</span> -h <span class="string">&quot;<span class="variable">$&#123;HOST_NAME&#125;</span>&quot;</span></span><br></pre></td></tr></table></figure></p>
 <p>这样修改的原因是默认情况下读取HDFS时数据本地性（Locality Level）都是 Any。原因是Spark 中 Worker Id和Address中都使用的IP地址作为Worker的标识，而HDFS集群中一般都以hostname作为slave的标识，这样，Spark从 HDFS中获取文件的保存位置对应的是hostname，而Spark自己的Worker标识为IP地址，两者不同，因此没有将任务的Locality Level标记为NODE_LOCAL,而是ANY。</p>
-<h3 id="历史服务-HistoryServer"><a href="#历史服务-HistoryServer" class="headerlink" title="历史服务 HistoryServer"></a>历史服务 HistoryServer</h3><p>官方文档：<a href="https://spark.apache.org/docs/latest/monitoring.html" target="_blank" rel="noopener">https://spark.apache.org/docs/latest/monitoring.html</a></p>
+<h3 id="历史服务-HistoryServer"><a href="#历史服务-HistoryServer" class="headerlink" title="历史服务 HistoryServer"></a>历史服务 HistoryServer</h3><p>官方文档：<a href="https://spark.apache.org/docs/latest/monitoring.html">https://spark.apache.org/docs/latest/monitoring.html</a></p>
 <p>开启历史服务，可以通过UI界面监控分析已经跑完的历史任务，便于我们分析及时发现和解决性能瓶颈。（在性能测试时，我们可以先开启历史服务，当调到最优参数时，可以先把历史服务相关的配置关掉，这样也许可以提升些许性能。）</p>
 <p>在 spark-defaults.conf 中配置</p>
-<p>客户端（Spark应用程序）<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">spark.eventLog.dir hdfs:///spark-history/</span><br><span class="line">spark.eventLog.enabled <span class="literal">true</span></span><br></pre></td></tr></table></figure></p>
-<p>通过上面的两个配置，运行Spark 程序时会将UI中显示的信息进行编码然后持久化存储中，存储路径为 hdfs:///spark-history/</p>
+<p>客户端（Spark应用程序）<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">spark.eventLog.<span class="built_in">dir</span> hdfs:///spark-history/</span><br><span class="line">spark.eventLog.enabled <span class="literal">true</span></span><br></pre></td></tr></table></figure><br>通过上面的两个配置，运行Spark 程序时会将UI中显示的信息进行编码然后持久化存储中，存储路径为 hdfs:///spark-history/</p>
 <p>服务端</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 只需要这一个参数即可正常使用，需要和客户端路径一致，其他参数属于调优，根据实际情况配置</span></span><br><span class="line">spark.history.fs.logDirectory hdfs:///spark-history/</span><br><span class="line">spark.history.store.path /var/lib/spark/shs_db</span><br><span class="line">spark.history.fs.cleaner.enabled <span class="literal">true</span></span><br><span class="line">spark.history.fs.cleaner.interval 7d</span><br><span class="line">spark.history.fs.cleaner.maxAge 90d</span><br><span class="line"><span class="comment">#spark.history.ui.acls.enable false</span></span><br><span class="line"><span class="comment">#spark.history.ui.admin.acls yarn,spark,hdfs,hbase,hive</span></span><br><span class="line"><span class="comment">#spark.history.kerberos.enabled</span></span><br><span class="line"><span class="comment">#spark.history.kerberos.keytab</span></span><br><span class="line"><span class="comment">#spark.history.kerberos.principal</span></span><br><span class="line"><span class="comment">#...</span></span><br></pre></td></tr></table></figure>
 <blockquote>
@@ -298,7 +296,7 @@
 <h2 id="启动"><a href="#启动" class="headerlink" title="启动"></a>启动</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sbin/start-all.sh</span><br><span class="line">sbin/start-history-server.sh</span><br></pre></td></tr></table></figure>
 <p>Spark master和 history server可以在不同节点。比如master的默认端口是8080，而我配置history server的端口也是8080。这是因为我们环境做了端口限制，只开放了有限的几个端口。这样利用不同节点的8080端口既可以访问master UI也可以访问 history server UI。</p>
 <h2 id="停止"><a href="#停止" class="headerlink" title="停止"></a>停止</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sbin/stop-all.sh</span><br><span class="line">sbin/stop-history-server.sh</span><br></pre></td></tr></table></figure>
-<h2 id="UI-界面"><a href="#UI-界面" class="headerlink" title="UI 界面"></a>UI 界面</h2><p>UI 默认端口及其对应配置参考官网：<a href="https://spark.apache.org/docs/latest/security.html" target="_blank" rel="noopener">https://spark.apache.org/docs/latest/security.html</a></p>
+<h2 id="UI-界面"><a href="#UI-界面" class="headerlink" title="UI 界面"></a>UI 界面</h2><p>UI 默认端口及其对应配置参考官网：<a href="https://spark.apache.org/docs/latest/security.html">https://spark.apache.org/docs/latest/security.html</a></p>
 <h3 id="Spark-Master"><a href="#Spark-Master" class="headerlink" title="Spark Master"></a>Spark Master</h3><p>Spark master UI界面 默认端口 8080，可以通过 SPARK_MASTER_WEBUI_PORT (spark-env.sh) 和  spark.master.ui.port （spark-defaults.conf）修改，其中 spark.master.ui.port 优先级最高，具体逻辑在源码：org.apache.spark.deploy.master.MasterArguments</p>
 <blockquote>
 <p>这里对比一下上面说的数据本地性</p>
@@ -310,12 +308,12 @@
 <h3 id="Spark-History-Server"><a href="#Spark-History-Server" class="headerlink" title="Spark History Server"></a>Spark History Server</h3><p>默认端口 18080，可以通过 spark.history.ui.port 修改。(在spark-env.sh 中通过 SPARK_HISTORY_OPTS 配置，在spark-defaults.conf 配置不生效)</p>
 <p><img src="https://img.dongkelun.com/spark/standalone/watermark/s6.png" alt=""></p>
 <h2 id="Standalone-对比-YARN"><a href="#Standalone-对比-YARN" class="headerlink" title="Standalone 对比 YARN"></a>Standalone 对比 YARN</h2><h3 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h3><ul>
-<li>1、提交时间短，在<a href="https://www.tpc.org/tpcx-hs/results/tpcxhs_perf_results5.asp?version=2" target="_blank" rel="noopener">TPC测试</a>打榜时差几秒差距就很大。</li>
+<li>1、提交时间短，在<a href="https://www.tpc.org/tpcx-hs/results/tpcxhs_perf_results5.asp?version=2">TPC测试</a>打榜时差几秒差距就很大。</li>
 <li>2、可以单独配置每个节点的CPU核数和内存大小，比较灵活。比如对于HDFS NAME NODE 节点，可能HDFS用的 CPU 和 内存相比其他节点要多，这样剩余可用资源就会少一些。我们可以单独修改对应节点上的 spark-env.sh 。比如将内存改为360G： export SPARK_WORKER_MEMORY=360G。因为我们集群配置比较充足，有22个节点，每个节点的内存有512G，分给Spark的只有400G（仅示例，非实际测试配置；测试数据量只有1T，远小于集群总内存），剩下100G给HDFS足够了， 所以不用单独配置。而对于资源不充足的集群，这样配置也许能提升性能。<br><img src="https://img.dongkelun.com/spark/standalone/watermark/s7.png" alt=""></li>
 </ul>
 <h3 id="不同"><a href="#不同" class="headerlink" title="不同"></a>不同</h3><p>通过参数 spark.executor.instances 或者 <code>--num-executors</code> 来配置程序的 executor 的数量是不管用的。Standalone 模式下 executor的数量 是看 CPU 和 内存哪个先到上限决定的，也就是默认情况下，根据先进先出顺序，尝试使用集群所有可用的资源。<br>executor_num = min(SPARK_WORKER_MEMORY/spark.executor.memory, SPARK_WORKER_CORES/spark.executor.cores)。另外可以通过 spark.cores.max 配置程序的最大cpu数，即 executor_num = spark.cores.max/spark.executor.cores，严格说 executor_num = min(SPARK_WORKER_MEMORY/spark.executor.memory, min(SPARK_WORKER_CORES, spark.cores.max)/spark.executor.cores)。还可以通过 spark.deploy.defaultCores 来设置没有配置 spark.cores.max 的应用程序的默认值。</p>
 <h3 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h3><p>不支持kerberos认证等。</p>
-<h2 id="TPC测试结果"><a href="#TPC测试结果" class="headerlink" title="TPC测试结果"></a>TPC测试结果</h2><p>恭喜我们团队（InspurCloud Data Cloud Platform）在 <a href="https://www.tpc.org/tpcx-hs/results/tpcxhs_perf_results5.asp?version=2" target="_blank" rel="noopener">TPCx-HS 1T 测评</a> 中取得第一名的好成绩，后面还会继续进行 TPCx-BB 和 TPCx-HS 3T 的测评打榜。</p>
+<h2 id="TPC测试结果"><a href="#TPC测试结果" class="headerlink" title="TPC测试结果"></a>TPC测试结果</h2><p>恭喜我们团队（InspurCloud Data Cloud Platform）在 <a href="https://www.tpc.org/tpcx-hs/results/tpcxhs_perf_results5.asp?version=2">TPCx-HS 1T 测评</a> 中取得第一名的好成绩，后面还会继续进行 TPCx-BB 和 TPCx-HS 3T 的测评打榜。</p>
 <p><img src="https://img.dongkelun.com/spark/standalone/s8.png" alt=""></p>
 
       
@@ -473,7 +471,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#集群管理类型"><span class="toc-number">2.</span> <span class="toc-text">集群管理类型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#官方文档"><span class="toc-number">3.</span> <span class="toc-text">官方文档</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#安装包"><span class="toc-number">4.</span> <span class="toc-text">安装包</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#安装目录"><span class="toc-number">5.</span> <span class="toc-text">安装目录</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#配置"><span class="toc-number">6.</span> <span class="toc-text">配置</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#slaves"><span class="toc-number">6.1.</span> <span class="toc-text">slaves</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#spark-env-sh"><span class="toc-number">6.2.</span> <span class="toc-text">spark-env.sh</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#start-slave-sh"><span class="toc-number">6.3.</span> <span class="toc-text">start-slave.sh</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#历史服务-HistoryServer"><span class="toc-number">6.4.</span> <span class="toc-text">历史服务 HistoryServer</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#环境变量"><span class="toc-number">6.5.</span> <span class="toc-text">环境变量</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#传输到其他节点"><span class="toc-number">6.6.</span> <span class="toc-text">传输到其他节点</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#启动"><span class="toc-number">7.</span> <span class="toc-text">启动</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#停止"><span class="toc-number">8.</span> <span class="toc-text">停止</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#UI-界面"><span class="toc-number">9.</span> <span class="toc-text">UI 界面</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Spark-Master"><span class="toc-number">9.1.</span> <span class="toc-text">Spark Master</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Spark-Worker"><span class="toc-number">9.2.</span> <span class="toc-text">Spark Worker</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Application"><span class="toc-number">9.3.</span> <span class="toc-text">Application</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Spark-History-Server"><span class="toc-number">9.4.</span> <span class="toc-text">Spark History Server</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Standalone-对比-YARN"><span class="toc-number">10.</span> <span class="toc-text">Standalone 对比 YARN</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#优点"><span class="toc-number">10.1.</span> <span class="toc-text">优点</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#不同"><span class="toc-number">10.2.</span> <span class="toc-text">不同</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#缺点"><span class="toc-number">10.3.</span> <span class="toc-text">缺点</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#TPC测试结果"><span class="toc-number">11.</span> <span class="toc-text">TPC测试结果</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E7%B1%BB%E5%9E%8B"><span class="toc-number">2.</span> <span class="toc-text">集群管理类型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%98%E6%96%B9%E6%96%87%E6%A1%A3"><span class="toc-number">3.</span> <span class="toc-text">官方文档</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%89%E8%A3%85%E5%8C%85"><span class="toc-number">4.</span> <span class="toc-text">安装包</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%89%E8%A3%85%E7%9B%AE%E5%BD%95"><span class="toc-number">5.</span> <span class="toc-text">安装目录</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE"><span class="toc-number">6.</span> <span class="toc-text">配置</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#slaves"><span class="toc-number">6.1.</span> <span class="toc-text">slaves</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#spark-env-sh"><span class="toc-number">6.2.</span> <span class="toc-text">spark-env.sh</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#start-slave-sh"><span class="toc-number">6.3.</span> <span class="toc-text">start-slave.sh</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8E%86%E5%8F%B2%E6%9C%8D%E5%8A%A1-HistoryServer"><span class="toc-number">6.4.</span> <span class="toc-text">历史服务 HistoryServer</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F"><span class="toc-number">6.5.</span> <span class="toc-text">环境变量</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BC%A0%E8%BE%93%E5%88%B0%E5%85%B6%E4%BB%96%E8%8A%82%E7%82%B9"><span class="toc-number">6.6.</span> <span class="toc-text">传输到其他节点</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%90%AF%E5%8A%A8"><span class="toc-number">7.</span> <span class="toc-text">启动</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%81%9C%E6%AD%A2"><span class="toc-number">8.</span> <span class="toc-text">停止</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#UI-%E7%95%8C%E9%9D%A2"><span class="toc-number">9.</span> <span class="toc-text">UI 界面</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Spark-Master"><span class="toc-number">9.1.</span> <span class="toc-text">Spark Master</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Spark-Worker"><span class="toc-number">9.2.</span> <span class="toc-text">Spark Worker</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Application"><span class="toc-number">9.3.</span> <span class="toc-text">Application</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Spark-History-Server"><span class="toc-number">9.4.</span> <span class="toc-text">Spark History Server</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Standalone-%E5%AF%B9%E6%AF%94-YARN"><span class="toc-number">10.</span> <span class="toc-text">Standalone 对比 YARN</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BC%98%E7%82%B9"><span class="toc-number">10.1.</span> <span class="toc-text">优点</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%8D%E5%90%8C"><span class="toc-number">10.2.</span> <span class="toc-text">不同</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BC%BA%E7%82%B9"><span class="toc-number">10.3.</span> <span class="toc-text">缺点</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#TPC%E6%B5%8B%E8%AF%95%E7%BB%93%E6%9E%9C"><span class="toc-number">11.</span> <span class="toc-text">TPC测试结果</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -648,14 +646,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -665,6 +655,22 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -680,14 +686,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
@@ -700,23 +698,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -736,7 +718,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -748,15 +742,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -792,11 +782,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -828,15 +818,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -848,7 +830,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -856,7 +838,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -868,7 +850,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -876,11 +862,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -889,6 +875,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -904,15 +898,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -921,6 +911,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -933,10 +927,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -956,10 +946,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
@@ -968,7 +954,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -976,11 +962,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1008,7 +998,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1024,7 +1030,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
+                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1032,11 +1038,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1056,23 +1058,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ZooKeeper</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1081,6 +1075,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ollama</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
             
             <div class="clearfix"></div>

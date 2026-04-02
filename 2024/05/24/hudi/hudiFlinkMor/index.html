@@ -10,13 +10,12 @@
   <title>Hudi Flink MOR 学习总结 | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="前言之前很少用MOR表，现在来学习总结一下。首先总结一下 compaction 遇到的问题。 版本 Flink 1.15.4 Hudi 0.13.0  表类型COW 和 MOR  COW：COW COPY_ON_WRITE 写时复制，写性能相比于MOR表差一点，因为每次写数据都会合并文件，但是能及时读取到最新的表数据。数据文件只有 parquet MOR：MERGE_ON_READ 读时合并，写性">
-<meta name="keywords" content="Hudi,Flink">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Hudi Flink MOR 学习总结">
 <meta property="og:url" content="https://dongkelun.com/2024/05/24/hudi/hudiFlinkMor/index.html">
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言之前很少用MOR表，现在来学习总结一下。首先总结一下 compaction 遇到的问题。 版本 Flink 1.15.4 Hudi 0.13.0  表类型COW 和 MOR  COW：COW COPY_ON_WRITE 写时复制，写性能相比于MOR表差一点，因为每次写数据都会合并文件，但是能及时读取到最新的表数据。数据文件只有 parquet MOR：MERGE_ON_READ 读时合并，写性">
-<meta property="og:locale" content="cn">
+<meta property="og:locale">
 <meta property="og:image" content="https://img.dongkelun.com/hudi/mor/hive1.png">
 <meta property="og:image" content="https://img.dongkelun.com/hudi/mor/fm1.png">
 <meta property="og:image" content="https://img.dongkelun.com/hudi/mor/fm2.png">
@@ -28,10 +27,12 @@
 <meta property="og:image" content="https://img.dongkelun.com/hudi/mor/fm9.png">
 <meta property="og:image" content="https://img.dongkelun.com/hudi/mor/fm10.png">
 <meta property="og:image" content="https://img.dongkelun.com/hudi/mor/fm7.png">
-<meta property="og:updated_time" content="2024-05-28T11:18:52.814Z">
+<meta property="article:published_time" content="2024-05-23T16:00:00.000Z">
+<meta property="article:modified_time" content="2024-05-28T11:18:52.814Z">
+<meta property="article:author" content="董可伦">
+<meta property="article:tag" content="Flink">
+<meta property="article:tag" content="Hudi">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Hudi Flink MOR 学习总结">
-<meta name="twitter:description" content="前言之前很少用MOR表，现在来学习总结一下。首先总结一下 compaction 遇到的问题。 版本 Flink 1.15.4 Hudi 0.13.0  表类型COW 和 MOR  COW：COW COPY_ON_WRITE 写时复制，写性能相比于MOR表差一点，因为每次写数据都会合并文件，但是能及时读取到最新的表数据。数据文件只有 parquet MOR：MERGE_ON_READ 读时合并，写性">
 <meta name="twitter:image" content="https://img.dongkelun.com/hudi/mor/hive1.png">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
@@ -50,7 +51,7 @@
 
   
 
-</head>
+<meta name="generator" content="Hexo 8.1.1"></head>
 
 <body>
   <div id="container" q-class="show:isCtnShow">
@@ -80,7 +81,7 @@
 			<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 		</a>
 		<hgroup>
-		  <h1 class="header-author"><a href="/">董可伦</a></h1>
+		  <h1 class="header-author"><a href="/"></a></h1>
 		</hgroup>
 		
 
@@ -152,7 +153,7 @@
 				<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 			</div>
 			<hgroup>
-			  <h1 class="header-author js-header-author">董可伦</h1>
+			  <h1 class="header-author js-header-author"></h1>
 			</hgroup>
 			
 			
@@ -239,11 +240,11 @@
 		<ul class="article-tag-list">
 			 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Flink</a>
         		</li>
       		 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Flink</a>
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
         		</li>
       		
 		</ul>
@@ -277,8 +278,8 @@
 <li>COW：COW COPY_ON_WRITE 写时复制，写性能相比于MOR表差一点，因为每次写数据都会合并文件，但是能及时读取到最新的表数据。数据文件只有 parquet</li>
 <li>MOR：MERGE_ON_READ 读时合并，写性能相比于COW会快，因为写数据时只追加不合并（.log文件），只有compaction才会合并文件，将.log文件合并为 paruqet文件。有两种表类型 ro、rt，ro表只会读parquet文件，rt 表会将paruqet文件和.log文件合并。也就是虽然rt表可以读取所有的最新的数据，但是要先合并文件，性能要比读取COW表差一些。</li>
 </ul>
-<a id="more"></a>
-<h2 id="compaction"><a href="#compaction" class="headerlink" title="compaction"></a>compaction</h2><p>官方文档：<a href="https://hudi.apache.org/docs/compaction" target="_blank" rel="noopener">https://hudi.apache.org/docs/compaction</a></p>
+<span id="more"></span>
+<h2 id="compaction"><a href="#compaction" class="headerlink" title="compaction"></a>compaction</h2><p>官方文档：<a href="https://hudi.apache.org/docs/compaction">https://hudi.apache.org/docs/compaction</a></p>
 <p>compaction 只在MOR表中有，COW表是没有的，所以相比较而言，COW表使用起来相对简单，问题也少，这也是为啥开始我们主要是COW表的原因。</p>
 <blockquote>
 <p>Compaction is a table service employed by Hudi specifically in Merge On Read(MOR) tables to merge updates from row-based log files to the corresponding columnar-based base file periodically to produce a new version of the base file. Compaction is not applicable to Copy On Write(COW) tables and only applies to MOR tables.</p>
@@ -301,7 +302,7 @@
 <li>compaction.tasks 执行实际压缩的任务的并行性，默认与写入任务的并行度相同 （Flink 独有）</li>
 </ul>
 <h2 id="批写"><a href="#批写" class="headerlink" title="批写"></a>批写</h2><p>批写：source 有界。<br>批写时，使用默认 compaction 参数会有问题，因为默认情况下 compaction 为异步的，比如只插入一条数据，当写数据的流程完成后，程序就会关闭，这时异步的 compaction 就会失败。<br>所以应该将异步关闭，使用 inline ：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">'compaction.async.enabled'= 'false',</span><br><span class="line">'compaction.delta_commits' = '1',</span><br><span class="line">'hoodie.compact.inline' = 'true',</span><br><span class="line">'hoodie.compact.inline.max.delta.commits' = '1'</span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">&#x27;compaction.async.enabled&#x27;</span><span class="operator">=</span> <span class="string">&#x27;false&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;compaction.delta_commits&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;1&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;hoodie.compact.inline&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;true&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;hoodie.compact.inline.max.delta.commits&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;1&#x27;</span></span><br></pre></td></tr></table></figure>
 <p>实际使用中不能将 <code>compaction.delta_commits</code> 和 <code>hoodie.compact.inline.max.delta.commits</code> 设置为1，因为这意味着每一次都会合并log文件，和cow表一样，这样比如直接用cow表了。设置为1只是为了更快的验证 compaction 。另外如果想验证或调试 查询时 paruqet和log文件合并的逻辑，应该将次数这是为2，否则查询时只会读parquet文件。</p>
 <p>批写实测：<br>RUNTIME_MODE = STREAMING 时 （默认为STREAMING）：</p>
 <ul>
@@ -323,21 +324,21 @@
 </ul>
 <p>如何设置 RUNTIME_MODE：</p>
 <p>代码：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line">StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env, EnvironmentSettings.inBatchMode());</span><br><span class="line"><span class="comment">//StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env, EnvironmentSettings.inStreamingMode());</span></span><br></pre></td></tr></table></figure>
-<p>sql:<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> <span class="string">'execution.runtime-mode'</span> = <span class="string">'batch'</span>; <span class="comment">-- execution mode either 'batch' or 'streaming'</span></span><br><span class="line"><span class="keyword">set</span> execution.runtime-<span class="keyword">mode</span>=batch; <span class="comment">-- 也可以不加引号</span></span><br></pre></td></tr></table></figure></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">StreamExecutionEnvironment</span> <span class="variable">env</span> <span class="operator">=</span> StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line"><span class="type">StreamTableEnvironment</span> <span class="variable">tableEnv</span> <span class="operator">=</span> StreamTableEnvironment.create(env, EnvironmentSettings.inBatchMode());</span><br><span class="line"><span class="comment">//StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env, EnvironmentSettings.inStreamingMode());</span></span><br></pre></td></tr></table></figure>
+<p>sql:<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> <span class="string">&#x27;execution.runtime-mode&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;batch&#x27;</span>; <span class="comment">-- execution mode either &#x27;batch&#x27; or &#x27;streaming&#x27;</span></span><br><span class="line"><span class="keyword">set</span> execution.runtime<span class="operator">-</span>mode<span class="operator">=</span>batch; <span class="comment">-- 也可以不加引号</span></span><br></pre></td></tr></table></figure></p>
 <h2 id="delta-commits"><a href="#delta-commits" class="headerlink" title="delta_commits"></a>delta_commits</h2><p>关于 compaction.delta_commits 和 hoodie.compact.inline.max.delta.commits ，官方并没有给出明确的关系和区别。经测试：<br>无论是否异步、是否 inline 、RUNTIME_MODE 是否等于BATCH，规律一样：这俩个参数单独显示设置哪个参数都会生效，如果这两个参数同时设置，则以 hoodie.compact.inline.max.delta.commits 为准，也就是 hoodie.compact.inline.max.delta.commits 优先级高，如果都不设置，则按照默认五次。</p>
 <h2 id="异常"><a href="#异常" class="headerlink" title="异常"></a>异常</h2><p>默认参数下的异常：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">24</span>/<span class="number">05</span>/<span class="number">22</span> <span class="number">17</span>:<span class="number">21</span>:<span class="number">09</span> ERROR CompactOperator: Executor executes action [Execute compaction <span class="keyword">for</span> instant <span class="number">20240522172031878</span> from task <span class="number">3</span>] error</span><br><span class="line">org.apache.hudi.exception.HoodieIOException: Could not load Hoodie properties from /tmp/flink/hudi/test_mor/.hoodie/hoodie.properties</span><br><span class="line">    at org.apache.hudi.common.table.HoodieTableConfig.&lt;init&gt;(HoodieTableConfig.java:<span class="number">289</span>)</span><br><span class="line">    at org.apache.hudi.common.table.HoodieTableMetaClient.&lt;init&gt;(HoodieTableMetaClient.java:<span class="number">138</span>)</span><br><span class="line">    at org.apache.hudi.common.table.HoodieTableMetaClient.newMetaClient(HoodieTableMetaClient.java:<span class="number">689</span>)</span><br><span class="line">    at org.apache.hudi.common.table.HoodieTableMetaClient.access$<span class="number">000</span>(HoodieTableMetaClient.java:<span class="number">81</span>)</span><br><span class="line">    at org.apache.hudi.common.table.HoodieTableMetaClient$Builder.build(HoodieTableMetaClient.java:<span class="number">770</span>)</span><br><span class="line">    at org.apache.hudi.table.HoodieFlinkTable.create(HoodieFlinkTable.java:<span class="number">62</span>)</span><br><span class="line">    at org.apache.hudi.client.HoodieFlinkWriteClient.getHoodieTable(HoodieFlinkWriteClient.java:<span class="number">467</span>)</span><br><span class="line">    at org.apache.hudi.sink.compact.CompactOperator.reloadWriteConfig(CompactOperator.java:<span class="number">151</span>)</span><br><span class="line">    at org.apache.hudi.sink.compact.CompactOperator.lambda$processElement$<span class="number">0</span>(CompactOperator.java:<span class="number">119</span>)</span><br><span class="line">    at org.apache.hudi.sink.utils.NonThrownExecutor.lambda$wrapAction$<span class="number">0</span>(NonThrownExecutor.java:<span class="number">130</span>)</span><br><span class="line">    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:<span class="number">1149</span>)</span><br><span class="line">    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:<span class="number">624</span>)</span><br><span class="line">    at java.lang.Thread.run(Thread.java:<span class="number">748</span>)</span><br><span class="line">Caused by: java.nio.channels.ClosedByInterruptException</span><br><span class="line">    at java.nio.channels.spi.AbstractInterruptibleChannel.end(AbstractInterruptibleChannel.java:<span class="number">202</span>)</span><br><span class="line">    at sun.nio.ch.FileChannelImpl.position(FileChannelImpl.java:<span class="number">293</span>)</span><br><span class="line">    at org.apache.hadoop.fs.RawLocalFileSystem$LocalFSFileInputStream.seek(RawLocalFileSystem.java:<span class="number">119</span>)</span><br><span class="line">    at org.apache.hadoop.fs.BufferedFSInputStream.seek(BufferedFSInputStream.java:<span class="number">96</span>)</span><br><span class="line">    at org.apache.hadoop.fs.FSDataInputStream.seek(FSDataInputStream.java:<span class="number">66</span>)</span><br><span class="line">    at org.apache.hadoop.fs.ChecksumFileSystem$ChecksumFSInputChecker.readChunk(ChecksumFileSystem.java:<span class="number">237</span>)</span><br><span class="line">    at org.apache.hadoop.fs.FSInputChecker.readChecksumChunk(FSInputChecker.java:<span class="number">300</span>)</span><br><span class="line">    at org.apache.hadoop.fs.FSInputChecker.read1(FSInputChecker.java:<span class="number">252</span>)</span><br><span class="line">    at org.apache.hadoop.fs.FSInputChecker.read(FSInputChecker.java:<span class="number">197</span>)</span><br><span class="line">    at java.io.DataInputStream.read(DataInputStream.java:<span class="number">149</span>)</span><br><span class="line">    at java.io.DataInputStream.read(DataInputStream.java:<span class="number">100</span>)</span><br><span class="line">    at java.util.Properties$LineReader.readLine(Properties.java:<span class="number">435</span>)</span><br><span class="line">    at java.util.Properties.load0(Properties.java:<span class="number">353</span>)</span><br><span class="line">    at java.util.Properties.load(Properties.java:<span class="number">341</span>)</span><br><span class="line">    at org.apache.hudi.common.table.HoodieTableConfig.fetchConfigs(HoodieTableConfig.java:<span class="number">337</span>)</span><br><span class="line">    at org.apache.hudi.common.table.HoodieTableConfig.&lt;init&gt;(HoodieTableConfig.java:<span class="number">270</span>)</span><br><span class="line">    ... <span class="number">12</span> more</span><br><span class="line"><span class="number">24</span>/<span class="number">05</span>/<span class="number">22</span> <span class="number">17</span>:<span class="number">21</span>:<span class="number">10</span> WARN BaseHoodieCompactionPlanGenerator: No operations are retrieved <span class="keyword">for</span> /tmp/flink/hudi/test_mor</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">24</span>/<span class="number">05</span>/<span class="number">22</span> <span class="number">17</span>:<span class="number">21</span>:09 ERROR CompactOperator: Executor executes action [Execute compaction <span class="keyword">for</span> instant <span class="number">20240522172031878</span> from task <span class="number">3</span>] error</span><br><span class="line">org.apache.hudi.exception.HoodieIOException: Could not load Hoodie properties from /tmp/flink/hudi/test_mor/.hoodie/hoodie.properties</span><br><span class="line">    at org.apache.hudi.common.table.HoodieTableConfig.&lt;init&gt;(HoodieTableConfig.java:<span class="number">289</span>)</span><br><span class="line">    at org.apache.hudi.common.table.HoodieTableMetaClient.&lt;init&gt;(HoodieTableMetaClient.java:<span class="number">138</span>)</span><br><span class="line">    at org.apache.hudi.common.table.HoodieTableMetaClient.newMetaClient(HoodieTableMetaClient.java:<span class="number">689</span>)</span><br><span class="line">    at org.apache.hudi.common.table.HoodieTableMetaClient.access$<span class="number">000</span>(HoodieTableMetaClient.java:<span class="number">81</span>)</span><br><span class="line">    at org.apache.hudi.common.table.HoodieTableMetaClient$Builder.build(HoodieTableMetaClient.java:<span class="number">770</span>)</span><br><span class="line">    at org.apache.hudi.table.HoodieFlinkTable.create(HoodieFlinkTable.java:<span class="number">62</span>)</span><br><span class="line">    at org.apache.hudi.client.HoodieFlinkWriteClient.getHoodieTable(HoodieFlinkWriteClient.java:<span class="number">467</span>)</span><br><span class="line">    at org.apache.hudi.sink.compact.CompactOperator.reloadWriteConfig(CompactOperator.java:<span class="number">151</span>)</span><br><span class="line">    at org.apache.hudi.sink.compact.CompactOperator.lambda$processElement$<span class="number">0</span>(CompactOperator.java:<span class="number">119</span>)</span><br><span class="line">    at org.apache.hudi.sink.utils.NonThrownExecutor.lambda$wrapAction$<span class="number">0</span>(NonThrownExecutor.java:<span class="number">130</span>)</span><br><span class="line">    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:<span class="number">1149</span>)</span><br><span class="line">    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:<span class="number">624</span>)</span><br><span class="line">    at java.lang.Thread.run(Thread.java:<span class="number">748</span>)</span><br><span class="line">Caused by: java.nio.channels.ClosedByInterruptException</span><br><span class="line">    at java.nio.channels.spi.AbstractInterruptibleChannel.end(AbstractInterruptibleChannel.java:<span class="number">202</span>)</span><br><span class="line">    at sun.nio.ch.FileChannelImpl.position(FileChannelImpl.java:<span class="number">293</span>)</span><br><span class="line">    at org.apache.hadoop.fs.RawLocalFileSystem$LocalFSFileInputStream.seek(RawLocalFileSystem.java:<span class="number">119</span>)</span><br><span class="line">    at org.apache.hadoop.fs.BufferedFSInputStream.seek(BufferedFSInputStream.java:<span class="number">96</span>)</span><br><span class="line">    at org.apache.hadoop.fs.FSDataInputStream.seek(FSDataInputStream.java:<span class="number">66</span>)</span><br><span class="line">    at org.apache.hadoop.fs.ChecksumFileSystem$ChecksumFSInputChecker.readChunk(ChecksumFileSystem.java:<span class="number">237</span>)</span><br><span class="line">    at org.apache.hadoop.fs.FSInputChecker.readChecksumChunk(FSInputChecker.java:<span class="number">300</span>)</span><br><span class="line">    at org.apache.hadoop.fs.FSInputChecker.read1(FSInputChecker.java:<span class="number">252</span>)</span><br><span class="line">    at org.apache.hadoop.fs.FSInputChecker.read(FSInputChecker.java:<span class="number">197</span>)</span><br><span class="line">    at java.io.DataInputStream.read(DataInputStream.java:<span class="number">149</span>)</span><br><span class="line">    at java.io.DataInputStream.read(DataInputStream.java:<span class="number">100</span>)</span><br><span class="line">    at java.util.Properties$LineReader.readLine(Properties.java:<span class="number">435</span>)</span><br><span class="line">    at java.util.Properties.load0(Properties.java:<span class="number">353</span>)</span><br><span class="line">    at java.util.Properties.load(Properties.java:<span class="number">341</span>)</span><br><span class="line">    at org.apache.hudi.common.table.HoodieTableConfig.fetchConfigs(HoodieTableConfig.java:<span class="number">337</span>)</span><br><span class="line">    at org.apache.hudi.common.table.HoodieTableConfig.&lt;init&gt;(HoodieTableConfig.java:<span class="number">270</span>)</span><br><span class="line">    ... <span class="number">12</span> more</span><br><span class="line"><span class="number">24</span>/<span class="number">05</span>/<span class="number">22</span> <span class="number">17</span>:<span class="number">21</span>:<span class="number">10</span> WARN BaseHoodieCompactionPlanGenerator: No operations are retrieved <span class="keyword">for</span> /tmp/flink/hudi/test_mor</span><br></pre></td></tr></table></figure>
 <p>原因分析：默认参数下，使用异步 Compaction， 当写数据的流程完成后，程序就会关闭，这时异步的 compaction 还没完成，因主程序关闭导致读取 hoodie.properties 时报异常：java.nio.channels.ClosedByInterruptException，从而抛出：HoodieIOException: Could not load Hoodie properties from /tmp/flink/hudi/test_mor/.hoodie/hoodie.properties，导致 compaction 失败。</p>
 <h2 id="批写示例"><a href="#批写示例" class="headerlink" title="批写示例"></a>批写示例</h2><p>索引：FLINK_STATE</p>
-<h3 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h3><p><a href="https://github.com/dongkelun/hudi-demo/blob/master/hudi0.13_flink1.15/src/main/java/com/dkl/hudi/flink/TestBatchMOR.java" target="_blank" rel="noopener">https://github.com/dongkelun/hudi-demo/blob/master/hudi0.13_flink1.15/src/main/java/com/dkl/hudi/flink/TestBatchMOR.java</a></p>
+<h3 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h3><p><a href="https://github.com/dongkelun/hudi-demo/blob/master/hudi0.13_flink1.15/src/main/java/com/dkl/hudi/flink/TestBatchMOR.java">https://github.com/dongkelun/hudi-demo/blob/master/hudi0.13_flink1.15/src/main/java/com/dkl/hudi/flink/TestBatchMOR.java</a></p>
 <p>可以在Idea中调试，比较方便</p>
 <h3 id="SQL"><a href="#SQL" class="headerlink" title="SQL"></a>SQL</h3><p><code>test-mor.sql</code></p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> execution.target=yarn-per-job;</span><br><span class="line"><span class="keyword">set</span> taskmanager.numberOfTaskSlots=<span class="number">1</span>;</span><br><span class="line"><span class="keyword">set</span> execution.runtime-<span class="keyword">mode</span>=batch;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> test_mor (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span> PRIMARY <span class="keyword">KEY</span> <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span>,</span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="built_in">int</span>,</span><br><span class="line">  ts <span class="built_in">int</span>,</span><br><span class="line">  dt <span class="keyword">string</span></span><br><span class="line">)</span><br><span class="line">PARTITIONED <span class="keyword">BY</span> (dt)</span><br><span class="line"><span class="keyword">WITH</span> (</span><br><span class="line">  <span class="string">'connector'</span> = <span class="string">'hudi'</span>,</span><br><span class="line">  <span class="string">'path'</span> = <span class="string">'/tmp/hudi/test_mor'</span>,</span><br><span class="line">  <span class="string">'table.type'</span> = <span class="string">'MERGE_ON_READ'</span>,</span><br><span class="line">  <span class="string">'hoodie.datasource.write.keygenerator.class'</span> = <span class="string">'org.apache.hudi.keygen.ComplexAvroKeyGenerator'</span>,</span><br><span class="line">  <span class="string">'hoodie.datasource.write.recordkey.field'</span> = <span class="string">'id'</span>,</span><br><span class="line">  <span class="string">'hoodie.datasource.write.hive_style_partitioning'</span> = <span class="string">'true'</span>,</span><br><span class="line">  <span class="string">'hive_sync.enable'</span> = <span class="string">'true'</span>,</span><br><span class="line">  <span class="string">'hive_sync.mode'</span> = <span class="string">'hms'</span>,</span><br><span class="line">  <span class="string">'hive_sync.conf.dir'</span>=<span class="string">'/usr/hdp/3.1.0.0-78/hive/conf'</span>,</span><br><span class="line">  <span class="string">'hive_sync.db'</span> = <span class="string">'hudi'</span>,</span><br><span class="line">  <span class="string">'hive_sync.table'</span> = <span class="string">'test_mor'</span>,</span><br><span class="line">  <span class="string">'hive_sync.partition_fields'</span> = <span class="string">'dt'</span>,</span><br><span class="line">  <span class="string">'hive_sync.partition_extractor_class'</span> = <span class="string">'org.apache.hudi.hive.HiveStylePartitionValueExtractor'</span>,</span><br><span class="line">  <span class="string">'hoodie.datasource.hive_sync.create_managed_table'</span> = <span class="string">'true'</span>,</span><br><span class="line">  <span class="string">'compaction.async.enabled'</span>= <span class="string">'false'</span>,</span><br><span class="line">  <span class="string">'compaction.delta_commits'</span> = <span class="string">'1'</span>,</span><br><span class="line">  <span class="string">'hoodie.compact.inline'</span> = <span class="string">'true'</span>,</span><br><span class="line">  <span class="string">'hoodie.compact.inline.max.delta.commits'</span> = <span class="string">'1'</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test_mor <span class="keyword">values</span> (<span class="number">1</span>,<span class="string">'hudi'</span>,<span class="number">10</span>,<span class="number">100</span>,<span class="string">'2024-05-22'</span>);</span><br></pre></td></tr></table></figure>
-<h2 id="流写示例"><a href="#流写示例" class="headerlink" title="流写示例"></a>流写示例</h2><h3 id="代码-1"><a href="#代码-1" class="headerlink" title="代码"></a>代码</h3><p><a href="https://github.com/dongkelun/hudi-demo/blob/master/hudi0.13_flink1.15/src/main/java/com/dkl/hudi/flink/TestStreamingMOR.java" target="_blank" rel="noopener">https://github.com/dongkelun/hudi-demo/blob/master/hudi0.13_flink1.15/src/main/java/com/dkl/hudi/flink/TestStreamingMOR.java</a></p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> execution.target<span class="operator">=</span>yarn<span class="operator">-</span><span class="keyword">per</span><span class="operator">-</span>job;</span><br><span class="line"><span class="keyword">set</span> taskmanager.numberOfTaskSlots<span class="operator">=</span><span class="number">1</span>;</span><br><span class="line"><span class="keyword">set</span> execution.runtime<span class="operator">-</span>mode<span class="operator">=</span>batch;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE TABLE</span> test_mor (</span><br><span class="line">  id <span class="type">int</span> <span class="keyword">PRIMARY KEY</span> <span class="keyword">NOT</span> ENFORCED,</span><br><span class="line">  name string,</span><br><span class="line">  price <span class="type">int</span>,</span><br><span class="line">  ts <span class="type">int</span>,</span><br><span class="line">  dt string</span><br><span class="line">)</span><br><span class="line">PARTITIONED <span class="keyword">BY</span> (dt)</span><br><span class="line"><span class="keyword">WITH</span> (</span><br><span class="line">  <span class="string">&#x27;connector&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;hudi&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;path&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;/tmp/hudi/test_mor&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;table.type&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;MERGE_ON_READ&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hoodie.datasource.write.keygenerator.class&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;org.apache.hudi.keygen.ComplexAvroKeyGenerator&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hoodie.datasource.write.recordkey.field&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;id&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hoodie.datasource.write.hive_style_partitioning&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;true&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hive_sync.enable&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;true&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hive_sync.mode&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;hms&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hive_sync.conf.dir&#x27;</span><span class="operator">=</span><span class="string">&#x27;/usr/hdp/3.1.0.0-78/hive/conf&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hive_sync.db&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;hudi&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hive_sync.table&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;test_mor&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hive_sync.partition_fields&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;dt&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hive_sync.partition_extractor_class&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;org.apache.hudi.hive.HiveStylePartitionValueExtractor&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hoodie.datasource.hive_sync.create_managed_table&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;true&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;compaction.async.enabled&#x27;</span><span class="operator">=</span> <span class="string">&#x27;false&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;compaction.delta_commits&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;1&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hoodie.compact.inline&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;true&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hoodie.compact.inline.max.delta.commits&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;1&#x27;</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert into</span> test_mor <span class="keyword">values</span> (<span class="number">1</span>,<span class="string">&#x27;hudi&#x27;</span>,<span class="number">10</span>,<span class="number">100</span>,<span class="string">&#x27;2024-05-22&#x27;</span>);</span><br></pre></td></tr></table></figure>
+<h2 id="流写示例"><a href="#流写示例" class="headerlink" title="流写示例"></a>流写示例</h2><h3 id="代码-1"><a href="#代码-1" class="headerlink" title="代码"></a>代码</h3><p><a href="https://github.com/dongkelun/hudi-demo/blob/master/hudi0.13_flink1.15/src/main/java/com/dkl/hudi/flink/TestStreamingMOR.java">https://github.com/dongkelun/hudi-demo/blob/master/hudi0.13_flink1.15/src/main/java/com/dkl/hudi/flink/TestStreamingMOR.java</a></p>
 <p>可以在Idea中调试，比较方便</p>
 <h3 id="SQL-1"><a href="#SQL-1" class="headerlink" title="SQL"></a>SQL</h3><p><code>test_streaming_mor.sql</code></p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> parallelism.default=<span class="number">1</span>;</span><br><span class="line"><span class="keyword">set</span> taskmanager.memory.process.size=<span class="number">2</span>g;</span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.interval= <span class="number">10000</span>;</span><br><span class="line"><span class="keyword">set</span> state.checkpoints.dir=hdfs:///flink/checkpoints/test_mor_orders;</span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.externalized-checkpoint-<span class="keyword">retention</span>= RETAIN_ON_CANCELLATION;</span><br><span class="line"><span class="keyword">set</span> pipeline.operator-chaining=<span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> random_source ( </span><br><span class="line">  user_id <span class="built_in">INT</span>,</span><br><span class="line">  product <span class="built_in">VARCHAR</span>,</span><br><span class="line">  amount <span class="built_in">VARCHAR</span></span><br><span class="line">  ) <span class="keyword">WITH</span> ( </span><br><span class="line">  <span class="string">'connector'</span> = <span class="string">'datagen'</span>,</span><br><span class="line">  <span class="string">'rows-per-second'</span> = <span class="string">'10'</span>,           <span class="comment">-- 每秒产生的数据条数</span></span><br><span class="line">  <span class="string">'fields.user_id.kind'</span> = <span class="string">'sequence'</span>,   <span class="comment">-- 有界序列（结束后自动停止输出）</span></span><br><span class="line">  <span class="string">'fields.user_id.start'</span> = <span class="string">'1'</span>,         <span class="comment">-- 序列的起始值</span></span><br><span class="line">  <span class="string">'fields.user_id.end'</span> = <span class="string">'10000'</span>,       <span class="comment">-- 序列的终止值</span></span><br><span class="line">  <span class="string">'fields.product.length'</span> = <span class="string">'5'</span>,</span><br><span class="line">  <span class="string">'fields.amount.length'</span> = <span class="string">'5'</span>        <span class="comment">-- 随机字符串的长度</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> <span class="keyword">if</span> <span class="keyword">not</span> <span class="keyword">exists</span> test_mor_orders (</span><br><span class="line">    user_id <span class="keyword">STRING</span>, </span><br><span class="line">    product <span class="keyword">STRING</span>, </span><br><span class="line">     amount <span class="keyword">STRING</span>,</span><br><span class="line">     primary <span class="keyword">key</span> (user_id)   <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span>) <span class="keyword">WITH</span> (</span><br><span class="line">    <span class="string">'connector'</span> = <span class="string">'hudi'</span>,</span><br><span class="line">  <span class="string">'path'</span> = <span class="string">'/tmp/hudi/test_mor_orders'</span>,</span><br><span class="line">  <span class="string">'table.type'</span> = <span class="string">'MERGE_ON_READ'</span>,</span><br><span class="line">  <span class="string">'index.type'</span> =  <span class="string">'BUCKET'</span>,</span><br><span class="line">  <span class="string">'hoodie.bucket.index.num.buckets'</span> = <span class="string">'4'</span>,</span><br><span class="line">  <span class="string">'hoodie.datasource.write.keygenerator.class'</span> = <span class="string">'org.apache.hudi.keygen.ComplexAvroKeyGenerator'</span>,</span><br><span class="line">  <span class="string">'hive_sync.enable'</span> = <span class="string">'true'</span>,</span><br><span class="line">  <span class="string">'hive_sync.mode'</span> = <span class="string">'hms'</span>,</span><br><span class="line">  <span class="string">'hive_sync.conf.dir'</span>=<span class="string">'/usr/hdp/3.1.0.0-78/hive/conf'</span>,</span><br><span class="line">  <span class="string">'hive_sync.db'</span> = <span class="string">'hudi'</span>,</span><br><span class="line">  <span class="string">'hive_sync.table'</span> = <span class="string">'test_mor_orders'</span>,</span><br><span class="line">  <span class="string">'hoodie.datasource.hive_sync.create_managed_table'</span> = <span class="string">'true'</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test_mor_orders <span class="keyword">select</span> <span class="keyword">cast</span>(user_id <span class="keyword">as</span> <span class="keyword">String</span>), product,amount <span class="keyword">from</span> random_source;</span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> parallelism.default<span class="operator">=</span><span class="number">1</span>;</span><br><span class="line"><span class="keyword">set</span> taskmanager.memory.process.size<span class="operator">=</span><span class="number">2</span>g;</span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.interval<span class="operator">=</span> <span class="number">10000</span>;</span><br><span class="line"><span class="keyword">set</span> state.checkpoints.dir<span class="operator">=</span>hdfs:<span class="operator">/</span><span class="operator">/</span><span class="operator">/</span>flink<span class="operator">/</span>checkpoints<span class="operator">/</span>test_mor_orders;</span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.externalized<span class="operator">-</span>checkpoint<span class="operator">-</span>retention<span class="operator">=</span> RETAIN_ON_CANCELLATION;</span><br><span class="line"><span class="keyword">set</span> pipeline.operator<span class="operator">-</span>chaining<span class="operator">=</span><span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE TABLE</span> random_source ( </span><br><span class="line">  user_id <span class="type">INT</span>,</span><br><span class="line">  product <span class="type">VARCHAR</span>,</span><br><span class="line">  amount <span class="type">VARCHAR</span></span><br><span class="line">  ) <span class="keyword">WITH</span> ( </span><br><span class="line">  <span class="string">&#x27;connector&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;datagen&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;rows-per-second&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;10&#x27;</span>,           <span class="comment">-- 每秒产生的数据条数</span></span><br><span class="line">  <span class="string">&#x27;fields.user_id.kind&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;sequence&#x27;</span>,   <span class="comment">-- 有界序列（结束后自动停止输出）</span></span><br><span class="line">  <span class="string">&#x27;fields.user_id.start&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;1&#x27;</span>,         <span class="comment">-- 序列的起始值</span></span><br><span class="line">  <span class="string">&#x27;fields.user_id.end&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;10000&#x27;</span>,       <span class="comment">-- 序列的终止值</span></span><br><span class="line">  <span class="string">&#x27;fields.product.length&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;5&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;fields.amount.length&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;5&#x27;</span>        <span class="comment">-- 随机字符串的长度</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE TABLE</span> if <span class="keyword">not</span> <span class="keyword">exists</span> test_mor_orders (</span><br><span class="line">    user_id STRING, </span><br><span class="line">    product STRING, </span><br><span class="line">     amount STRING,</span><br><span class="line">     <span class="keyword">primary key</span> (user_id)   <span class="keyword">NOT</span> ENFORCED) <span class="keyword">WITH</span> (</span><br><span class="line">    <span class="string">&#x27;connector&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;hudi&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;path&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;/tmp/hudi/test_mor_orders&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;table.type&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;MERGE_ON_READ&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;index.type&#x27;</span> <span class="operator">=</span>  <span class="string">&#x27;BUCKET&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hoodie.bucket.index.num.buckets&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;4&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hoodie.datasource.write.keygenerator.class&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;org.apache.hudi.keygen.ComplexAvroKeyGenerator&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hive_sync.enable&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;true&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hive_sync.mode&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;hms&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hive_sync.conf.dir&#x27;</span><span class="operator">=</span><span class="string">&#x27;/usr/hdp/3.1.0.0-78/hive/conf&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hive_sync.db&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;hudi&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hive_sync.table&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;test_mor_orders&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hoodie.datasource.hive_sync.create_managed_table&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;true&#x27;</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert into</span> test_mor_orders <span class="keyword">select</span> <span class="built_in">cast</span>(user_id <span class="keyword">as</span> String), product,amount <span class="keyword">from</span> random_source;</span><br></pre></td></tr></table></figure>
 <h2 id="Hive查询"><a href="#Hive查询" class="headerlink" title="Hive查询"></a>Hive查询</h2><p>在第一次 compaction 没有完成之前，没有 .paruqet 文件只有 .log 文件。这时不论是 ro 表还是 rt表 ，hive 查询都为空，只有有了 .parquet 文件之后，查询 rt 表才会将 .parquet 文件和 .log 文件合并。（仅限Hive）</p>
 <blockquote>
 <p>delta.commits 改成 2， insert 3次 , hive 查询结果：</p>
@@ -371,7 +372,7 @@
 <p>每次 insert 主键一样（update、upsert）</p>
 </blockquote>
 <p><img src="https://img.dongkelun.com/hudi/mor/fm5.png" alt=""><br><img src="https://img.dongkelun.com/hudi/mor/fm6.png" alt=""></p>
-<p>由上图：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">1、   20240527151604966.deltacommit -&gt; .de2734a0-97ba-408b-9085-97e684d062f5_20240527151604966.log.1_2-8-0</span><br><span class="line">2.1、 20240527152026848.deltacommit -&gt; .de2734a0-97ba-408b-9085-97e684d062f5_20240527151604966.log.2_2-8-0</span><br><span class="line">2.2、 20240527152028101.compaction -&gt; de2734a0-97ba-408b-9085-97e684d062f5_0-1-0_20240527152028101.parquet</span><br><span class="line">3、   20240527152141075.deltacommit -&gt; .de2734a0-97ba-408b-9085-97e684d062f5_20240527152028101.log.1_2-8-0</span><br></pre></td></tr></table></figure></p>
+<p>由上图：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">1、   20240527151604966.deltacommit -&gt; .de2734a0-97ba-408b-9085-97e684d062f5_20240527151604966.log.1_2-8-0</span><br><span class="line">2.1、 20240527152026848.deltacommit -&gt; .de2734a0-97ba-408b-9085-97e684d062f5_20240527151604966.log.2_2-8-0</span><br><span class="line">2.2、 20240527152028101.compaction -&gt; de2734a0-97ba-408b-9085-97e684d062f5_0-1-0_20240527152028101.parquet</span><br><span class="line">3、   20240527152141075.deltacommit -&gt; .de2734a0-97ba-408b-9085-97e684d062f5_20240527152028101.log.1_2-8-0  </span><br></pre></td></tr></table></figure></p>
 <p>小结：</p>
 <ul>
 <li>1、对于主键不同的：每次 .log 的前缀不一样；主键相同：每次 .log 的前缀一样</li>
@@ -396,12 +397,12 @@
 <li>4、compation 之后生成的 .log 文件的前缀和 上次的 .parquet前缀相同，只是后缀不同，以 .log.1 .log.2 区分 。（这里的时间后缀并没有与 .deltacommit 对应 ）</li>
 </ul>
 <h2 id="源码"><a href="#源码" class="headerlink" title="源码"></a>源码</h2><p><code>HoodieTableSink</code>.<code>getSinkRuntimeProvider</code></p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (OptionsResolver.needsAsyncCompaction(conf)) &#123;</span><br><span class="line">  <span class="comment">// use synchronous compaction for bounded source.</span></span><br><span class="line">  <span class="keyword">if</span> (context.isBounded()) &#123;</span><br><span class="line">    conf.setBoolean(FlinkOptions.COMPACTION_ASYNC_ENABLED, <span class="keyword">false</span>);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> Pipelines.compact(conf, pipeline);</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> Pipelines.clean(conf, pipeline);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (OptionsResolver.needsAsyncCompaction(conf)) &#123;</span><br><span class="line">  <span class="comment">// use synchronous compaction for bounded source.</span></span><br><span class="line">  <span class="keyword">if</span> (context.isBounded()) &#123;</span><br><span class="line">    conf.setBoolean(FlinkOptions.COMPACTION_ASYNC_ENABLED, <span class="literal">false</span>);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> Pipelines.compact(conf, pipeline);</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> Pipelines.clean(conf, pipeline);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p><img src="https://img.dongkelun.com/hudi/mor/fm7.png" alt=""></p>
 <p>上面提到 RUNTIME_MODE 等于 BATCH 和 STREAMING 时的表现是不一样的，原因就在这一块源码里。根据注释，本意是想判断 source 有界是就将异步关掉，但是 context.isBounded() 只能判断 RUNTIME_MODE 是否为 BATCH ，并不能判断 source 是否有界。所以当 RUNTIME_MODE = BATCH 时 compaction 是成功的。如果这里的源码能判断 source 是否有界，无论 RUNTIME_MODE 是 STREAMING 还是 BATCH，compaction 都不会有问题。</p>
 <h2 id="相关阅读"><a href="#相关阅读" class="headerlink" title="相关阅读"></a>相关阅读</h2><ul>
-<li><a href="https://mp.weixin.qq.com/s/rdvCSHV5ObUSGMl9FciMfA" target="_blank" rel="noopener">Hudi查询类型/视图总结</a></li>
-<li><a href="https://mp.weixin.qq.com/s/N_SnkJDEEvka2rvtV2RWJg" target="_blank" rel="noopener">Flink SQL操作Hudi并同步Hive使用总结</a></li>
+<li><a href="https://mp.weixin.qq.com/s/rdvCSHV5ObUSGMl9FciMfA">Hudi查询类型/视图总结</a></li>
+<li><a href="https://mp.weixin.qq.com/s/N_SnkJDEEvka2rvtV2RWJg">Flink SQL操作Hudi并同步Hive使用总结</a></li>
 </ul>
 
       
@@ -559,7 +560,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#版本"><span class="toc-number">2.</span> <span class="toc-text">版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#表类型"><span class="toc-number">3.</span> <span class="toc-text">表类型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#compaction"><span class="toc-number">4.</span> <span class="toc-text">compaction</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#compaction-参数"><span class="toc-number">5.</span> <span class="toc-text">compaction 参数</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#批写"><span class="toc-number">6.</span> <span class="toc-text">批写</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#delta-commits"><span class="toc-number">7.</span> <span class="toc-text">delta_commits</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#异常"><span class="toc-number">8.</span> <span class="toc-text">异常</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#批写示例"><span class="toc-number">9.</span> <span class="toc-text">批写示例</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#代码"><span class="toc-number">9.1.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#SQL"><span class="toc-number">9.2.</span> <span class="toc-text">SQL</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#流写示例"><span class="toc-number">10.</span> <span class="toc-text">流写示例</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#代码-1"><span class="toc-number">10.1.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#SQL-1"><span class="toc-number">10.2.</span> <span class="toc-text">SQL</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Hive查询"><span class="toc-number">11.</span> <span class="toc-text">Hive查询</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#表结构"><span class="toc-number">12.</span> <span class="toc-text">表结构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#规律"><span class="toc-number">13.</span> <span class="toc-text">规律</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#FLINK-STATE"><span class="toc-number">13.1.</span> <span class="toc-text">FLINK_STATE</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Linux"><span class="toc-number">13.1.1.</span> <span class="toc-text">Linux</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Windows"><span class="toc-number">13.1.2.</span> <span class="toc-text">Windows</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#BUCKET"><span class="toc-number">13.2.</span> <span class="toc-text">BUCKET</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Linux-1"><span class="toc-number">13.2.1.</span> <span class="toc-text">Linux</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Windows-1"><span class="toc-number">13.2.2.</span> <span class="toc-text">Windows</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#源码"><span class="toc-number">14.</span> <span class="toc-text">源码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#相关阅读"><span class="toc-number">15.</span> <span class="toc-text">相关阅读</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%89%88%E6%9C%AC"><span class="toc-number">2.</span> <span class="toc-text">版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A1%A8%E7%B1%BB%E5%9E%8B"><span class="toc-number">3.</span> <span class="toc-text">表类型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#compaction"><span class="toc-number">4.</span> <span class="toc-text">compaction</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#compaction-%E5%8F%82%E6%95%B0"><span class="toc-number">5.</span> <span class="toc-text">compaction 参数</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%89%B9%E5%86%99"><span class="toc-number">6.</span> <span class="toc-text">批写</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#delta-commits"><span class="toc-number">7.</span> <span class="toc-text">delta_commits</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BC%82%E5%B8%B8"><span class="toc-number">8.</span> <span class="toc-text">异常</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%89%B9%E5%86%99%E7%A4%BA%E4%BE%8B"><span class="toc-number">9.</span> <span class="toc-text">批写示例</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81"><span class="toc-number">9.1.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#SQL"><span class="toc-number">9.2.</span> <span class="toc-text">SQL</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B5%81%E5%86%99%E7%A4%BA%E4%BE%8B"><span class="toc-number">10.</span> <span class="toc-text">流写示例</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81-1"><span class="toc-number">10.1.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#SQL-1"><span class="toc-number">10.2.</span> <span class="toc-text">SQL</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Hive%E6%9F%A5%E8%AF%A2"><span class="toc-number">11.</span> <span class="toc-text">Hive查询</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A1%A8%E7%BB%93%E6%9E%84"><span class="toc-number">12.</span> <span class="toc-text">表结构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%84%E5%BE%8B"><span class="toc-number">13.</span> <span class="toc-text">规律</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#FLINK-STATE"><span class="toc-number">13.1.</span> <span class="toc-text">FLINK_STATE</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Linux"><span class="toc-number">13.1.1.</span> <span class="toc-text">Linux</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Windows"><span class="toc-number">13.1.2.</span> <span class="toc-text">Windows</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#BUCKET"><span class="toc-number">13.2.</span> <span class="toc-text">BUCKET</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Linux-1"><span class="toc-number">13.2.1.</span> <span class="toc-text">Linux</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Windows-1"><span class="toc-number">13.2.2.</span> <span class="toc-text">Windows</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%BA%90%E7%A0%81"><span class="toc-number">14.</span> <span class="toc-text">源码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E9%98%85%E8%AF%BB"><span class="toc-number">15.</span> <span class="toc-text">相关阅读</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -734,14 +735,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -751,6 +744,22 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -766,14 +775,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
@@ -786,23 +787,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -822,7 +807,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -834,15 +831,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -878,11 +871,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -914,15 +907,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -934,7 +919,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -942,7 +927,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -954,7 +939,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -962,11 +951,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -975,6 +964,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -990,15 +987,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1007,6 +1000,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1019,10 +1016,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1042,10 +1035,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
@@ -1054,7 +1043,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1062,11 +1051,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1094,7 +1087,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1110,7 +1119,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
+                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1118,11 +1127,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1142,23 +1147,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ZooKeeper</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1167,6 +1164,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ollama</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
             
             <div class="clearfix"></div>

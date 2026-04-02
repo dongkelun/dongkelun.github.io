@@ -10,13 +10,12 @@
   <title>Hive 表添加列（新增字段） | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="前言记录总结一下 Hive 表如何添加新的字段以及遇到的问题。  最初是因为要验证 Hudi Schema Evolution 中的增加字段问题">
-<meta name="keywords" content="Hive,Partition">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Hive 表添加列（新增字段）">
 <meta property="og:url" content="https://dongkelun.com/2024/04/22/hive/hiveAddColumns/index.html">
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言记录总结一下 Hive 表如何添加新的字段以及遇到的问题。  最初是因为要验证 Hudi Schema Evolution 中的增加字段问题">
-<meta property="og:locale" content="cn">
+<meta property="og:locale">
 <meta property="og:image" content="https://img.dongkelun.com/hive/add-col/add1.png">
 <meta property="og:image" content="https://img.dongkelun.com/hive/add-col/add2.png">
 <meta property="og:image" content="https://img.dongkelun.com/hive/add-col/add3.png">
@@ -26,10 +25,12 @@
 <meta property="og:image" content="https://img.dongkelun.com/hive/add-col/add6.png">
 <meta property="og:image" content="https://img.dongkelun.com/hive/add-col/add7.png">
 <meta property="og:image" content="https://img.dongkelun.com/hive/add-col/add9.png">
-<meta property="og:updated_time" content="2024-04-23T01:02:47.672Z">
+<meta property="article:published_time" content="2024-04-21T16:00:00.000Z">
+<meta property="article:modified_time" content="2024-04-23T01:02:47.672Z">
+<meta property="article:author" content="董可伦">
+<meta property="article:tag" content="Hive">
+<meta property="article:tag" content="Partition">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Hive 表添加列（新增字段）">
-<meta name="twitter:description" content="前言记录总结一下 Hive 表如何添加新的字段以及遇到的问题。  最初是因为要验证 Hudi Schema Evolution 中的增加字段问题">
 <meta name="twitter:image" content="https://img.dongkelun.com/hive/add-col/add1.png">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
@@ -48,7 +49,7 @@
 
   
 
-</head>
+<meta name="generator" content="Hexo 8.1.1"></head>
 
 <body>
   <div id="container" q-class="show:isCtnShow">
@@ -78,7 +79,7 @@
 			<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 		</a>
 		<hgroup>
-		  <h1 class="header-author"><a href="/">董可伦</a></h1>
+		  <h1 class="header-author"><a href="/"></a></h1>
 		</hgroup>
 		
 
@@ -150,7 +151,7 @@
 				<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 			</div>
 			<hgroup>
-			  <h1 class="header-author js-header-author">董可伦</h1>
+			  <h1 class="header-author js-header-author"></h1>
 			</hgroup>
 			
 			
@@ -269,70 +270,67 @@
 <blockquote>
 <p>最初是因为要验证 Hudi Schema Evolution 中的增加字段问题</p>
 </blockquote>
-<a id="more"></a>
-<h2 id="SQL"><a href="#SQL" class="headerlink" title="SQL"></a>SQL</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> test_hive <span class="keyword">add</span> <span class="keyword">columns</span> (col_new <span class="keyword">string</span>);</span><br><span class="line"></span><br><span class="line"># 级联应用到分区表的所有分区</span><br><span class="line"># 对于 Parquet、Text 分区表需要加cascade ， ORC 分区表可以不加；建议只要是分区表都加上 cascade</span><br><span class="line"># 非分区表加 cascade 会报错：Alter table with non-partitioned table does not support cascade (state=42000,code=10410)</span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> test_hive <span class="keyword">add</span> <span class="keyword">columns</span> (col_new <span class="keyword">string</span>) <span class="keyword">cascade</span>;</span><br><span class="line"></span><br><span class="line"># 同时新增多个字段</span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> test_hive <span class="keyword">add</span> <span class="keyword">columns</span> (col_new1 <span class="keyword">string</span>, col_new2 <span class="built_in">int</span>);</span><br><span class="line"></span><br><span class="line"># 注释 </span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> test_hive <span class="keyword">add</span> <span class="keyword">columns</span> (col_new_with_comment <span class="keyword">string</span> <span class="keyword">comment</span> <span class="string">'测试新增字段'</span>);</span><br></pre></td></tr></table></figure>
+<span id="more"></span>
+<h2 id="SQL"><a href="#SQL" class="headerlink" title="SQL"></a>SQL</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter table</span> test_hive <span class="keyword">add</span> columns (col_new string);</span><br><span class="line"></span><br><span class="line"># 级联应用到分区表的所有分区</span><br><span class="line"># 对于 Parquet、Text 分区表需要加cascade ， ORC 分区表可以不加；建议只要是分区表都加上 cascade</span><br><span class="line"># 非分区表加 cascade 会报错：<span class="keyword">Alter table</span> <span class="keyword">with</span> non<span class="operator">-</span>partitioned <span class="keyword">table</span> does <span class="keyword">not</span> support cascade (state<span class="operator">=</span><span class="number">42000</span>,code<span class="operator">=</span><span class="number">10410</span>)</span><br><span class="line"><span class="keyword">alter table</span> test_hive <span class="keyword">add</span> columns (col_new string) cascade;</span><br><span class="line"></span><br><span class="line"># 同时新增多个字段</span><br><span class="line"><span class="keyword">alter table</span> test_hive <span class="keyword">add</span> columns (col_new1 string, col_new2 <span class="type">int</span>);</span><br><span class="line"></span><br><span class="line"># 注释 </span><br><span class="line"><span class="keyword">alter table</span> test_hive <span class="keyword">add</span> columns (col_new_with_comment string comment <span class="string">&#x27;测试新增字段&#x27;</span>);</span><br></pre></td></tr></table></figure>
 <h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><p>建表</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> test_hive (</span><br><span class="line">    <span class="keyword">id</span> <span class="keyword">string</span> <span class="keyword">comment</span> <span class="string">'ID'</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create table</span> test_hive (</span><br><span class="line">    id string comment <span class="string">&#x27;ID&#x27;</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
 <p>插入数据</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test_hive <span class="keyword">values</span> (<span class="string">'001'</span>);</span><br></pre></td></tr></table></figure>
-<p>查询<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> test_hive;</span><br></pre></td></tr></table></figure></p>
-<p>新增几个字段<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> test_hive <span class="keyword">add</span> <span class="keyword">columns</span> (col_new <span class="keyword">string</span>);</span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> test_hive <span class="keyword">add</span> <span class="keyword">columns</span> (col_new1 <span class="keyword">string</span>, col_new2 <span class="built_in">int</span>);</span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> test_hive <span class="keyword">add</span> <span class="keyword">columns</span> (col_new_with_comment <span class="keyword">string</span> <span class="keyword">comment</span> <span class="string">'测试新增字段'</span>);</span><br></pre></td></tr></table></figure></p>
-<p>查看表结构<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">show</span> <span class="keyword">create</span> <span class="keyword">table</span> test_hive;</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert into</span> test_hive <span class="keyword">values</span> (<span class="string">&#x27;001&#x27;</span>);</span><br></pre></td></tr></table></figure>
+<p>查询<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> test_hive;</span><br></pre></td></tr></table></figure></p>
+<p>新增几个字段<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter table</span> test_hive <span class="keyword">add</span> columns (col_new string);</span><br><span class="line"><span class="keyword">alter table</span> test_hive <span class="keyword">add</span> columns (col_new1 string, col_new2 <span class="type">int</span>);</span><br><span class="line"><span class="keyword">alter table</span> test_hive <span class="keyword">add</span> columns (col_new_with_comment string comment <span class="string">&#x27;测试新增字段&#x27;</span>);</span><br></pre></td></tr></table></figure></p>
+<p>查看表结构<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">show</span> <span class="keyword">create table</span> test_hive;</span><br></pre></td></tr></table></figure></p>
 <p>插入数据</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test_hive <span class="keyword">values</span> (<span class="string">'002'</span>,<span class="string">'col_new_value2'</span>,<span class="string">'col_new1_value2'</span>,<span class="number">200</span>,<span class="string">'col_new_with_comment_value'</span>);</span><br></pre></td></tr></table></figure>
-<p>查询新增列新增数据是否正常<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> test_hive;</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert into</span> test_hive <span class="keyword">values</span> (<span class="string">&#x27;002&#x27;</span>,<span class="string">&#x27;col_new_value2&#x27;</span>,<span class="string">&#x27;col_new1_value2&#x27;</span>,<span class="number">200</span>,<span class="string">&#x27;col_new_with_comment_value&#x27;</span>);</span><br></pre></td></tr></table></figure>
+<p>查询新增列新增数据是否正常<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> test_hive;</span><br></pre></td></tr></table></figure></p>
 <p><img src="https://img.dongkelun.com/hive/add-col/add1.png" alt=""></p>
 <h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>如上SQL所述，对于 Parquet、Text 分区表增加字段时如果不加 cascade 会有问题：新增字段后，对于已存在的分区新增的数据，新增字段查询结果为null（Hive查询），用 Spark SQL 和 Flink SQL 查询正常，对应的 parquet文件实际是有数据的。新增分区对应的新增数据，查询结果正常。</p>
 <h2 id="问题复现"><a href="#问题复现" class="headerlink" title="问题复现"></a>问题复现</h2><h3 id="ORC-分区表"><a href="#ORC-分区表" class="headerlink" title="ORC 分区表"></a>ORC 分区表</h3><blockquote>
 <p>ORC 分区表不存在这个问题</p>
 </blockquote>
 <p>建表</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> test_hive_orc_partition (</span><br><span class="line"><span class="keyword">id</span> <span class="keyword">string</span> <span class="keyword">comment</span> <span class="string">'ID'</span>, </span><br><span class="line"><span class="keyword">name</span> <span class="keyword">string</span> <span class="keyword">comment</span> <span class="string">'名字'</span></span><br><span class="line">)</span><br><span class="line"><span class="keyword">comment</span> <span class="string">'测试分区'</span></span><br><span class="line">partitioned <span class="keyword">by</span> (<span class="keyword">year</span> <span class="built_in">int</span> <span class="keyword">comment</span> <span class="string">'年'</span>)</span><br><span class="line"><span class="keyword">ROW</span> <span class="keyword">FORMAT</span> <span class="keyword">DELIMITED</span> <span class="keyword">FIELDS</span> <span class="keyword">TERMINATED</span> <span class="keyword">BY</span> <span class="string">','</span> </span><br><span class="line"><span class="keyword">STORED</span> <span class="keyword">AS</span> ORC;</span><br></pre></td></tr></table></figure>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">show</span> <span class="keyword">create</span> <span class="keyword">table</span> test_hive_orc_partition;</span><br></pre></td></tr></table></figure>
-<p>插入数据<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> test_hive_orc_partition <span class="keyword">partition</span>(<span class="keyword">year</span>=<span class="number">2024</span>) <span class="keyword">values</span> (<span class="string">'001'</span>,<span class="string">'张三'</span>);</span><br></pre></td></tr></table></figure></p>
-<p>查询<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> test_hive_orc_partition;</span><br></pre></td></tr></table></figure></p>
-<p>新增字段<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> test_hive_orc_partition <span class="keyword">add</span> <span class="keyword">columns</span> (col_new <span class="keyword">string</span>);</span><br></pre></td></tr></table></figure></p>
-<p>插入数据<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> test_hive_orc_partition <span class="keyword">partition</span>(<span class="keyword">year</span>=<span class="number">2024</span>) <span class="keyword">values</span> (<span class="string">'002'</span>,<span class="string">'李四'</span>,<span class="string">'col_new_value2'</span>);</span><br></pre></td></tr></table></figure></p>
-<p>查询新增列新增数据是否正常<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> test_hive_orc_partition;</span><br></pre></td></tr></table></figure></p>
-<p>可以看到一切正常：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create table</span> test_hive_orc_partition (</span><br><span class="line">id string comment <span class="string">&#x27;ID&#x27;</span>, </span><br><span class="line">name string comment <span class="string">&#x27;名字&#x27;</span></span><br><span class="line">)</span><br><span class="line">comment <span class="string">&#x27;测试分区&#x27;</span></span><br><span class="line">partitioned <span class="keyword">by</span> (<span class="keyword">year</span> <span class="type">int</span> comment <span class="string">&#x27;年&#x27;</span>)</span><br><span class="line"><span class="type">ROW</span> FORMAT DELIMITED FIELDS TERMINATED <span class="keyword">BY</span> <span class="string">&#x27;,&#x27;</span> </span><br><span class="line">STORED <span class="keyword">AS</span> ORC;</span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">show</span> <span class="keyword">create table</span> test_hive_orc_partition;</span><br></pre></td></tr></table></figure>
+<p>插入数据<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert into</span> <span class="keyword">table</span> test_hive_orc_partition <span class="keyword">partition</span>(<span class="keyword">year</span><span class="operator">=</span><span class="number">2024</span>) <span class="keyword">values</span> (<span class="string">&#x27;001&#x27;</span>,<span class="string">&#x27;张三&#x27;</span>);</span><br></pre></td></tr></table></figure></p>
+<p>查询<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> test_hive_orc_partition;</span><br></pre></td></tr></table></figure></p>
+<p>新增字段<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter table</span> test_hive_orc_partition <span class="keyword">add</span> columns (col_new string);</span><br></pre></td></tr></table></figure></p>
+<p>插入数据<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert into</span> <span class="keyword">table</span> test_hive_orc_partition <span class="keyword">partition</span>(<span class="keyword">year</span><span class="operator">=</span><span class="number">2024</span>) <span class="keyword">values</span> (<span class="string">&#x27;002&#x27;</span>,<span class="string">&#x27;李四&#x27;</span>,<span class="string">&#x27;col_new_value2&#x27;</span>);</span><br></pre></td></tr></table></figure></p>
+<p>查询新增列新增数据是否正常<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> test_hive_orc_partition;</span><br></pre></td></tr></table></figure><br>可以看到一切正常：</p>
 <p><img src="https://img.dongkelun.com/hive/add-col/add2.png" alt=""></p>
 <h3 id="Text-分区表"><a href="#Text-分区表" class="headerlink" title="Text 分区表"></a>Text 分区表</h3><p>建表</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> test_hive_text_partition (</span><br><span class="line"><span class="keyword">id</span> <span class="keyword">string</span> <span class="keyword">comment</span> <span class="string">'ID'</span>, </span><br><span class="line"><span class="keyword">name</span> <span class="keyword">string</span> <span class="keyword">comment</span> <span class="string">'名字'</span></span><br><span class="line">)</span><br><span class="line"><span class="keyword">comment</span> <span class="string">'测试分区'</span></span><br><span class="line">partitioned <span class="keyword">by</span> (<span class="keyword">year</span> <span class="built_in">int</span> <span class="keyword">comment</span> <span class="string">'年'</span>)</span><br><span class="line"><span class="keyword">ROW</span> <span class="keyword">FORMAT</span> <span class="keyword">DELIMITED</span> <span class="keyword">FIELDS</span> <span class="keyword">TERMINATED</span> <span class="keyword">BY</span> <span class="string">','</span> </span><br><span class="line"><span class="keyword">STORED</span> <span class="keyword">AS</span> TEXTFILE;</span><br></pre></td></tr></table></figure>
-<p>插入数据<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> test_hive_text_partition <span class="keyword">partition</span>(<span class="keyword">year</span>=<span class="number">2024</span>) <span class="keyword">values</span> (<span class="string">'001'</span>,<span class="string">'张三'</span>);</span><br></pre></td></tr></table></figure></p>
-<p>查询<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> test_hive_text_partition;</span><br></pre></td></tr></table></figure></p>
-<p>新增字段<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> test_hive_text_partition <span class="keyword">add</span> <span class="keyword">columns</span> (col_new <span class="keyword">string</span>);</span><br></pre></td></tr></table></figure></p>
-<p>插入数据<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># 已有分区</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> test_hive_text_partition <span class="keyword">partition</span>(<span class="keyword">year</span>=<span class="number">2024</span>) <span class="keyword">values</span> (<span class="string">'002'</span>,<span class="string">'李四'</span>,<span class="string">'col_new_value2'</span>);</span><br></pre></td></tr></table></figure></p>
-<p>查询新增列新增数据是否正常<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> test_hive_text_partition;</span><br></pre></td></tr></table></figure></p>
-<p>可以看到新增字段对应的查询内容为空：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create table</span> test_hive_text_partition (</span><br><span class="line">id string comment <span class="string">&#x27;ID&#x27;</span>, </span><br><span class="line">name string comment <span class="string">&#x27;名字&#x27;</span></span><br><span class="line">)</span><br><span class="line">comment <span class="string">&#x27;测试分区&#x27;</span></span><br><span class="line">partitioned <span class="keyword">by</span> (<span class="keyword">year</span> <span class="type">int</span> comment <span class="string">&#x27;年&#x27;</span>)</span><br><span class="line"><span class="type">ROW</span> FORMAT DELIMITED FIELDS TERMINATED <span class="keyword">BY</span> <span class="string">&#x27;,&#x27;</span> </span><br><span class="line">STORED <span class="keyword">AS</span> TEXTFILE;</span><br></pre></td></tr></table></figure>
+<p>插入数据<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert into</span> <span class="keyword">table</span> test_hive_text_partition <span class="keyword">partition</span>(<span class="keyword">year</span><span class="operator">=</span><span class="number">2024</span>) <span class="keyword">values</span> (<span class="string">&#x27;001&#x27;</span>,<span class="string">&#x27;张三&#x27;</span>);</span><br></pre></td></tr></table></figure></p>
+<p>查询<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> test_hive_text_partition;</span><br></pre></td></tr></table></figure></p>
+<p>新增字段<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter table</span> test_hive_text_partition <span class="keyword">add</span> columns (col_new string);</span><br></pre></td></tr></table></figure></p>
+<p>插入数据<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># 已有分区</span><br><span class="line"><span class="keyword">insert into</span> <span class="keyword">table</span> test_hive_text_partition <span class="keyword">partition</span>(<span class="keyword">year</span><span class="operator">=</span><span class="number">2024</span>) <span class="keyword">values</span> (<span class="string">&#x27;002&#x27;</span>,<span class="string">&#x27;李四&#x27;</span>,<span class="string">&#x27;col_new_value2&#x27;</span>);</span><br></pre></td></tr></table></figure></p>
+<p>查询新增列新增数据是否正常<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> test_hive_text_partition;</span><br></pre></td></tr></table></figure><br>可以看到新增字段对应的查询内容为空：</p>
 <p><img src="https://img.dongkelun.com/hive/add-col/add3.png" alt=""></p>
 <p>但是对应的数据文件实际是有内容的：<br><img src="https://img.dongkelun.com/hive/add-col/add4.png" alt=""></p>
 <h3 id="Parquet-分区表"><a href="#Parquet-分区表" class="headerlink" title="Parquet 分区表"></a>Parquet 分区表</h3><p>建表</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> test_hive_parquet_partition (</span><br><span class="line"><span class="keyword">id</span> <span class="keyword">string</span> <span class="keyword">comment</span> <span class="string">'ID'</span>, </span><br><span class="line"><span class="keyword">name</span> <span class="keyword">string</span> <span class="keyword">comment</span> <span class="string">'名字'</span></span><br><span class="line">)</span><br><span class="line"><span class="keyword">comment</span> <span class="string">'测试分区'</span></span><br><span class="line">partitioned <span class="keyword">by</span> (<span class="keyword">year</span> <span class="built_in">int</span> <span class="keyword">comment</span> <span class="string">'年'</span>)</span><br><span class="line"><span class="keyword">STORED</span> <span class="keyword">AS</span> PARQUET;</span><br></pre></td></tr></table></figure>
-<p>插入数据<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> test_hive_parquet_partition <span class="keyword">partition</span>(<span class="keyword">year</span>=<span class="number">2024</span>) <span class="keyword">values</span> (<span class="string">'001'</span>,<span class="string">'张三'</span>);</span><br></pre></td></tr></table></figure></p>
-<p>查询<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> test_hive_parquet_partition;</span><br></pre></td></tr></table></figure></p>
-<p>新增字段<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> test_hive_parquet_partition <span class="keyword">add</span> <span class="keyword">columns</span> (col_new <span class="keyword">string</span>);</span><br></pre></td></tr></table></figure></p>
-<p>插入数据<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># 已有分区</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> test_hive_parquet_partition <span class="keyword">partition</span>(<span class="keyword">year</span>=<span class="number">2024</span>) <span class="keyword">values</span> (<span class="string">'002'</span>,<span class="string">'李四'</span>,<span class="string">'col_new_value2'</span>);</span><br><span class="line"># 新增分区</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> test_hive_parquet_partition <span class="keyword">partition</span>(<span class="keyword">year</span>=<span class="number">2025</span>) <span class="keyword">values</span> (<span class="string">'003'</span>,<span class="string">'王五'</span>,<span class="string">'col_new_value3'</span>);</span><br></pre></td></tr></table></figure></p>
-<p>查询新增列新增数据是否正常<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> test_hive_parquet_partition;</span><br></pre></td></tr></table></figure></p>
-<p>可以看到对于已有分区新增字段对应的内容为空，新增分区新增字段对应的内容正常。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create table</span> test_hive_parquet_partition (</span><br><span class="line">id string comment <span class="string">&#x27;ID&#x27;</span>, </span><br><span class="line">name string comment <span class="string">&#x27;名字&#x27;</span></span><br><span class="line">)</span><br><span class="line">comment <span class="string">&#x27;测试分区&#x27;</span></span><br><span class="line">partitioned <span class="keyword">by</span> (<span class="keyword">year</span> <span class="type">int</span> comment <span class="string">&#x27;年&#x27;</span>)</span><br><span class="line">STORED <span class="keyword">AS</span> PARQUET;</span><br></pre></td></tr></table></figure>
+<p>插入数据<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert into</span> <span class="keyword">table</span> test_hive_parquet_partition <span class="keyword">partition</span>(<span class="keyword">year</span><span class="operator">=</span><span class="number">2024</span>) <span class="keyword">values</span> (<span class="string">&#x27;001&#x27;</span>,<span class="string">&#x27;张三&#x27;</span>);</span><br></pre></td></tr></table></figure></p>
+<p>查询<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> test_hive_parquet_partition;</span><br></pre></td></tr></table></figure></p>
+<p>新增字段<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter table</span> test_hive_parquet_partition <span class="keyword">add</span> columns (col_new string);</span><br></pre></td></tr></table></figure></p>
+<p>插入数据<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># 已有分区</span><br><span class="line"><span class="keyword">insert into</span> <span class="keyword">table</span> test_hive_parquet_partition <span class="keyword">partition</span>(<span class="keyword">year</span><span class="operator">=</span><span class="number">2024</span>) <span class="keyword">values</span> (<span class="string">&#x27;002&#x27;</span>,<span class="string">&#x27;李四&#x27;</span>,<span class="string">&#x27;col_new_value2&#x27;</span>);</span><br><span class="line"># 新增分区</span><br><span class="line"><span class="keyword">insert into</span> <span class="keyword">table</span> test_hive_parquet_partition <span class="keyword">partition</span>(<span class="keyword">year</span><span class="operator">=</span><span class="number">2025</span>) <span class="keyword">values</span> (<span class="string">&#x27;003&#x27;</span>,<span class="string">&#x27;王五&#x27;</span>,<span class="string">&#x27;col_new_value3&#x27;</span>);</span><br></pre></td></tr></table></figure></p>
+<p>查询新增列新增数据是否正常<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> test_hive_parquet_partition;</span><br></pre></td></tr></table></figure><br>可以看到对于已有分区新增字段对应的内容为空，新增分区新增字段对应的内容正常。</p>
 <p><img src="https://img.dongkelun.com/hive/add-col/add5.png" alt=""></p>
 <p>对应的parquet文件新增字段也不为空</p>
 <p><img src="https://img.dongkelun.com/hive/add-col/add8.png" alt=""></p>
 <h3 id="问题总结"><a href="#问题总结" class="headerlink" title="问题总结"></a>问题总结</h3><p>对于某些文件类型，如ORC不存在该问题，而对于 Parquet、Text ，只有在已有分区下插入数据时，新增字段查询才为 NULL, 新增的分区正常。</p>
 <h2 id="问题解决"><a href="#问题解决" class="headerlink" title="问题解决"></a>问题解决</h2><p>1、新增字段时添加 <code>cascade</code> 关键字，级联应用到分区表的所有分区</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> test_hive_parquet_partition <span class="keyword">add</span> <span class="keyword">columns</span> (col_new <span class="keyword">string</span>) <span class="keyword">cascade</span>;</span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter table</span> test_hive_parquet_partition <span class="keyword">add</span> columns (col_new string) cascade;</span><br></pre></td></tr></table></figure>
 <p><img src="https://img.dongkelun.com/hive/add-col/add6.png" alt=""></p>
 <p>2、如果新增字段时忘了添加 <code>cascade</code> ，则可以通过改名的方式解决。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> test_hive_text_partition <span class="keyword">change</span> col_new col_new2 <span class="keyword">string</span>;</span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> test_hive_text_partition <span class="keyword">change</span> col_new2 col_new <span class="keyword">string</span> <span class="keyword">cascade</span>;</span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">alter table</span> test_hive_text_partition change col_new col_new2 string;</span><br><span class="line"><span class="keyword">alter table</span> test_hive_text_partition change col_new2 col_new string cascade;</span><br></pre></td></tr></table></figure>
 <p><img src="https://img.dongkelun.com/hive/add-col/add7.png" alt=""></p>
 <h2 id="CASCADE"><a href="#CASCADE" class="headerlink" title="CASCADE"></a>CASCADE</h2><blockquote>
 <p>仅供参考</p>
 </blockquote>
 <p><img src="https://img.dongkelun.com/hive/add-col/add9.png" alt=""></p>
 <h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
-<li><a href="https://baijiahao.baidu.com/s?id=1724926871601854322&amp;wfr=spider&amp;for=pc" target="_blank" rel="noopener">https://baijiahao.baidu.com/s?id=1724926871601854322&amp;wfr=spider&amp;for=pc</a></li>
-<li><a href="https://blog.csdn.net/MyNameIsWangYi/article/details/136022818" target="_blank" rel="noopener">https://blog.csdn.net/MyNameIsWangYi/article/details/136022818</a></li>
+<li><a href="https://baijiahao.baidu.com/s?id=1724926871601854322&amp;wfr=spider&amp;for=pc">https://baijiahao.baidu.com/s?id=1724926871601854322&amp;wfr=spider&amp;for=pc</a></li>
+<li><a href="https://blog.csdn.net/MyNameIsWangYi/article/details/136022818">https://blog.csdn.net/MyNameIsWangYi/article/details/136022818</a></li>
 </ul>
-<h2 id="相关阅读"><a href="#相关阅读" class="headerlink" title="相关阅读"></a>相关阅读</h2><p><a href="https://mp.weixin.qq.com/s/p4o4T6_FTXv3OrIkPrr5lw" target="_blank" rel="noopener">Hive分区表学习总结</a></p>
+<h2 id="相关阅读"><a href="#相关阅读" class="headerlink" title="相关阅读"></a>相关阅读</h2><p><a href="https://mp.weixin.qq.com/s/p4o4T6_FTXv3OrIkPrr5lw">Hive分区表学习总结</a></p>
 
       
 
@@ -489,7 +487,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#SQL"><span class="toc-number">2.</span> <span class="toc-text">SQL</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#示例"><span class="toc-number">2.1.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#问题"><span class="toc-number">3.</span> <span class="toc-text">问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#问题复现"><span class="toc-number">4.</span> <span class="toc-text">问题复现</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#ORC-分区表"><span class="toc-number">4.1.</span> <span class="toc-text">ORC 分区表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Text-分区表"><span class="toc-number">4.2.</span> <span class="toc-text">Text 分区表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Parquet-分区表"><span class="toc-number">4.3.</span> <span class="toc-text">Parquet 分区表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#问题总结"><span class="toc-number">4.4.</span> <span class="toc-text">问题总结</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#问题解决"><span class="toc-number">5.</span> <span class="toc-text">问题解决</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#CASCADE"><span class="toc-number">6.</span> <span class="toc-text">CASCADE</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考"><span class="toc-number">7.</span> <span class="toc-text">参考</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#相关阅读"><span class="toc-number">8.</span> <span class="toc-text">相关阅读</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#SQL"><span class="toc-number">2.</span> <span class="toc-text">SQL</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%A4%BA%E4%BE%8B"><span class="toc-number">2.1.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%97%AE%E9%A2%98"><span class="toc-number">3.</span> <span class="toc-text">问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%97%AE%E9%A2%98%E5%A4%8D%E7%8E%B0"><span class="toc-number">4.</span> <span class="toc-text">问题复现</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#ORC-%E5%88%86%E5%8C%BA%E8%A1%A8"><span class="toc-number">4.1.</span> <span class="toc-text">ORC 分区表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Text-%E5%88%86%E5%8C%BA%E8%A1%A8"><span class="toc-number">4.2.</span> <span class="toc-text">Text 分区表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Parquet-%E5%88%86%E5%8C%BA%E8%A1%A8"><span class="toc-number">4.3.</span> <span class="toc-text">Parquet 分区表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93"><span class="toc-number">4.4.</span> <span class="toc-text">问题总结</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%97%AE%E9%A2%98%E8%A7%A3%E5%86%B3"><span class="toc-number">5.</span> <span class="toc-text">问题解决</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#CASCADE"><span class="toc-number">6.</span> <span class="toc-text">CASCADE</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">7.</span> <span class="toc-text">参考</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E9%98%85%E8%AF%BB"><span class="toc-number">8.</span> <span class="toc-text">相关阅读</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -664,14 +662,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -681,6 +671,22 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -696,14 +702,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
@@ -716,23 +714,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -752,7 +734,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -764,15 +758,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -808,11 +798,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -844,15 +834,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -864,7 +846,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -872,7 +854,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -884,7 +866,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -892,11 +878,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -905,6 +891,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -920,15 +914,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -937,6 +927,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -949,10 +943,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -972,10 +962,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
@@ -984,7 +970,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -992,11 +978,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1024,7 +1014,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1040,7 +1046,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
+                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1048,11 +1054,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1072,23 +1074,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ZooKeeper</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1097,6 +1091,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ollama</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
             
             <div class="clearfix"></div>

@@ -9,14 +9,13 @@
   <link rel="dns-prefetch" href="https://dongkelun.com">
   <title>Hudi Spark Sql Procedures 回滚 Hudi 表数据 | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="前言因为有 Hudi Rollback 的需求，所以单独总结 Hudi Spark Sql Procedures Rollback。 版本 Hudi 0.13.0（发现有bug）、（然后升级）0.14.1 Spark 3.2.3  Procedures官方文档：https://hudi.apache.org/docs/procedures相关阅读：Hudi Spark SQL Call Proce">
-<meta name="keywords" content="Spark,Hudi">
+  <meta name="description" content="前言因为有 Hudi Rollback 的需求，所以单独总结 Hudi Spark Sql Procedures Rollback。 版本 Hudi 0.13.0（发现有bug）、（然后升级）0.14.1 Spark 3.2.3  Procedures官方文档：https:&#x2F;&#x2F;hudi.apache.org&#x2F;docs&#x2F;procedures相关阅读：Hudi Spark SQL Call Proce">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Hudi Spark Sql Procedures 回滚 Hudi 表数据">
 <meta property="og:url" content="https://dongkelun.com/2024/06/04/hudi/hudiSparkSQLRollback/index.html">
 <meta property="og:site_name" content="伦少的博客">
-<meta property="og:description" content="前言因为有 Hudi Rollback 的需求，所以单独总结 Hudi Spark Sql Procedures Rollback。 版本 Hudi 0.13.0（发现有bug）、（然后升级）0.14.1 Spark 3.2.3  Procedures官方文档：https://hudi.apache.org/docs/procedures相关阅读：Hudi Spark SQL Call Proce">
-<meta property="og:locale" content="cn">
+<meta property="og:description" content="前言因为有 Hudi Rollback 的需求，所以单独总结 Hudi Spark Sql Procedures Rollback。 版本 Hudi 0.13.0（发现有bug）、（然后升级）0.14.1 Spark 3.2.3  Procedures官方文档：https:&#x2F;&#x2F;hudi.apache.org&#x2F;docs&#x2F;procedures相关阅读：Hudi Spark SQL Call Proce">
+<meta property="og:locale">
 <meta property="og:image" content="https://img.dongkelun.com/hudi/rollback/r1.png">
 <meta property="og:image" content="https://img.dongkelun.com/hudi/rollback/r2.png">
 <meta property="og:image" content="https://img.dongkelun.com/hudi/rollback/r3.png">
@@ -34,10 +33,12 @@
 <meta property="og:image" content="https://img.dongkelun.com/hudi/rollback/r15.png">
 <meta property="og:image" content="https://img.dongkelun.com/hudi/rollback/r16.png">
 <meta property="og:image" content="https://img.dongkelun.com/hudi/rollback/r17.png">
-<meta property="og:updated_time" content="2024-06-04T07:43:35.164Z">
+<meta property="article:published_time" content="2024-06-03T16:00:00.000Z">
+<meta property="article:modified_time" content="2024-06-04T07:43:35.164Z">
+<meta property="article:author" content="董可伦">
+<meta property="article:tag" content="Hudi">
+<meta property="article:tag" content="Spark">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Hudi Spark Sql Procedures 回滚 Hudi 表数据">
-<meta name="twitter:description" content="前言因为有 Hudi Rollback 的需求，所以单独总结 Hudi Spark Sql Procedures Rollback。 版本 Hudi 0.13.0（发现有bug）、（然后升级）0.14.1 Spark 3.2.3  Procedures官方文档：https://hudi.apache.org/docs/procedures相关阅读：Hudi Spark SQL Call Proce">
 <meta name="twitter:image" content="https://img.dongkelun.com/hudi/rollback/r1.png">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
@@ -56,7 +57,7 @@
 
   
 
-</head>
+<meta name="generator" content="Hexo 8.1.1"></head>
 
 <body>
   <div id="container" q-class="show:isCtnShow">
@@ -86,7 +87,7 @@
 			<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 		</a>
 		<hgroup>
-		  <h1 class="header-author"><a href="/">董可伦</a></h1>
+		  <h1 class="header-author"><a href="/"></a></h1>
 		</hgroup>
 		
 
@@ -158,7 +159,7 @@
 				<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 			</div>
 			<hgroup>
-			  <h1 class="header-author js-header-author">董可伦</h1>
+			  <h1 class="header-author js-header-author"></h1>
 			</hgroup>
 			
 			
@@ -278,39 +279,39 @@
 <li>Hudi 0.13.0（发现有bug）、（然后升级）0.14.1</li>
 <li>Spark 3.2.3</li>
 </ul>
-<h2 id="Procedures"><a href="#Procedures" class="headerlink" title="Procedures"></a>Procedures</h2><p>官方文档：<a href="https://hudi.apache.org/docs/procedures" target="_blank" rel="noopener">https://hudi.apache.org/docs/procedures</a><br>相关阅读：<a href="https://mp.weixin.qq.com/s/vctHNIJG05aHmb5l64eNXA" target="_blank" rel="noopener">Hudi Spark SQL Call Procedures学习总结（一）（查询统计表文件信息）</a></p>
-<h2 id="Rollback"><a href="#Rollback" class="headerlink" title="Rollback"></a>Rollback</h2><p>官方文档：<a href="https://hudi.apache.org/docs/rollbacks" target="_blank" rel="noopener">https://hudi.apache.org/docs/rollbacks</a></p>
-<p>回滚数据，可以回滚到至上一个commit（成功的）,也可以回滚到指定 commit (savepoint)。本文暂不涉及savepoint，只总结 回滚到上一个 commit。<br><a id="more"></a></p>
+<h2 id="Procedures"><a href="#Procedures" class="headerlink" title="Procedures"></a>Procedures</h2><p>官方文档：<a href="https://hudi.apache.org/docs/procedures">https://hudi.apache.org/docs/procedures</a><br>相关阅读：<a href="https://mp.weixin.qq.com/s/vctHNIJG05aHmb5l64eNXA">Hudi Spark SQL Call Procedures学习总结（一）（查询统计表文件信息）</a></p>
+<h2 id="Rollback"><a href="#Rollback" class="headerlink" title="Rollback"></a>Rollback</h2><p>官方文档：<a href="https://hudi.apache.org/docs/rollbacks">https://hudi.apache.org/docs/rollbacks</a></p>
+<p>回滚数据，可以回滚到至上一个commit（成功的）,也可以回滚到指定 commit (savepoint)。本文暂不涉及savepoint，只总结 回滚到上一个 commit。<br><span id="more"></span></p>
 <ul>
-<li>自动回滚：默认写任务时会自动触发回滚：<code>rollbackFailedWrites</code>。<br>每次写数据前会先检测上一个commit是否完成，如果上一个commit失败，删除上一个commit，如果成功，则不作任务操作。<br>如何检测commit失败：一个完整的commit 有 .commit.requested-&gt; .inflight-&gt;.commit ,如果只有  .commit.requested 或 .inflight 则认为不完整，commit失败。<br>在哪里触发自动回滚：在 startCommit 方法中 会先调用 CleanerUtils.rollbackFailedWrites 执行 rollback操作，相关源码分析见：<a href="https://mp.weixin.qq.com/s/JF9UfsNHhtKZOawKKZ1LFA" target="_blank" rel="noopener">Hudi源码|Insert源码分析总结（一）(整体流程)</a><br>举例：<br>001 commit 成功、002 commit 失败：先删除002 commit ，然后执行003 commit<br>001 commit 成功、002 commit 成功：不回滚，只执行 003 commit</li>
+<li>自动回滚：默认写任务时会自动触发回滚：<code>rollbackFailedWrites</code>。<br>每次写数据前会先检测上一个commit是否完成，如果上一个commit失败，删除上一个commit，如果成功，则不作任务操作。<br>如何检测commit失败：一个完整的commit 有 .commit.requested-&gt; .inflight-&gt;.commit ,如果只有  .commit.requested 或 .inflight 则认为不完整，commit失败。<br>在哪里触发自动回滚：在 startCommit 方法中 会先调用 CleanerUtils.rollbackFailedWrites 执行 rollback操作，相关源码分析见：<a href="https://mp.weixin.qq.com/s/JF9UfsNHhtKZOawKKZ1LFA">Hudi源码|Insert源码分析总结（一）(整体流程)</a><br>举例：<br>001 commit 成功、002 commit 失败：先删除002 commit ，然后执行003 commit<br>001 commit 成功、002 commit 成功：不回滚，只执行 003 commit</li>
 </ul>
 <ul>
 <li>手动回滚：<code>rollback_to_instant</code> 可以删除上一个成功的commit,回滚到上上个成功的commit。<br>举例：<br>001 commit 成功、002 commit 成功，可以回滚到001：删除002，最后一次commit 是001<br>限制：只能一个一个回滚，也就是只能删除最后一个commit，回滚到倒数第二个commit。可以连续回滚，如果想回滚到某个时间点的coomit，只能用 rollback_to_savepoint 回滚到指定的 savepoint。</li>
 </ul>
 <p>本文主要总结手动回滚：rollback_to_instant</p>
-<h2 id="SQL-语法"><a href="#SQL-语法" class="headerlink" title="SQL 语法"></a>SQL 语法</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> show_commits(<span class="keyword">table</span> =&gt; <span class="string">'hudi.test_hudi_table'</span>, <span class="keyword">limit</span> =&gt; <span class="number">10</span>);</span><br><span class="line"><span class="keyword">call</span> rollback_to_instant(<span class="keyword">table</span> =&gt; <span class="string">'hudi.test_hudi_table'</span>, instant_time =&gt; <span class="string">'committime'</span>);</span><br><span class="line"><span class="keyword">call</span> show_rollbacks(<span class="keyword">table</span> =&gt; <span class="string">'hudi.test_hudi_table'</span>);</span><br><span class="line"><span class="keyword">call</span> show_rollback_detail(<span class="keyword">table</span> =&gt; <span class="string">'hudi.test_hudi_table'</span>, instant_time =&gt; <span class="string">'committime'</span>);</span><br></pre></td></tr></table></figure>
-<h2 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h2><h3 id="数据准备"><a href="#数据准备" class="headerlink" title="数据准备"></a>数据准备</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> hudi.test_hudi_table (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span>,</span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="keyword">long</span>,</span><br><span class="line">  dt <span class="keyword">string</span></span><br><span class="line">) <span class="keyword">using</span> hudi</span><br><span class="line"> partitioned <span class="keyword">by</span> (dt)</span><br><span class="line"> options (</span><br><span class="line">  <span class="keyword">type</span> = <span class="string">'cow'</span>,</span><br><span class="line">  primaryKey = <span class="string">'id'</span>,</span><br><span class="line">  preCombineField = <span class="string">'ts'</span></span><br><span class="line"> ); </span><br><span class="line"> </span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> hudi.test_hudi_table <span class="keyword">values</span> (<span class="number">1</span>,<span class="string">'hudi'</span>,<span class="number">10</span>,<span class="number">100</span>,<span class="string">'2024-06-03'</span>); </span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> hudi.test_hudi_table <span class="keyword">values</span> (<span class="number">2</span>,<span class="string">'hudi'</span>,<span class="number">20</span>,<span class="number">200</span>,<span class="string">'2024-06-03'</span>); </span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> hudi.test_hudi_table <span class="keyword">values</span> (<span class="number">3</span>,<span class="string">'hudi'</span>,<span class="number">30</span>,<span class="number">300</span>,<span class="string">'2024-06-03'</span>);</span><br></pre></td></tr></table></figure>
-<h3 id="SQL-执行"><a href="#SQL-执行" class="headerlink" title="SQL 执行"></a>SQL 执行</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> show_commits(<span class="keyword">table</span> =&gt; <span class="string">'hudi.test_hudi_table'</span>, <span class="keyword">limit</span> =&gt; <span class="number">10</span>);</span><br><span class="line">20240603145257060       <span class="keyword">commit</span>  <span class="number">435474</span>  <span class="number">0</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">3</span>       <span class="number">0</span>       <span class="number">0</span></span><br><span class="line"><span class="number">20240603145214563</span>       <span class="keyword">commit</span>  <span class="number">435442</span>  <span class="number">0</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">2</span>       <span class="number">0</span>       <span class="number">0</span></span><br><span class="line"><span class="number">20240603145154120</span>       <span class="keyword">commit</span>  <span class="number">435293</span>  <span class="number">1</span></span><br></pre></td></tr></table></figure>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> rollback_to_instant(<span class="keyword">table</span> =&gt; <span class="string">'hudi.test_hudi_table'</span>, instant_time =&gt; <span class="string">'20240603145257060'</span>);</span><br></pre></td></tr></table></figure>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> show_commits(<span class="keyword">table</span> =&gt; <span class="string">'hudi.test_hudi_table'</span>, <span class="keyword">limit</span> =&gt; <span class="number">10</span>);</span><br><span class="line">20240603145214563       <span class="keyword">commit</span>  <span class="number">435442</span>  <span class="number">0</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">2</span>       <span class="number">0</span>       <span class="number">0</span></span><br><span class="line"><span class="number">20240603145154120</span>       <span class="keyword">commit</span>  <span class="number">435293</span>  <span class="number">1</span>       <span class="number">0</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">0</span>       <span class="number">0</span></span><br></pre></td></tr></table></figure>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> show_rollbacks(<span class="keyword">table</span> =&gt; <span class="string">'hudi.test_hudi_table'</span>);</span><br><span class="line">20240603145441704       20240603145257060       1       637     1</span><br></pre></td></tr></table></figure>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> show_rollback_detail(<span class="keyword">table</span> =&gt; <span class="string">'hudi.test_hudi_table'</span>, instant_time =&gt; <span class="string">'20240603145441704'</span>);</span><br><span class="line">20240603145441704       [20240603145257060]     dt=2024-06-03   //cluster1/warehouse/tablespace/managed/hive/hudi.db/test_hudi_table/dt=2024-06-03/358c406e-12b6-4718-b102-f303eecec6bf-0_0-243-200_20240603145257060.parquet   true</span><br></pre></td></tr></table></figure>
+<h2 id="SQL-语法"><a href="#SQL-语法" class="headerlink" title="SQL 语法"></a>SQL 语法</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> show_commits(<span class="keyword">table</span> <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;hudi.test_hudi_table&#x27;</span>, limit <span class="operator">=</span><span class="operator">&gt;</span> <span class="number">10</span>);</span><br><span class="line"><span class="keyword">call</span> rollback_to_instant(<span class="keyword">table</span> <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;hudi.test_hudi_table&#x27;</span>, instant_time <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;committime&#x27;</span>);</span><br><span class="line"><span class="keyword">call</span> show_rollbacks(<span class="keyword">table</span> <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;hudi.test_hudi_table&#x27;</span>);</span><br><span class="line"><span class="keyword">call</span> show_rollback_detail(<span class="keyword">table</span> <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;hudi.test_hudi_table&#x27;</span>, instant_time <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;committime&#x27;</span>);</span><br></pre></td></tr></table></figure>
+<h2 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h2><h3 id="数据准备"><a href="#数据准备" class="headerlink" title="数据准备"></a>数据准备</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create table</span> hudi.test_hudi_table (</span><br><span class="line">  id <span class="type">int</span>,</span><br><span class="line">  name string,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts long,</span><br><span class="line">  dt string</span><br><span class="line">) <span class="keyword">using</span> hudi</span><br><span class="line"> partitioned <span class="keyword">by</span> (dt)</span><br><span class="line"> options (</span><br><span class="line">  type <span class="operator">=</span> <span class="string">&#x27;cow&#x27;</span>,</span><br><span class="line">  primaryKey <span class="operator">=</span> <span class="string">&#x27;id&#x27;</span>,</span><br><span class="line">  preCombineField <span class="operator">=</span> <span class="string">&#x27;ts&#x27;</span></span><br><span class="line"> ); </span><br><span class="line"> </span><br><span class="line"><span class="keyword">insert into</span> hudi.test_hudi_table <span class="keyword">values</span> (<span class="number">1</span>,<span class="string">&#x27;hudi&#x27;</span>,<span class="number">10</span>,<span class="number">100</span>,<span class="string">&#x27;2024-06-03&#x27;</span>); </span><br><span class="line"><span class="keyword">insert into</span> hudi.test_hudi_table <span class="keyword">values</span> (<span class="number">2</span>,<span class="string">&#x27;hudi&#x27;</span>,<span class="number">20</span>,<span class="number">200</span>,<span class="string">&#x27;2024-06-03&#x27;</span>); </span><br><span class="line"><span class="keyword">insert into</span> hudi.test_hudi_table <span class="keyword">values</span> (<span class="number">3</span>,<span class="string">&#x27;hudi&#x27;</span>,<span class="number">30</span>,<span class="number">300</span>,<span class="string">&#x27;2024-06-03&#x27;</span>);  </span><br></pre></td></tr></table></figure>
+<h3 id="SQL-执行"><a href="#SQL-执行" class="headerlink" title="SQL 执行"></a>SQL 执行</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> show_commits(<span class="keyword">table</span> <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;hudi.test_hudi_table&#x27;</span>, limit <span class="operator">=</span><span class="operator">&gt;</span> <span class="number">10</span>);</span><br><span class="line"><span class="number">20240603145257060</span>       <span class="keyword">commit</span>  <span class="number">435474</span>  <span class="number">0</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">3</span>       <span class="number">0</span>       <span class="number">0</span></span><br><span class="line"><span class="number">20240603145214563</span>       <span class="keyword">commit</span>  <span class="number">435442</span>  <span class="number">0</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">2</span>       <span class="number">0</span>       <span class="number">0</span></span><br><span class="line"><span class="number">20240603145154120</span>       <span class="keyword">commit</span>  <span class="number">435293</span>  <span class="number">1</span>    </span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> rollback_to_instant(<span class="keyword">table</span> <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;hudi.test_hudi_table&#x27;</span>, instant_time <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;20240603145257060&#x27;</span>);</span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> show_commits(<span class="keyword">table</span> <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;hudi.test_hudi_table&#x27;</span>, limit <span class="operator">=</span><span class="operator">&gt;</span> <span class="number">10</span>);</span><br><span class="line"><span class="number">20240603145214563</span>       <span class="keyword">commit</span>  <span class="number">435442</span>  <span class="number">0</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">2</span>       <span class="number">0</span>       <span class="number">0</span></span><br><span class="line"><span class="number">20240603145154120</span>       <span class="keyword">commit</span>  <span class="number">435293</span>  <span class="number">1</span>       <span class="number">0</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">0</span>       <span class="number">0</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> show_rollbacks(<span class="keyword">table</span> <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;hudi.test_hudi_table&#x27;</span>);</span><br><span class="line"><span class="number">20240603145441704</span>       <span class="number">20240603145257060</span>       <span class="number">1</span>       <span class="number">637</span>     <span class="number">1</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> show_rollback_detail(<span class="keyword">table</span> <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;hudi.test_hudi_table&#x27;</span>, instant_time <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;20240603145441704&#x27;</span>);</span><br><span class="line"><span class="number">20240603145441704</span>       [<span class="number">20240603145257060</span>]     dt<span class="operator">=</span><span class="number">2024</span><span class="number">-06</span><span class="number">-03</span>   <span class="operator">/</span><span class="operator">/</span>cluster1<span class="operator">/</span>warehouse<span class="operator">/</span>tablespace<span class="operator">/</span>managed<span class="operator">/</span>hive<span class="operator">/</span>hudi.db<span class="operator">/</span>test_hudi_table<span class="operator">/</span>dt<span class="operator">=</span><span class="number">2024</span><span class="number">-06</span><span class="number">-03</span><span class="operator">/</span><span class="number">358</span>c406e<span class="number">-12</span>b6<span class="number">-4718</span><span class="operator">-</span>b102<span class="operator">-</span>f303eecec6bf<span class="number">-0</span>_0<span class="number">-243</span><span class="number">-200</span>_20240603145257060.parquet   <span class="literal">true</span></span><br></pre></td></tr></table></figure>
 <p>继续 rollback</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> rollback_to_instant(<span class="keyword">table</span> =&gt; <span class="string">'hudi.test_hudi_table'</span>, instant_time =&gt; <span class="string">'20240603145214563'</span>);</span><br></pre></td></tr></table></figure>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> show_commits(<span class="keyword">table</span> =&gt; <span class="string">'hudi.test_hudi_table'</span>, <span class="keyword">limit</span> =&gt; <span class="number">10</span>);</span><br><span class="line">20240603145154120       <span class="keyword">commit</span>  <span class="number">435293</span>  <span class="number">1</span>       <span class="number">0</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">0</span>       <span class="number">0</span></span><br></pre></td></tr></table></figure>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> show_rollbacks(<span class="keyword">table</span> =&gt; <span class="string">'hudi.test_hudi_table'</span>);</span><br><span class="line">20240603145441704       20240603145257060       1       637     1</span><br><span class="line">20240603150458282       20240603145214563       1       628     1</span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> rollback_to_instant(<span class="keyword">table</span> <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;hudi.test_hudi_table&#x27;</span>, instant_time <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;20240603145214563&#x27;</span>);</span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> show_commits(<span class="keyword">table</span> <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;hudi.test_hudi_table&#x27;</span>, limit <span class="operator">=</span><span class="operator">&gt;</span> <span class="number">10</span>);</span><br><span class="line"><span class="number">20240603145154120</span>       <span class="keyword">commit</span>  <span class="number">435293</span>  <span class="number">1</span>       <span class="number">0</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">0</span>       <span class="number">0</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> show_rollbacks(<span class="keyword">table</span> <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;hudi.test_hudi_table&#x27;</span>);</span><br><span class="line"><span class="number">20240603145441704</span>       <span class="number">20240603145257060</span>       <span class="number">1</span>       <span class="number">637</span>     <span class="number">1</span></span><br><span class="line"><span class="number">20240603150458282</span>       <span class="number">20240603145214563</span>       <span class="number">1</span>       <span class="number">628</span>     <span class="number">1</span></span><br></pre></td></tr></table></figure>
 <h3 id="结果验证"><a href="#结果验证" class="headerlink" title="结果验证"></a>结果验证</h3><p>效果截图：<br><img src="https://img.dongkelun.com/hudi/rollback/r1.png" alt=""><br><img src="https://img.dongkelun.com/hudi/rollback/r2.png" alt=""><br><img src="https://img.dongkelun.com/hudi/rollback/r3.png" alt=""><br><img src="https://img.dongkelun.com/hudi/rollback/r4.png" alt=""></p>
 <p>可以看到：第一次 rollback 删除了id=3的数据和commit,生成了 20240603145441704.rollback；第二次删除了id=2的数据和commit,生成了 20240603150458282.rollback</p>
 <h2 id="Flink-结合"><a href="#Flink-结合" class="headerlink" title="Flink 结合"></a>Flink 结合</h2><p>验证 Spark SQL rollback Flink写的表是否有问题</p>
 <h3 id="Flink-造数"><a href="#Flink-造数" class="headerlink" title="Flink 造数"></a>Flink 造数</h3><p>rollback 既可以回滚 cow 表也可以，也可以回滚 mor 表，上面验证的 cow 表，这次用 mor 表验证。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> execution.target=yarn-per-job;</span><br><span class="line"><span class="keyword">set</span> taskmanager.numberOfTaskSlots=<span class="number">1</span>;</span><br><span class="line"><span class="keyword">set</span> execution.runtime-<span class="keyword">mode</span>=batch;</span><br><span class="line"><span class="keyword">set</span> table.dml-<span class="keyword">sync</span> = <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> test_flink_mor (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span> PRIMARY <span class="keyword">KEY</span> <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span>,</span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="built_in">int</span>,</span><br><span class="line">  ts <span class="built_in">int</span>,</span><br><span class="line">  dt <span class="keyword">string</span></span><br><span class="line">)</span><br><span class="line">PARTITIONED <span class="keyword">BY</span> (dt)</span><br><span class="line"><span class="keyword">WITH</span> (</span><br><span class="line">  <span class="string">'connector'</span> = <span class="string">'hudi'</span>,</span><br><span class="line">  <span class="string">'path'</span> = <span class="string">'/tmp/hudi/test_flink_mor'</span>,</span><br><span class="line">  <span class="string">'table.type'</span> = <span class="string">'MERGE_ON_READ'</span>,</span><br><span class="line">  <span class="string">'hoodie.datasource.write.keygenerator.class'</span> = <span class="string">'org.apache.hudi.keygen.ComplexAvroKeyGenerator'</span>,</span><br><span class="line">  <span class="string">'hoodie.datasource.write.recordkey.field'</span> = <span class="string">'id'</span>,</span><br><span class="line">  <span class="string">'hoodie.datasource.write.hive_style_partitioning'</span> = <span class="string">'true'</span>,</span><br><span class="line">  <span class="string">'hive_sync.enable'</span> = <span class="string">'true'</span>,</span><br><span class="line">  <span class="string">'hive_sync.mode'</span> = <span class="string">'hms'</span>,</span><br><span class="line">  <span class="string">'hive_sync.conf.dir'</span>=<span class="string">'/usr/hdp/3.1.0.0-78/hive/conf'</span>,</span><br><span class="line">  <span class="string">'hive_sync.db'</span> = <span class="string">'hudi'</span>,</span><br><span class="line">  <span class="string">'hive_sync.table'</span> = <span class="string">'test_flink_mor'</span>,</span><br><span class="line">  <span class="string">'hive_sync.partition_fields'</span> = <span class="string">'dt'</span>,</span><br><span class="line">  <span class="string">'hive_sync.partition_extractor_class'</span> = <span class="string">'org.apache.hudi.hive.HiveStylePartitionValueExtractor'</span>,</span><br><span class="line">  <span class="string">'hoodie.datasource.hive_sync.create_managed_table'</span> = <span class="string">'true'</span>,</span><br><span class="line">  <span class="string">'compaction.async.enabled'</span>= <span class="string">'false'</span>,</span><br><span class="line">  <span class="string">'compaction.delta_commits'</span> = <span class="string">'2'</span>,</span><br><span class="line">  <span class="string">'hoodie.compact.inline'</span> = <span class="string">'true'</span>,</span><br><span class="line">  <span class="string">'hoodie.compact.inline.max.delta.commits'</span> = <span class="string">'2'</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test_flink_mor <span class="keyword">values</span> (<span class="number">1</span>,<span class="string">'hudi'</span>,<span class="number">10</span>,<span class="number">100</span>,<span class="string">'2024-06-03'</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test_flink_mor <span class="keyword">values</span> (<span class="number">2</span>,<span class="string">'hudi'</span>,<span class="number">20</span>,<span class="number">200</span>,<span class="string">'2024-06-03'</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test_flink_mor <span class="keyword">values</span> (<span class="number">3</span>,<span class="string">'hudi'</span>,<span class="number">30</span>,<span class="number">300</span>,<span class="string">'2024-06-03'</span>);</span><br></pre></td></tr></table></figure>
-<h3 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> show_commits(<span class="keyword">table</span> =&gt; <span class="string">'hudi.test_flink_mor_ro'</span>, <span class="keyword">limit</span> =&gt; <span class="number">10</span>);</span><br><span class="line">20240603152727949       deltacommit     903     0       1       1       1       1       0</span><br><span class="line">20240603152637632       <span class="keyword">commit</span>  <span class="number">435262</span>  <span class="number">1</span>       <span class="number">0</span>       <span class="number">1</span>       <span class="number">2</span>       <span class="number">0</span>       <span class="number">0</span></span><br><span class="line"><span class="number">20240603152636150</span>       deltacommit     <span class="number">903</span>     <span class="number">0</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">0</span></span><br><span class="line"><span class="number">20240603152552562</span>       deltacommit     <span class="number">903</span>     <span class="number">0</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">0</span>       <span class="number">0</span></span><br></pre></td></tr></table></figure>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> rollback_to_instant(<span class="keyword">table</span> =&gt; <span class="string">'hudi.test_flink_mor_ro'</span>, instant_time =&gt; <span class="string">'20240603152727949'</span>);</span><br></pre></td></tr></table></figure>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> show_commits(<span class="keyword">table</span> =&gt; <span class="string">'hudi.test_flink_mor_ro'</span>, <span class="keyword">limit</span> =&gt; <span class="number">10</span>);</span><br><span class="line">20240603152637632       <span class="keyword">commit</span>  <span class="number">435262</span>  <span class="number">1</span>       <span class="number">0</span>       <span class="number">1</span>       <span class="number">2</span>       <span class="number">0</span>       <span class="number">0</span></span><br><span class="line"><span class="number">20240603152636150</span>       deltacommit     <span class="number">903</span>     <span class="number">0</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">0</span></span><br><span class="line"><span class="number">20240603152552562</span>       deltacommit     <span class="number">903</span>     <span class="number">0</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">0</span>       <span class="number">0</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> execution.target<span class="operator">=</span>yarn<span class="operator">-</span><span class="keyword">per</span><span class="operator">-</span>job;</span><br><span class="line"><span class="keyword">set</span> taskmanager.numberOfTaskSlots<span class="operator">=</span><span class="number">1</span>;</span><br><span class="line"><span class="keyword">set</span> execution.runtime<span class="operator">-</span>mode<span class="operator">=</span>batch;</span><br><span class="line"><span class="keyword">set</span> table.dml<span class="operator">-</span>sync <span class="operator">=</span> <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE TABLE</span> test_flink_mor (</span><br><span class="line">  id <span class="type">int</span> <span class="keyword">PRIMARY KEY</span> <span class="keyword">NOT</span> ENFORCED,</span><br><span class="line">  name string,</span><br><span class="line">  price <span class="type">int</span>,</span><br><span class="line">  ts <span class="type">int</span>,</span><br><span class="line">  dt string</span><br><span class="line">)</span><br><span class="line">PARTITIONED <span class="keyword">BY</span> (dt)</span><br><span class="line"><span class="keyword">WITH</span> (</span><br><span class="line">  <span class="string">&#x27;connector&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;hudi&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;path&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;/tmp/hudi/test_flink_mor&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;table.type&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;MERGE_ON_READ&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hoodie.datasource.write.keygenerator.class&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;org.apache.hudi.keygen.ComplexAvroKeyGenerator&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hoodie.datasource.write.recordkey.field&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;id&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hoodie.datasource.write.hive_style_partitioning&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;true&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hive_sync.enable&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;true&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hive_sync.mode&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;hms&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hive_sync.conf.dir&#x27;</span><span class="operator">=</span><span class="string">&#x27;/usr/hdp/3.1.0.0-78/hive/conf&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hive_sync.db&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;hudi&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hive_sync.table&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;test_flink_mor&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hive_sync.partition_fields&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;dt&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hive_sync.partition_extractor_class&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;org.apache.hudi.hive.HiveStylePartitionValueExtractor&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hoodie.datasource.hive_sync.create_managed_table&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;true&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;compaction.async.enabled&#x27;</span><span class="operator">=</span> <span class="string">&#x27;false&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;compaction.delta_commits&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;2&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hoodie.compact.inline&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;true&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;hoodie.compact.inline.max.delta.commits&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;2&#x27;</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert into</span> test_flink_mor <span class="keyword">values</span> (<span class="number">1</span>,<span class="string">&#x27;hudi&#x27;</span>,<span class="number">10</span>,<span class="number">100</span>,<span class="string">&#x27;2024-06-03&#x27;</span>);</span><br><span class="line"><span class="keyword">insert into</span> test_flink_mor <span class="keyword">values</span> (<span class="number">2</span>,<span class="string">&#x27;hudi&#x27;</span>,<span class="number">20</span>,<span class="number">200</span>,<span class="string">&#x27;2024-06-03&#x27;</span>);</span><br><span class="line"><span class="keyword">insert into</span> test_flink_mor <span class="keyword">values</span> (<span class="number">3</span>,<span class="string">&#x27;hudi&#x27;</span>,<span class="number">30</span>,<span class="number">300</span>,<span class="string">&#x27;2024-06-03&#x27;</span>);</span><br></pre></td></tr></table></figure>
+<h3 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> show_commits(<span class="keyword">table</span> <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;hudi.test_flink_mor_ro&#x27;</span>, limit <span class="operator">=</span><span class="operator">&gt;</span> <span class="number">10</span>);</span><br><span class="line"><span class="number">20240603152727949</span>       deltacommit     <span class="number">903</span>     <span class="number">0</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">0</span></span><br><span class="line"><span class="number">20240603152637632</span>       <span class="keyword">commit</span>  <span class="number">435262</span>  <span class="number">1</span>       <span class="number">0</span>       <span class="number">1</span>       <span class="number">2</span>       <span class="number">0</span>       <span class="number">0</span></span><br><span class="line"><span class="number">20240603152636150</span>       deltacommit     <span class="number">903</span>     <span class="number">0</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">0</span></span><br><span class="line"><span class="number">20240603152552562</span>       deltacommit     <span class="number">903</span>     <span class="number">0</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">0</span>       <span class="number">0</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> rollback_to_instant(<span class="keyword">table</span> <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;hudi.test_flink_mor_ro&#x27;</span>, instant_time <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;20240603152727949&#x27;</span>);</span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> show_commits(<span class="keyword">table</span> <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;hudi.test_flink_mor_ro&#x27;</span>, limit <span class="operator">=</span><span class="operator">&gt;</span> <span class="number">10</span>);</span><br><span class="line"><span class="number">20240603152637632</span>       <span class="keyword">commit</span>  <span class="number">435262</span>  <span class="number">1</span>       <span class="number">0</span>       <span class="number">1</span>       <span class="number">2</span>       <span class="number">0</span>       <span class="number">0</span></span><br><span class="line"><span class="number">20240603152636150</span>       deltacommit     <span class="number">903</span>     <span class="number">0</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">0</span></span><br><span class="line"><span class="number">20240603152552562</span>       deltacommit     <span class="number">903</span>     <span class="number">0</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">1</span>       <span class="number">0</span>       <span class="number">0</span></span><br></pre></td></tr></table></figure>
 <p>继续回滚：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> rollback_to_instant(<span class="keyword">table</span> =&gt; <span class="string">'hudi.test_flink_mor_ro'</span>, instant_time =&gt; <span class="string">'20240603152637632'</span>);</span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> rollback_to_instant(<span class="keyword">table</span> <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;hudi.test_flink_mor_ro&#x27;</span>, instant_time <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;20240603152637632&#x27;</span>);</span><br></pre></td></tr></table></figure>
 <p>hudi 0.13.0 会抛异常</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">call <span class="title">rollback_to_instant</span><span class="params">(table =&gt; <span class="string">'hudi.test_flink_mor_ro'</span>, instant_time =&gt; <span class="string">'20240603152637632'</span>)</span></span>;</span><br><span class="line"><span class="number">24</span>/<span class="number">06</span>/<span class="number">03</span> <span class="number">15</span>:<span class="number">49</span>:<span class="number">40</span> ERROR SparkSQLDriver: Failed in [<span class="function">call <span class="title">rollback_to_instant</span><span class="params">(table =&gt; <span class="string">'hudi.test_flink_mor_ro'</span>, instant_time =&gt; <span class="string">'20240603152637632'</span>)</span>]</span></span><br><span class="line"><span class="function">org.apache.hudi.exception.HoodieRollbackException: Failed to rollback hdfs:<span class="comment">//cluster1/tmp/hudi/test_flink_mor commits 20240603152637632</span></span></span><br><span class="line"><span class="function">Caused by: org.apache.hudi.exception.HoodieMetadataException: The instant [20240603152637632__deltacommit__COMPLETED] required to sync rollback of 20240603152637632 has been archived</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">call <span class="title function_">rollback_to_instant</span><span class="params">(table =&gt; <span class="string">&#x27;hudi.test_flink_mor_ro&#x27;</span>, instant_time =&gt; <span class="string">&#x27;20240603152637632&#x27;</span>)</span>;</span><br><span class="line"><span class="number">24</span>/<span class="number">06</span>/<span class="number">03</span> <span class="number">15</span>:<span class="number">49</span>:<span class="number">40</span> ERROR SparkSQLDriver: Failed in [call <span class="title function_">rollback_to_instant</span><span class="params">(table =&gt; <span class="string">&#x27;hudi.test_flink_mor_ro&#x27;</span>, instant_time =&gt; <span class="string">&#x27;20240603152637632&#x27;</span>)</span>]</span><br><span class="line">org.apache.hudi.exception.HoodieRollbackException: Failed to rollback hdfs:<span class="comment">//cluster1/tmp/hudi/test_flink_mor commits 20240603152637632</span></span><br><span class="line">Caused by: org.apache.hudi.exception.HoodieMetadataException: The instant [20240603152637632__deltacommit__COMPLETED] required to sync rollback of <span class="number">20240603152637632</span> has been archived</span><br></pre></td></tr></table></figure>
 <p><img src="https://img.dongkelun.com/hudi/rollback/r5.png" alt=""><br><img src="https://img.dongkelun.com/hudi/rollback/r6.png" alt=""><br><img src="https://img.dongkelun.com/hudi/rollback/r7.png" alt=""><br><img src="https://img.dongkelun.com/hudi/rollback/r8.png" alt=""></p>
 <h3 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h3><p>这里实际删除了对应的commit 和数据 ：20240603152637632.commit fc621eda-7f97-465d-b191-9eab0b4bb660_0-1-0_20240603152637632.parquet，但是.requested和 .inflight 没有删除成功就报错了。</p>
 <p>也就是 Hudi 0.13.0 spark sql rollback spark 写的hudi 表没有问题，rollback flink写的表只有第一次成功，第二次会失败，导致之后无法继续进行rollback了。</p>
@@ -319,16 +320,14 @@
 <h3 id="升级验证"><a href="#升级验证" class="headerlink" title="升级验证"></a>升级验证</h3><p>重新造数：test_flink_mor</p>
 <p><img src="https://img.dongkelun.com/hudi/rollback/r9.png" alt=""><br><img src="https://img.dongkelun.com/hudi/rollback/r10.png" alt=""><br><img src="https://img.dongkelun.com/hudi/rollback/r11.png" alt=""><br><img src="https://img.dongkelun.com/hudi/rollback/r_12.png" alt=""></p>
 <p>可以看到连续两次rollback都是成功的!</p>
-<h2 id="测试-rollback-失败的-commit"><a href="#测试-rollback-失败的-commit" class="headerlink" title="测试 rollback 失败的 commit"></a>测试 rollback 失败的 commit</h2><h3 id="rollback-to-instant"><a href="#rollback-to-instant" class="headerlink" title="rollback_to_instant"></a>rollback_to_instant</h3><p>首先人为删除表 hudi.test_hudi_table 的 20240603145154120.commit，这样20240603145154120对应的commit就是不完整的、失败的。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hadoop fs -rm -r /warehouse/tablespace/managed/hive/hudi.db/test_hudi_table/.hoodie/20240603145154120.commit</span><br></pre></td></tr></table></figure></p>
-<p><img src="https://img.dongkelun.com/hudi/rollback/r13.png" alt=""></p>
-<p>先测试 hudi 0.13.0 <code>rollback_to_instant</code> 是否正常<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> rollback_to_instant(<span class="keyword">table</span> =&gt; <span class="string">'hudi.test_hudi_table'</span>, instant_time =&gt; <span class="string">'20240603145154120'</span>);</span><br><span class="line">24/06/04 09:51:34 ERROR SparkSQLDriver: Failed in [<span class="keyword">call</span> rollback_to_instant(<span class="keyword">table</span> =&gt; <span class="string">'hudi.test_hudi_table'</span>, instant_time =&gt; <span class="string">'20240603145154120'</span>)]</span><br><span class="line">org.apache.hudi.exception.HoodieException: <span class="keyword">Commit</span> <span class="number">20240603145154120</span> <span class="keyword">not</span> <span class="keyword">found</span> <span class="keyword">in</span> Commits org.apache.hudi.common.table.timeline.HoodieDefaultTimeline:</span><br></pre></td></tr></table></figure></p>
-<p>0.13.0 抛出异常：Commit 20240603145154120 not found in Commits</p>
+<h2 id="测试-rollback-失败的-commit"><a href="#测试-rollback-失败的-commit" class="headerlink" title="测试 rollback 失败的 commit"></a>测试 rollback 失败的 commit</h2><h3 id="rollback-to-instant"><a href="#rollback-to-instant" class="headerlink" title="rollback_to_instant"></a>rollback_to_instant</h3><p>首先人为删除表 hudi.test_hudi_table 的 20240603145154120.commit，这样20240603145154120对应的commit就是不完整的、失败的。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hadoop fs -<span class="built_in">rm</span> -r /warehouse/tablespace/managed/hive/hudi.db/test_hudi_table/.hoodie/20240603145154120.commit</span><br></pre></td></tr></table></figure><br><img src="https://img.dongkelun.com/hudi/rollback/r13.png" alt=""></p>
+<p>先测试 hudi 0.13.0 <code>rollback_to_instant</code> 是否正常<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> rollback_to_instant(<span class="keyword">table</span> <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;hudi.test_hudi_table&#x27;</span>, instant_time <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;20240603145154120&#x27;</span>);</span><br><span class="line"><span class="number">24</span><span class="operator">/</span><span class="number">06</span><span class="operator">/</span><span class="number">04</span> <span class="number">09</span>:<span class="number">51</span>:<span class="number">34</span> ERROR SparkSQLDriver: Failed <span class="keyword">in</span> [<span class="keyword">call</span> rollback_to_instant(<span class="keyword">table</span> <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;hudi.test_hudi_table&#x27;</span>, instant_time <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;20240603145154120&#x27;</span>)]</span><br><span class="line">org.apache.hudi.exception.HoodieException: <span class="keyword">Commit</span> <span class="number">20240603145154120</span> <span class="keyword">not</span> found <span class="keyword">in</span> Commits org.apache.hudi.common.table.timeline.HoodieDefaultTimeline:</span><br></pre></td></tr></table></figure><br>0.13.0 抛出异常：Commit 20240603145154120 not found in Commits</p>
 <p><img src="https://img.dongkelun.com/hudi/rollback/r14.png" alt=""></p>
 <p>然后测试 0.14.1 是否正常<br><img src="https://img.dongkelun.com/hudi/rollback/r15.png" alt=""><br><img src="https://img.dongkelun.com/hudi/rollback/r16.png" alt=""></p>
 <h3 id="自动回滚"><a href="#自动回滚" class="headerlink" title="自动回滚"></a>自动回滚</h3><p>测试写数据时是否会自动回滚。<br>先用flink insert一条数据，生成 .deltacommit 后，人为删除 .deltacommit，保留 .deltacommit.requested 和 .deltacommit.inflight<br>然后执行再用flink insert一条数据，看是否会触发rollback。</p>
 <p><img src="https://img.dongkelun.com/hudi/rollback/r17.png" alt=""></p>
 <p>可以看到写数据时，会先rollback上一次失败的commit，再写数据生成新的commit</p>
-<h2 id="相关异常"><a href="#相关异常" class="headerlink" title="相关异常"></a>相关异常</h2><p>记录遇到的相关异常信息：<a href="https://note.youdao.com/s/EtQEL1wC" target="_blank" rel="noopener">https://note.youdao.com/s/EtQEL1wC</a></p>
+<h2 id="相关异常"><a href="#相关异常" class="headerlink" title="相关异常"></a>相关异常</h2><p>记录遇到的相关异常信息：<a href="https://note.youdao.com/s/EtQEL1wC">https://note.youdao.com/s/EtQEL1wC</a></p>
 <h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>对于 <code>rollback_to_instant</code></p>
 <ul>
 <li>只能 rollback 最后一个commit</li>
@@ -338,8 +337,8 @@
 <li>可以回滚哪些？对于cow 表：.commit；对于 mor表：.deltacommit 和 .commit</li>
 </ul>
 <h2 id="相关阅读"><a href="#相关阅读" class="headerlink" title="相关阅读"></a>相关阅读</h2><ul>
-<li><a href="https://mp.weixin.qq.com/s/vctHNIJG05aHmb5l64eNXA" target="_blank" rel="noopener">Hudi Spark SQL Call Procedures学习总结（一）（查询统计表文件信息）</a></li>
-<li><a href="https://mp.weixin.qq.com/s/JF9UfsNHhtKZOawKKZ1LFA" target="_blank" rel="noopener">Hudi源码|Insert源码分析总结（一）(整体流程)</a></li>
+<li><a href="https://mp.weixin.qq.com/s/vctHNIJG05aHmb5l64eNXA">Hudi Spark SQL Call Procedures学习总结（一）（查询统计表文件信息）</a></li>
+<li><a href="https://mp.weixin.qq.com/s/JF9UfsNHhtKZOawKKZ1LFA">Hudi源码|Insert源码分析总结（一）(整体流程)</a></li>
 </ul>
 
       
@@ -497,7 +496,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#版本"><span class="toc-number">2.</span> <span class="toc-text">版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Procedures"><span class="toc-number">3.</span> <span class="toc-text">Procedures</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Rollback"><span class="toc-number">4.</span> <span class="toc-text">Rollback</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#SQL-语法"><span class="toc-number">5.</span> <span class="toc-text">SQL 语法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#示例"><span class="toc-number">6.</span> <span class="toc-text">示例</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#数据准备"><span class="toc-number">6.1.</span> <span class="toc-text">数据准备</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#SQL-执行"><span class="toc-number">6.2.</span> <span class="toc-text">SQL 执行</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#结果验证"><span class="toc-number">6.3.</span> <span class="toc-text">结果验证</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Flink-结合"><span class="toc-number">7.</span> <span class="toc-text">Flink 结合</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Flink-造数"><span class="toc-number">7.1.</span> <span class="toc-text">Flink 造数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#验证"><span class="toc-number">7.2.</span> <span class="toc-text">验证</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#问题"><span class="toc-number">7.3.</span> <span class="toc-text">问题</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#问题解决"><span class="toc-number">7.4.</span> <span class="toc-text">问题解决</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#升级验证"><span class="toc-number">7.5.</span> <span class="toc-text">升级验证</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#测试-rollback-失败的-commit"><span class="toc-number">8.</span> <span class="toc-text">测试 rollback 失败的 commit</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#rollback-to-instant"><span class="toc-number">8.1.</span> <span class="toc-text">rollback_to_instant</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#自动回滚"><span class="toc-number">8.2.</span> <span class="toc-text">自动回滚</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#相关异常"><span class="toc-number">9.</span> <span class="toc-text">相关异常</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#小结"><span class="toc-number">10.</span> <span class="toc-text">小结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#相关阅读"><span class="toc-number">11.</span> <span class="toc-text">相关阅读</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%89%88%E6%9C%AC"><span class="toc-number">2.</span> <span class="toc-text">版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Procedures"><span class="toc-number">3.</span> <span class="toc-text">Procedures</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Rollback"><span class="toc-number">4.</span> <span class="toc-text">Rollback</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#SQL-%E8%AF%AD%E6%B3%95"><span class="toc-number">5.</span> <span class="toc-text">SQL 语法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%A4%BA%E4%BE%8B"><span class="toc-number">6.</span> <span class="toc-text">示例</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E5%87%86%E5%A4%87"><span class="toc-number">6.1.</span> <span class="toc-text">数据准备</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#SQL-%E6%89%A7%E8%A1%8C"><span class="toc-number">6.2.</span> <span class="toc-text">SQL 执行</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BB%93%E6%9E%9C%E9%AA%8C%E8%AF%81"><span class="toc-number">6.3.</span> <span class="toc-text">结果验证</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Flink-%E7%BB%93%E5%90%88"><span class="toc-number">7.</span> <span class="toc-text">Flink 结合</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Flink-%E9%80%A0%E6%95%B0"><span class="toc-number">7.1.</span> <span class="toc-text">Flink 造数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%AA%8C%E8%AF%81"><span class="toc-number">7.2.</span> <span class="toc-text">验证</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%97%AE%E9%A2%98"><span class="toc-number">7.3.</span> <span class="toc-text">问题</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%97%AE%E9%A2%98%E8%A7%A3%E5%86%B3"><span class="toc-number">7.4.</span> <span class="toc-text">问题解决</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8D%87%E7%BA%A7%E9%AA%8C%E8%AF%81"><span class="toc-number">7.5.</span> <span class="toc-text">升级验证</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95-rollback-%E5%A4%B1%E8%B4%A5%E7%9A%84-commit"><span class="toc-number">8.</span> <span class="toc-text">测试 rollback 失败的 commit</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#rollback-to-instant"><span class="toc-number">8.1.</span> <span class="toc-text">rollback_to_instant</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%87%AA%E5%8A%A8%E5%9B%9E%E6%BB%9A"><span class="toc-number">8.2.</span> <span class="toc-text">自动回滚</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E5%BC%82%E5%B8%B8"><span class="toc-number">9.</span> <span class="toc-text">相关异常</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%8F%E7%BB%93"><span class="toc-number">10.</span> <span class="toc-text">小结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E9%98%85%E8%AF%BB"><span class="toc-number">11.</span> <span class="toc-text">相关阅读</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -672,14 +671,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -689,6 +680,22 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -704,14 +711,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
@@ -724,23 +723,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -760,7 +743,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -772,15 +767,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -816,11 +807,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -852,15 +843,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -872,7 +855,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -880,7 +863,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -892,7 +875,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -900,11 +887,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -913,6 +900,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -928,15 +923,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -945,6 +936,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -957,10 +952,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -980,10 +971,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
@@ -992,7 +979,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1000,11 +987,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1032,7 +1023,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1048,7 +1055,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
+                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1056,11 +1063,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1080,23 +1083,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ZooKeeper</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1105,6 +1100,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ollama</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
             
             <div class="clearfix"></div>

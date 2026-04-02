@@ -9,18 +9,19 @@
   <link rel="dns-prefetch" href="https://dongkelun.com">
   <title>Spark Sql 执行流程源码阅读笔记 | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="前言学习Spark SQL解析sql生成DataFrame的源码，进行记录  基于Spark3.0.1  代码以下面的代码作为入口，进行跟踪调试12val df = spark.sql(&quot;select * from test_parquet&quot;)df.show 主要的类、方法spark.sql即SparkSession.sql12345678910111213/** * Executes a SQL">
-<meta name="keywords" content="Spark,源码">
+  <meta name="description" content="前言学习Spark SQL解析sql生成DataFrame的源码，进行记录  基于Spark3.0.1  代码以下面的代码作为入口，进行跟踪调试12val df &#x3D; spark.sql(&quot;select * from test_parquet&quot;)df.show 主要的类、方法spark.sql即SparkSession.sql12345678910111213&#x2F;** * Exec">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Spark Sql 执行流程源码阅读笔记">
 <meta property="og:url" content="https://dongkelun.com/2021/04/23/sparkSqlExecutionFlow/index.html">
 <meta property="og:site_name" content="伦少的博客">
-<meta property="og:description" content="前言学习Spark SQL解析sql生成DataFrame的源码，进行记录  基于Spark3.0.1  代码以下面的代码作为入口，进行跟踪调试12val df = spark.sql(&quot;select * from test_parquet&quot;)df.show 主要的类、方法spark.sql即SparkSession.sql12345678910111213/** * Executes a SQL">
-<meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2021-06-04T01:58:19.976Z">
+<meta property="og:description" content="前言学习Spark SQL解析sql生成DataFrame的源码，进行记录  基于Spark3.0.1  代码以下面的代码作为入口，进行跟踪调试12val df &#x3D; spark.sql(&quot;select * from test_parquet&quot;)df.show 主要的类、方法spark.sql即SparkSession.sql12345678910111213&#x2F;** * Exec">
+<meta property="og:locale">
+<meta property="article:published_time" content="2021-04-22T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-06-04T01:58:19.976Z">
+<meta property="article:author" content="董可伦">
+<meta property="article:tag" content="Spark">
+<meta property="article:tag" content="源码">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Spark Sql 执行流程源码阅读笔记">
-<meta name="twitter:description" content="前言学习Spark SQL解析sql生成DataFrame的源码，进行记录  基于Spark3.0.1  代码以下面的代码作为入口，进行跟踪调试12val df = spark.sql(&quot;select * from test_parquet&quot;)df.show 主要的类、方法spark.sql即SparkSession.sql12345678910111213/** * Executes a SQL">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -38,7 +39,7 @@
 
   
 
-</head>
+<meta name="generator" content="Hexo 8.1.1"></head>
 
 <body>
   <div id="container" q-class="show:isCtnShow">
@@ -68,7 +69,7 @@
 			<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 		</a>
 		<hgroup>
-		  <h1 class="header-author"><a href="/">董可伦</a></h1>
+		  <h1 class="header-author"><a href="/"></a></h1>
 		</hgroup>
 		
 
@@ -140,7 +141,7 @@
 				<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 			</div>
 			<hgroup>
-			  <h1 class="header-author js-header-author">董可伦</h1>
+			  <h1 class="header-author js-header-author"></h1>
 			</hgroup>
 			
 			
@@ -259,20 +260,18 @@
 <blockquote>
 <p>基于Spark3.0.1</p>
 </blockquote>
-<h2 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h2><p>以下面的代码作为入口，进行跟踪调试<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> df = spark.sql(<span class="string">"select * from test_parquet"</span>)</span><br><span class="line">df.show</span><br></pre></td></tr></table></figure></p>
-<h2 id="主要的类、方法"><a href="#主要的类、方法" class="headerlink" title="主要的类、方法"></a>主要的类、方法</h2><p>spark.sql即SparkSession.sql<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Executes a SQL query using Spark, returning the result as a `DataFrame`.</span></span><br><span class="line"><span class="comment"> * The dialect that is used for SQL parsing can be configured with 'spark.sql.dialect'.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * @since 2.0.0</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">sql</span></span>(sqlText: <span class="type">String</span>): <span class="type">DataFrame</span> = withActive &#123;</span><br><span class="line">  <span class="keyword">val</span> tracker = <span class="keyword">new</span> <span class="type">QueryPlanningTracker</span></span><br><span class="line">  <span class="keyword">val</span> plan = tracker.measurePhase(<span class="type">QueryPlanningTracker</span>.<span class="type">PARSING</span>) &#123;</span><br><span class="line">    sessionState.sqlParser.parsePlan(sqlText)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="type">Dataset</span>.ofRows(self, plan, tracker)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<a id="more"></a>
+<h2 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h2><p>以下面的代码作为入口，进行跟踪调试<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> df = spark.sql(<span class="string">&quot;select * from test_parquet&quot;</span>)</span><br><span class="line">df.show</span><br></pre></td></tr></table></figure></p>
+<h2 id="主要的类、方法"><a href="#主要的类、方法" class="headerlink" title="主要的类、方法"></a>主要的类、方法</h2><p>spark.sql即SparkSession.sql<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Executes a SQL query using Spark, returning the result as a `DataFrame`.</span></span><br><span class="line"><span class="comment"> * The dialect that is used for SQL parsing can be configured with &#x27;spark.sql.dialect&#x27;.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * @since 2.0.0</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">sql</span></span>(sqlText: <span class="type">String</span>): <span class="type">DataFrame</span> = withActive &#123;</span><br><span class="line">  <span class="keyword">val</span> tracker = <span class="keyword">new</span> <span class="type">QueryPlanningTracker</span></span><br><span class="line">  <span class="keyword">val</span> plan = tracker.measurePhase(<span class="type">QueryPlanningTracker</span>.<span class="type">PARSING</span>) &#123;</span><br><span class="line">    sessionState.sqlParser.parsePlan(sqlText)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="type">Dataset</span>.ofRows(self, plan, tracker)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><span id="more"></span></p>
 <h3 id="sessionState-sqlParser-parsePlan-sqlText"><a href="#sessionState-sqlParser-parsePlan-sqlText" class="headerlink" title="sessionState.sqlParser.parsePlan(sqlText)"></a>sessionState.sqlParser.parsePlan(sqlText)</h3><p>sessionState.sqlParser val sqlParser: ParserInterface<br>这里的sqlParser是SparkSqlParser，</p>
 <blockquote>
 <p>为什么是SparkSqlParser,在类BaseSessionStateBuilder里:<br>详细的流程后面单独写<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> <span class="keyword">lazy</span> <span class="keyword">val</span> sqlParser: <span class="type">ParserInterface</span> = &#123;</span><br><span class="line">   extensions.buildParser(session, <span class="keyword">new</span> <span class="type">SparkSqlParser</span>(conf))</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure></p>
 </blockquote>
 <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Concrete parser for Spark SQL statements.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">SparkSqlParser</span>(<span class="params">conf: <span class="type">SQLConf</span></span>) <span class="keyword">extends</span> <span class="title">AbstractSqlParser</span>(<span class="params">conf</span>) </span>&#123;</span><br><span class="line">  <span class="keyword">val</span> astBuilder = <span class="keyword">new</span> <span class="type">SparkSqlAstBuilder</span>(conf)</span><br><span class="line"></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">val</span> substitutor = <span class="keyword">new</span> <span class="type">VariableSubstitution</span>(conf)</span><br><span class="line"></span><br><span class="line">  <span class="keyword">protected</span> <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">parse</span></span>[<span class="type">T</span>](command: <span class="type">String</span>)(toResult: <span class="type">SqlBaseParser</span> =&gt; <span class="type">T</span>): <span class="type">T</span> = &#123;</span><br><span class="line">    <span class="keyword">super</span>.parse(substitutor.substitute(command))(toResult)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">AbstractSqlParser</span>(<span class="params">conf: <span class="type">SQLConf</span></span>) <span class="keyword">extends</span> <span class="title">ParserInterface</span> <span class="keyword">with</span> <span class="title">Logging</span> </span>&#123;</span><br><span class="line">    ...</span><br></pre></td></tr></table></figure>
 <p>SparkSqlParser没有重写AbstractSqlParser的parsePlan方法，即sessionState.sqlParser.parsePlan实际上调用的是AbstractSqlParser的parsePlan方法</p>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/** Creates LogicalPlan for a given SQL string. */</span></span><br><span class="line"><span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">parsePlan</span></span>(sqlText: <span class="type">String</span>): <span class="type">LogicalPlan</span> = parse(sqlText) &#123; parser =&gt;</span><br><span class="line">  astBuilder.visitSingleStatement(parser.singleStatement()) <span class="keyword">match</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> plan: <span class="type">LogicalPlan</span> =&gt; plan</span><br><span class="line">    <span class="keyword">case</span> _ =&gt;</span><br><span class="line">      <span class="keyword">val</span> position = <span class="type">Origin</span>(<span class="type">None</span>, <span class="type">None</span>)</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">ParseException</span>(<span class="type">Option</span>(sqlText), <span class="string">"Unsupported SQL statement"</span>, position, position)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/** Creates LogicalPlan for a given SQL string. */</span></span><br><span class="line"><span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">parsePlan</span></span>(sqlText: <span class="type">String</span>): <span class="type">LogicalPlan</span> = parse(sqlText) &#123; parser =&gt;</span><br><span class="line">  astBuilder.visitSingleStatement(parser.singleStatement()) <span class="keyword">match</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> plan: <span class="type">LogicalPlan</span> =&gt; plan</span><br><span class="line">    <span class="keyword">case</span> _ =&gt;</span><br><span class="line">      <span class="keyword">val</span> position = <span class="type">Origin</span>(<span class="type">None</span>, <span class="type">None</span>)</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">ParseException</span>(<span class="type">Option</span>(sqlText), <span class="string">&quot;Unsupported SQL statement&quot;</span>, position, position)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h2 id="parse"><a href="#parse" class="headerlink" title="parse"></a>parse</h2><p>这里的parse方法为SparkSqlParser的parse</p>
 <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">parse</span></span>[<span class="type">T</span>](command: <span class="type">String</span>)(toResult: <span class="type">SqlBaseParser</span> =&gt; <span class="type">T</span>): <span class="type">T</span> = &#123;</span><br><span class="line">  <span class="keyword">super</span>.parse(substitutor.substitute(command))(toResult)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>接着调用父类AbstractSqlParser的parse方法<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">  <span class="keyword">protected</span> <span class="function"><span class="keyword">def</span> <span class="title">parse</span></span>[<span class="type">T</span>](command: <span class="type">String</span>)(toResult: <span class="type">SqlBaseParser</span> =&gt; <span class="type">T</span>): <span class="type">T</span> = &#123;</span><br><span class="line">    logDebug(<span class="string">s"Parsing command: <span class="subst">$command</span>"</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> lexer = <span class="keyword">new</span> <span class="type">SqlBaseLexer</span>(<span class="keyword">new</span> <span class="type">UpperCaseCharStream</span>(<span class="type">CharStreams</span>.fromString(command)))</span><br><span class="line">    lexer.removeErrorListeners()</span><br><span class="line">    lexer.addErrorListener(<span class="type">ParseErrorListener</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> tokenStream = <span class="keyword">new</span> <span class="type">CommonTokenStream</span>(lexer)</span><br><span class="line">    <span class="keyword">val</span> parser = <span class="keyword">new</span> <span class="type">SqlBaseParser</span>(tokenStream)</span><br><span class="line">    parser.addParseListener(<span class="type">PostProcessor</span>)</span><br><span class="line">    parser.removeErrorListeners()</span><br><span class="line">    parser.addErrorListener(<span class="type">ParseErrorListener</span>)</span><br><span class="line">    parser.legacy_setops_precedence_enbled = conf.setOpsPrecedenceEnforced</span><br><span class="line">    parser.legacy_exponent_literal_as_decimal_enabled = conf.exponentLiteralAsDecimalEnabled</span><br><span class="line">    parser.<span class="type">SQL_standard_keyword_behavior</span> = conf.ansiEnabled</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// first, try parsing with potentially faster SLL mode</span></span><br><span class="line">        parser.getInterpreter.setPredictionMode(<span class="type">PredictionMode</span>.<span class="type">SLL</span>)</span><br><span class="line">        toResult(parser)</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">catch</span> &#123;</span><br><span class="line">        <span class="keyword">case</span> e: <span class="type">ParseCancellationException</span> =&gt;</span><br><span class="line">          <span class="comment">// if we fail, parse with LL mode</span></span><br><span class="line">          tokenStream.seek(<span class="number">0</span>) <span class="comment">// rewind input stream</span></span><br><span class="line">          parser.reset()</span><br><span class="line"></span><br><span class="line">          <span class="comment">// Try Again.</span></span><br><span class="line">          parser.getInterpreter.setPredictionMode(<span class="type">PredictionMode</span>.<span class="type">LL</span>)</span><br><span class="line">          toResult(parser)</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">catch</span> &#123;</span><br><span class="line">      <span class="keyword">case</span> e: <span class="type">ParseException</span> <span class="keyword">if</span> e.command.isDefined =&gt;</span><br><span class="line">        <span class="keyword">throw</span> e</span><br><span class="line">      <span class="keyword">case</span> e: <span class="type">ParseException</span> =&gt;</span><br><span class="line">        <span class="keyword">throw</span> e.withCommand(command)</span><br><span class="line">      <span class="keyword">case</span> e: <span class="type">AnalysisException</span> =&gt;</span><br><span class="line">        <span class="keyword">val</span> position = <span class="type">Origin</span>(e.line, e.startPosition)</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">ParseException</span>(<span class="type">Option</span>(command), e.message, position, position)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>先执行parse方法再执行toResult(parser),其实就是parsePlan的方法体<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123; parser =&gt;</span><br><span class="line">    astBuilder.visitSingleStatement(parser.singleStatement()) <span class="keyword">match</span> &#123;</span><br><span class="line">      <span class="keyword">case</span> plan: <span class="type">LogicalPlan</span> =&gt; plan</span><br><span class="line">      <span class="keyword">case</span> _ =&gt;</span><br><span class="line">        <span class="keyword">val</span> position = <span class="type">Origin</span>(<span class="type">None</span>, <span class="type">None</span>)</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">ParseException</span>(<span class="type">Option</span>(sqlText), <span class="string">"Unsupported SQL statement"</span>, position, position)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure></p>
+<p>接着调用父类AbstractSqlParser的parse方法<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">  <span class="keyword">protected</span> <span class="function"><span class="keyword">def</span> <span class="title">parse</span></span>[<span class="type">T</span>](command: <span class="type">String</span>)(toResult: <span class="type">SqlBaseParser</span> =&gt; <span class="type">T</span>): <span class="type">T</span> = &#123;</span><br><span class="line">    logDebug(<span class="string">s&quot;Parsing command: <span class="subst">$command</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> lexer = <span class="keyword">new</span> <span class="type">SqlBaseLexer</span>(<span class="keyword">new</span> <span class="type">UpperCaseCharStream</span>(<span class="type">CharStreams</span>.fromString(command)))</span><br><span class="line">    lexer.removeErrorListeners()</span><br><span class="line">    lexer.addErrorListener(<span class="type">ParseErrorListener</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> tokenStream = <span class="keyword">new</span> <span class="type">CommonTokenStream</span>(lexer)</span><br><span class="line">    <span class="keyword">val</span> parser = <span class="keyword">new</span> <span class="type">SqlBaseParser</span>(tokenStream)</span><br><span class="line">    parser.addParseListener(<span class="type">PostProcessor</span>)</span><br><span class="line">    parser.removeErrorListeners()</span><br><span class="line">    parser.addErrorListener(<span class="type">ParseErrorListener</span>)</span><br><span class="line">    parser.legacy_setops_precedence_enbled = conf.setOpsPrecedenceEnforced</span><br><span class="line">    parser.legacy_exponent_literal_as_decimal_enabled = conf.exponentLiteralAsDecimalEnabled</span><br><span class="line">    parser.<span class="type">SQL_standard_keyword_behavior</span> = conf.ansiEnabled</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// first, try parsing with potentially faster SLL mode</span></span><br><span class="line">        parser.getInterpreter.setPredictionMode(<span class="type">PredictionMode</span>.<span class="type">SLL</span>)</span><br><span class="line">        toResult(parser)</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">catch</span> &#123;</span><br><span class="line">        <span class="keyword">case</span> e: <span class="type">ParseCancellationException</span> =&gt;</span><br><span class="line">          <span class="comment">// if we fail, parse with LL mode</span></span><br><span class="line">          tokenStream.seek(<span class="number">0</span>) <span class="comment">// rewind input stream</span></span><br><span class="line">          parser.reset()</span><br><span class="line"></span><br><span class="line">          <span class="comment">// Try Again.</span></span><br><span class="line">          parser.getInterpreter.setPredictionMode(<span class="type">PredictionMode</span>.<span class="type">LL</span>)</span><br><span class="line">          toResult(parser)</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">catch</span> &#123;</span><br><span class="line">      <span class="keyword">case</span> e: <span class="type">ParseException</span> <span class="keyword">if</span> e.command.isDefined =&gt;</span><br><span class="line">        <span class="keyword">throw</span> e</span><br><span class="line">      <span class="keyword">case</span> e: <span class="type">ParseException</span> =&gt;</span><br><span class="line">        <span class="keyword">throw</span> e.withCommand(command)</span><br><span class="line">      <span class="keyword">case</span> e: <span class="type">AnalysisException</span> =&gt;</span><br><span class="line">        <span class="keyword">val</span> position = <span class="type">Origin</span>(e.line, e.startPosition)</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">ParseException</span>(<span class="type">Option</span>(command), e.message, position, position)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>先执行parse方法再执行toResult(parser),其实就是parsePlan的方法体<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123; parser =&gt;</span><br><span class="line">    astBuilder.visitSingleStatement(parser.singleStatement()) <span class="keyword">match</span> &#123;</span><br><span class="line">      <span class="keyword">case</span> plan: <span class="type">LogicalPlan</span> =&gt; plan</span><br><span class="line">      <span class="keyword">case</span> _ =&gt;</span><br><span class="line">        <span class="keyword">val</span> position = <span class="type">Origin</span>(<span class="type">None</span>, <span class="type">None</span>)</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">ParseException</span>(<span class="type">Option</span>(sqlText), <span class="string">&quot;Unsupported SQL statement&quot;</span>, position, position)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure></p>
 <h2 id="astBuilder"><a href="#astBuilder" class="headerlink" title="astBuilder"></a>astBuilder</h2>
       
 
@@ -429,7 +428,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#代码"><span class="toc-number">2.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#主要的类、方法"><span class="toc-number">3.</span> <span class="toc-text">主要的类、方法</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#sessionState-sqlParser-parsePlan-sqlText"><span class="toc-number">3.1.</span> <span class="toc-text">sessionState.sqlParser.parsePlan(sqlText)</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#parse"><span class="toc-number">4.</span> <span class="toc-text">parse</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#astBuilder"><span class="toc-number">5.</span> <span class="toc-text">astBuilder</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81"><span class="toc-number">2.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BB%E8%A6%81%E7%9A%84%E7%B1%BB%E3%80%81%E6%96%B9%E6%B3%95"><span class="toc-number">3.</span> <span class="toc-text">主要的类、方法</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#sessionState-sqlParser-parsePlan-sqlText"><span class="toc-number">3.1.</span> <span class="toc-text">sessionState.sqlParser.parsePlan(sqlText)</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#parse"><span class="toc-number">4.</span> <span class="toc-text">parse</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#astBuilder"><span class="toc-number">5.</span> <span class="toc-text">astBuilder</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -604,14 +603,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -621,6 +612,22 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -636,14 +643,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
@@ -656,23 +655,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -692,7 +675,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -704,15 +699,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -748,11 +739,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -784,15 +775,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -804,7 +787,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -812,7 +795,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -824,7 +807,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -832,11 +819,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -845,6 +832,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -860,15 +855,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -877,6 +868,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -889,10 +884,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -912,10 +903,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
@@ -924,7 +911,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -932,11 +919,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -964,7 +955,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -980,7 +987,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
+                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -988,11 +995,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1012,23 +1015,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ZooKeeper</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1037,6 +1032,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ollama</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
             
             <div class="clearfix"></div>

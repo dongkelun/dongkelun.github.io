@@ -15,10 +15,9 @@
 <meta property="og:url" content="https://dongkelun.com/page/16/index.html">
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="1412359494@qq.com">
-<meta property="og:locale" content="cn">
+<meta property="og:locale">
+<meta property="article:author" content="董可伦">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="伦少的博客">
-<meta name="twitter:description" content="1412359494@qq.com">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -36,7 +35,7 @@
 
   
 
-</head>
+<meta name="generator" content="Hexo 8.1.1"></head>
 
 <body>
   <div id="container" q-class="show:isCtnShow">
@@ -66,7 +65,7 @@
 			<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 		</a>
 		<hgroup>
-		  <h1 class="header-author"><a href="/">董可伦</a></h1>
+		  <h1 class="header-author"><a href="/"></a></h1>
 		</hgroup>
 		
 
@@ -138,7 +137,7 @@
 				<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 			</div>
 			<hgroup>
-			  <h1 class="header-author js-header-author">董可伦</h1>
+			  <h1 class="header-author js-header-author"></h1>
 			</hgroup>
 			
 			
@@ -227,7 +226,7 @@
         <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>上一篇文章<a href="https://dongkelun.com/2022/08/11/hudiSparkSourceCodeLearning-dfLoad/">Hudi Spark源码学习总结-spark.read.format(“hudi”).load</a>分析了load方法直接查询Hudi表路径的源码逻辑，那么Spark SQL select 表名的方式和load最终走的逻辑是一样的吗？本文带着这个疑问来分析一下select查询Hudi表的源码逻辑</p>
 <h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>Spark 2.4.4<br>Hudi master 0.12.0-SNAPSHOT 最新代码<br>（可以借助Spark3 planChangeLog 打印日志信息查看哪些规则生效,Spark3和Spark2生效的规则大致是一样的）</p>
 <h2 id="示例代码"><a href="#示例代码" class="headerlink" title="示例代码"></a>示例代码</h2><p>先Create Table，再Insert几条数据</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spark.sql(s<span class="string">"select id, name, price, ts, dt from $tableName"</span>).show()</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spark.sql(s<span class="string">&quot;select id, name, price, ts, dt from $tableName&quot;</span>).show()</span><br></pre></td></tr></table></figure>
         
           <a class="article-more-a" href="/2022/08/15/hudiSparkSqlSourceCodeLearning-select/#more">more >></a>
         
@@ -319,7 +318,7 @@
       
         <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>补充上一篇文章<a href="https://dongkelun.com/2022/08/11/hudiSparkSourceCodeLearning-dfLoad/">Hudi Spark源码学习总结-spark.read.format(“hudi”).load</a>，由于上篇文章篇幅已经比较长了，所以单独写一篇补充一下，没有读过的可以先阅读一下，我们在上篇文章讲到<code>resolveBaseFileOnlyRelation</code>返回的是<code>HadoopFsRelation</code>，那么如果返回<code>BaseFileOnlyRelation</code>呢?</p>
 <h2 id="起因"><a href="#起因" class="headerlink" title="起因"></a>起因</h2><p>其实除了<code>HadoopFsRelation</code>、<code>BaseFileOnlyRelation</code>还有<code>IncrementalRelation</code>、<code>MergeOnReadSnapshotRelation</code>、<code>MergeOnReadIncrementalRelation</code>、<code>HoodieBootstrapRelation</code>，之所有要单独看一下<code>BaseFileOnlyRelation</code>，是因为我们从提交历史上可以看出，一开始默认的就是<code>HadoopFsRelation</code>后来添加了自定义的<code>BaseFileOnlyRelation</code>，然后现在回退成了<code>HadoopFsRelation</code>，查看对应PR了解了一下原因 </p>
-<p>添加<code>BaseFileOnlyRelation</code>的PR：<a href="https://github.com/apache/hudi/pull/4709" target="_blank" rel="noopener">[HUDI-3338] custom relation instead of HadoopFsRelation</a>，原因是：目前，<code>HadoopFsRelation</code>将使用实际分区路径的值作为分区字段的值。但是，与普通表不同，Hudi在Parquet文件中保留分区值。在某些情况下，实际分区路径的值和分区字段的值是不同的。因此，这里实现了<code>BaseFileOnlyViewRelation</code>，通过它，Hudi可以管理自己的关系。<br>回退为<code>HadoopFsRelation</code>的PR：<a href="https://github.com/apache/hudi/pull/5352" target="_blank" rel="noopener">[HUDI-3902] Fallback to HadoopFsRelation in cases non-involving Schema Evolution</a>,原因是：Spark的一些优化规则（以及一些其他处理）是基于<code>HadoopFsRelation</code>的使用，这导致当我们依赖自定义<code>Relation</code>时，这些优化没有得到应用。我们可以在[HUDI-3338]的PR的下面可以看到，有commiter提出，使用<code>BaseFileOnlyRelation</code>后查询性能相比于之前的<code>HadoopFsRelation</code>下降了大约一倍，这是因为Spark仅在少数地方做了查询优化，其中一个地方就是我们在上篇文章中讲到的<code>FileSourceStrategy</code>,我们看到[HUDI-3902]虽然回退到<code>HadoopFsRelation</code>，但是貌似并没有处理分区路径值的问题，所以后面又提了一个PR：<br>PR：<a href="https://github.com/apache/hudi/pull/5364" target="_blank" rel="noopener">[HUDI-3204] Fixing partition-values being derived from partition-path instead of source columns</a>，这个PR添加了自定义<code>FileFormat</code>:<code>Spark24HoodieParquetFileFormat</code>，它重写了<code>ParquetFileFormat</code>的<code>buildReaderWithPartitionValues</code>方法。其中的关键点是添加了参数<code>shouldAppendPartitionValues</code>来判断是否将分区路径中的值添加为分区字段的值。</p>
+<p>添加<code>BaseFileOnlyRelation</code>的PR：<a href="https://github.com/apache/hudi/pull/4709">[HUDI-3338] custom relation instead of HadoopFsRelation</a>，原因是：目前，<code>HadoopFsRelation</code>将使用实际分区路径的值作为分区字段的值。但是，与普通表不同，Hudi在Parquet文件中保留分区值。在某些情况下，实际分区路径的值和分区字段的值是不同的。因此，这里实现了<code>BaseFileOnlyViewRelation</code>，通过它，Hudi可以管理自己的关系。<br>回退为<code>HadoopFsRelation</code>的PR：<a href="https://github.com/apache/hudi/pull/5352">[HUDI-3902] Fallback to HadoopFsRelation in cases non-involving Schema Evolution</a>,原因是：Spark的一些优化规则（以及一些其他处理）是基于<code>HadoopFsRelation</code>的使用，这导致当我们依赖自定义<code>Relation</code>时，这些优化没有得到应用。我们可以在[HUDI-3338]的PR的下面可以看到，有commiter提出，使用<code>BaseFileOnlyRelation</code>后查询性能相比于之前的<code>HadoopFsRelation</code>下降了大约一倍，这是因为Spark仅在少数地方做了查询优化，其中一个地方就是我们在上篇文章中讲到的<code>FileSourceStrategy</code>,我们看到[HUDI-3902]虽然回退到<code>HadoopFsRelation</code>，但是貌似并没有处理分区路径值的问题，所以后面又提了一个PR：<br>PR：<a href="https://github.com/apache/hudi/pull/5364">[HUDI-3204] Fixing partition-values being derived from partition-path instead of source columns</a>，这个PR添加了自定义<code>FileFormat</code>:<code>Spark24HoodieParquetFileFormat</code>，它重写了<code>ParquetFileFormat</code>的<code>buildReaderWithPartitionValues</code>方法。其中的关键点是添加了参数<code>shouldAppendPartitionValues</code>来判断是否将分区路径中的值添加为分区字段的值。</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (shouldAppendPartitionValues) &#123;</span><br><span class="line">  vectorizedReader.initBatch(partitionSchema, file.partitionValues)</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">  vectorizedReader.initBatch(StructType(Nil), InternalRow.empty)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
         
           <a class="article-more-a" href="/2022/08/12/hudiSparkSourceCodeLearning-dfLoad2/#more">more >></a>
@@ -413,7 +412,7 @@
         <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>由于工作原因，之前查询Hudi主要是用Hive来查询的，所以对Hive查询Hudi的逻辑比较了解，但是对于Spark查询Hudi的逻辑不太了解。所以现在想要学习一下Spark查询Hudi的大概逻辑，搞清楚它是如何从Spark的源码跳转到Hudi源码执行Hudi查询的逻辑， 这样既能搞清楚Spark查询表的逻辑，也能搞清楚Spark查询Hudi的逻辑，也便于在后面使用Kyuubi Spark SQL 时出现问题能更好的定位解决。</p>
 <h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>Spark 2.4.4<br>Hudi master 0.12.0-SNAPSHOT 最新代码<br>（可以借助Spark3 planChangeLog 打印日志信息查看哪些规则生效）</p>
 <h2 id="示例代码"><a href="#示例代码" class="headerlink" title="示例代码"></a>示例代码</h2><p>先用上篇文章写Hudi数据，再进行查询</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> spark.implicits._</span><br><span class="line">val df = Seq((<span class="number">1</span>, <span class="string">"a1"</span>, <span class="number">10</span>, <span class="number">1000</span>)).toDF(<span class="string">"id"</span>, <span class="string">"name"</span>, <span class="string">"value"</span>, <span class="string">"ts"</span>)</span><br><span class="line">df.write.format(<span class="string">"hudi"</span>)</span><br><span class="line">  .option(HoodieWriteConfig.TBL_NAME.key, tableName)</span><br><span class="line">  .option(TABLE_TYPE.key, COW_TABLE_TYPE_OPT_VAL)</span><br><span class="line">  .option(RECORDKEY_FIELD.key, <span class="string">"id"</span>)</span><br><span class="line">  .option(PRECOMBINE_FIELD.key, <span class="string">"ts"</span>)</span><br><span class="line">  .option(PARTITIONPATH_FIELD.key, <span class="string">""</span>)</span><br><span class="line">  .option(KEYGENERATOR_CLASS_NAME.key, classOf[NonpartitionedKeyGenerator].getName)</span><br><span class="line">  .option(HoodieWriteConfig.INSERT_PARALLELISM_VALUE.key, <span class="string">"1"</span>)</span><br><span class="line">  .option(HoodieWriteConfig.UPSERT_PARALLELISM_VALUE.key, <span class="string">"1"</span>)</span><br><span class="line">  .mode(SaveMode.Overwrite)</span><br><span class="line">  .save(tmp.getCanonicalPath)</span><br><span class="line"></span><br><span class="line">spark.read.format(<span class="string">"hudi"</span>).load(tmp.getCanonicalPath).show()</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> spark.implicits._</span><br><span class="line"><span class="type">val</span> <span class="variable">df</span> <span class="operator">=</span> Seq((<span class="number">1</span>, <span class="string">&quot;a1&quot;</span>, <span class="number">10</span>, <span class="number">1000</span>)).toDF(<span class="string">&quot;id&quot;</span>, <span class="string">&quot;name&quot;</span>, <span class="string">&quot;value&quot;</span>, <span class="string">&quot;ts&quot;</span>)</span><br><span class="line">df.write.format(<span class="string">&quot;hudi&quot;</span>)</span><br><span class="line">  .option(HoodieWriteConfig.TBL_NAME.key, tableName)</span><br><span class="line">  .option(TABLE_TYPE.key, COW_TABLE_TYPE_OPT_VAL)</span><br><span class="line">  .option(RECORDKEY_FIELD.key, <span class="string">&quot;id&quot;</span>)</span><br><span class="line">  .option(PRECOMBINE_FIELD.key, <span class="string">&quot;ts&quot;</span>)</span><br><span class="line">  .option(PARTITIONPATH_FIELD.key, <span class="string">&quot;&quot;</span>)</span><br><span class="line">  .option(KEYGENERATOR_CLASS_NAME.key, classOf[NonpartitionedKeyGenerator].getName)</span><br><span class="line">  .option(HoodieWriteConfig.INSERT_PARALLELISM_VALUE.key, <span class="string">&quot;1&quot;</span>)</span><br><span class="line">  .option(HoodieWriteConfig.UPSERT_PARALLELISM_VALUE.key, <span class="string">&quot;1&quot;</span>)</span><br><span class="line">  .mode(SaveMode.Overwrite)</span><br><span class="line">  .save(tmp.getCanonicalPath)</span><br><span class="line"></span><br><span class="line">spark.read.format(<span class="string">&quot;hudi&quot;</span>).load(tmp.getCanonicalPath).show()</span><br></pre></td></tr></table></figure>
         
           <a class="article-more-a" href="/2022/08/11/hudiSparkSourceCodeLearning-dfLoad/#more">more >></a>
         
@@ -506,7 +505,7 @@
         <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在开始学习Hudi的时候，我们知道通过<code>df.write.format(&quot;hudi&quot;).save</code>可以实现写Hudi，并且写Hudi的逻辑是在<code>HoodieSparkSqlWriter.write</code>实现的，但是始终有一个疑问：它怎么从<code>df.write.format(&quot;hudi&quot;).save</code>跳到<code>HoodieSparkSqlWriter.write</code>中的呢？本文就是主要来回答这个问题的。</p>
 <h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>Spark 2.4.4<br>Hudi 0.12.0-SNAPSHOT，和上篇文章<a href="https://dongkelun.com/2022/07/30/hudiSparkSqlSourceCodeLearning-ctas/">Hudi Spark SQL源码学习总结-CTAS</a>用的Hudi代码一样</p>
 <h2 id="示例代码"><a href="#示例代码" class="headerlink" title="示例代码"></a>示例代码</h2><p>还是拿源码里的<code>TestCreateTable</code>中的测试语句</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> spark.implicits._</span><br><span class="line">val df = Seq((<span class="number">1</span>, <span class="string">"a1"</span>, <span class="number">10</span>, <span class="number">1000</span>)).toDF(<span class="string">"id"</span>, <span class="string">"name"</span>, <span class="string">"value"</span>, <span class="string">"ts"</span>)</span><br><span class="line">df.write.format(<span class="string">"hudi"</span>)</span><br><span class="line">  .option(HoodieWriteConfig.TBL_NAME.key, tableName)</span><br><span class="line">  .option(TABLE_TYPE.key, COW_TABLE_TYPE_OPT_VAL)</span><br><span class="line">  .option(RECORDKEY_FIELD.key, <span class="string">"id"</span>)</span><br><span class="line">  .option(PRECOMBINE_FIELD.key, <span class="string">"ts"</span>)</span><br><span class="line">  .option(PARTITIONPATH_FIELD.key, <span class="string">""</span>)</span><br><span class="line">  .option(KEYGENERATOR_CLASS_NAME.key, classOf[NonpartitionedKeyGenerator].getName)</span><br><span class="line">  .option(HoodieWriteConfig.INSERT_PARALLELISM_VALUE.key, <span class="string">"1"</span>)</span><br><span class="line">  .option(HoodieWriteConfig.UPSERT_PARALLELISM_VALUE.key, <span class="string">"1"</span>)</span><br><span class="line">  .mode(SaveMode.Overwrite)</span><br><span class="line">  .save(tmp.getCanonicalPath)</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> spark.implicits._</span><br><span class="line"><span class="type">val</span> <span class="variable">df</span> <span class="operator">=</span> Seq((<span class="number">1</span>, <span class="string">&quot;a1&quot;</span>, <span class="number">10</span>, <span class="number">1000</span>)).toDF(<span class="string">&quot;id&quot;</span>, <span class="string">&quot;name&quot;</span>, <span class="string">&quot;value&quot;</span>, <span class="string">&quot;ts&quot;</span>)</span><br><span class="line">df.write.format(<span class="string">&quot;hudi&quot;</span>)</span><br><span class="line">  .option(HoodieWriteConfig.TBL_NAME.key, tableName)</span><br><span class="line">  .option(TABLE_TYPE.key, COW_TABLE_TYPE_OPT_VAL)</span><br><span class="line">  .option(RECORDKEY_FIELD.key, <span class="string">&quot;id&quot;</span>)</span><br><span class="line">  .option(PRECOMBINE_FIELD.key, <span class="string">&quot;ts&quot;</span>)</span><br><span class="line">  .option(PARTITIONPATH_FIELD.key, <span class="string">&quot;&quot;</span>)</span><br><span class="line">  .option(KEYGENERATOR_CLASS_NAME.key, classOf[NonpartitionedKeyGenerator].getName)</span><br><span class="line">  .option(HoodieWriteConfig.INSERT_PARALLELISM_VALUE.key, <span class="string">&quot;1&quot;</span>)</span><br><span class="line">  .option(HoodieWriteConfig.UPSERT_PARALLELISM_VALUE.key, <span class="string">&quot;1&quot;</span>)</span><br><span class="line">  .mode(SaveMode.Overwrite)</span><br><span class="line">  .save(tmp.getCanonicalPath)</span><br></pre></td></tr></table></figure>
         
           <a class="article-more-a" href="/2022/08/03/hudiSparkSourceCodeLearning-dfSave/#more">more >></a>
         
@@ -604,8 +603,8 @@
 <li>1、配置<code>spark.sql.catalog.spark_catalog=org.apache.spark.sql.hudi.catalog.HoodieCatalog</code></li>
 <li>2、isV2Provider(“hudi”)返回ture</li>
 </ul>
-<p>只要有一个不满足，Spark3.2.1的逻辑就和Spark2一样，引进<code>HoodieCatalog</code>和令<code>hudi</code>为V2Provider的PR为： <a href="https://github.com/apache/hudi/pull/4611" target="_blank" rel="noopener">[HUDI-3254] Introduce HoodieCatalog to manage tables for Spark Datasource V2</a><br>目前master最新代码已将spark3.2.1的isV2Provider(“hudi”)改为了false,也就是Spark2和Saprk3.2.1的逻辑又一致了，PR：<a href="https://github.com/apache/hudi/pull/5737" target="_blank" rel="noopener">[HUDI-4178] Addressing performance regressions in Spark DataSourceV2 Integration</a></p>
-<h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>Hudi <a href="https://github.com/apache/hudi/pull/5592" target="_blank" rel="noopener">https://github.com/apache/hudi/pull/5592</a> 本文基于这个PR对应的代码进行调试分析，因为我就是在贡献这个PR时才发现Spark3.2.1和Saprk2的<code>CTAS</code>的逻辑不同的</p>
+<p>只要有一个不满足，Spark3.2.1的逻辑就和Spark2一样，引进<code>HoodieCatalog</code>和令<code>hudi</code>为V2Provider的PR为： <a href="https://github.com/apache/hudi/pull/4611">[HUDI-3254] Introduce HoodieCatalog to manage tables for Spark Datasource V2</a><br>目前master最新代码已将spark3.2.1的isV2Provider(“hudi”)改为了false,也就是Spark2和Saprk3.2.1的逻辑又一致了，PR：<a href="https://github.com/apache/hudi/pull/5737">[HUDI-4178] Addressing performance regressions in Spark DataSourceV2 Integration</a></p>
+<h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>Hudi <a href="https://github.com/apache/hudi/pull/5592">https://github.com/apache/hudi/pull/5592</a> 本文基于这个PR对应的代码进行调试分析，因为我就是在贡献这个PR时才发现Spark3.2.1和Saprk2的<code>CTAS</code>的逻辑不同的</p>
         
           <a class="article-more-a" href="/2022/07/30/hudiSparkSqlSourceCodeLearning-ctas/#more">more >></a>
         
@@ -833,14 +832,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -850,6 +841,22 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -865,14 +872,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
@@ -885,23 +884,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -921,7 +904,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -933,15 +928,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -977,11 +968,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1013,15 +1004,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1033,7 +1016,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1041,7 +1024,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1053,7 +1036,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1061,11 +1048,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1074,6 +1061,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1089,15 +1084,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1106,6 +1097,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1118,10 +1113,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1141,10 +1132,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
@@ -1153,7 +1140,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1161,11 +1148,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1193,7 +1184,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1209,7 +1216,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
+                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1217,11 +1224,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1241,23 +1244,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ZooKeeper</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1266,6 +1261,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ollama</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
             
             <div class="clearfix"></div>

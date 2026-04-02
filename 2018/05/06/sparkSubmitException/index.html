@@ -10,17 +10,18 @@
   <title>spark-submit报错:Exception in thread &#34;main&#34; java.sql.SQLException:No suitable driver | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="前言最近写了一个用spark连接oracle,然后将mysql所有的表保存到hive中的程序，在本地eclipse里运行没有问题，想在集群上跑一下，看看在集群上性能如何，但是用spark-submit 提交程序时抛出一个异常Exception in thread “main” java.sql.SQLException: No suitable driver，一开始以为spark-submit提交">
-<meta name="keywords" content="Spark,spark-submit">
 <meta property="og:type" content="article">
 <meta property="og:title" content="spark-submit报错:Exception in thread &quot;main&quot; java.sql.SQLException:No suitable driver">
 <meta property="og:url" content="https://dongkelun.com/2018/05/06/sparkSubmitException/index.html">
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言最近写了一个用spark连接oracle,然后将mysql所有的表保存到hive中的程序，在本地eclipse里运行没有问题，想在集群上跑一下，看看在集群上性能如何，但是用spark-submit 提交程序时抛出一个异常Exception in thread “main” java.sql.SQLException: No suitable driver，一开始以为spark-submit提交">
-<meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2018-12-06T14:46:46.148Z">
+<meta property="og:locale">
+<meta property="article:published_time" content="2018-05-05T16:00:00.000Z">
+<meta property="article:modified_time" content="2018-12-06T14:46:46.148Z">
+<meta property="article:author" content="董可伦">
+<meta property="article:tag" content="Spark">
+<meta property="article:tag" content="spark-submit">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="spark-submit报错:Exception in thread &quot;main&quot; java.sql.SQLException:No suitable driver">
-<meta name="twitter:description" content="前言最近写了一个用spark连接oracle,然后将mysql所有的表保存到hive中的程序，在本地eclipse里运行没有问题，想在集群上跑一下，看看在集群上性能如何，但是用spark-submit 提交程序时抛出一个异常Exception in thread “main” java.sql.SQLException: No suitable driver，一开始以为spark-submit提交">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -38,7 +39,7 @@
 
   
 
-</head>
+<meta name="generator" content="Hexo 8.1.1"></head>
 
 <body>
   <div id="container" q-class="show:isCtnShow">
@@ -68,7 +69,7 @@
 			<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 		</a>
 		<hgroup>
-		  <h1 class="header-author"><a href="/">董可伦</a></h1>
+		  <h1 class="header-author"><a href="/"></a></h1>
 		</hgroup>
 		
 
@@ -140,7 +141,7 @@
 				<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 			</div>
 			<hgroup>
-			  <h1 class="header-author js-header-author">董可伦</h1>
+			  <h1 class="header-author js-header-author"></h1>
 			</hgroup>
 			
 			
@@ -257,26 +258,17 @@
       
         <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>最近写了一个用spark连接oracle,然后将mysql所有的表保存到hive中的程序，在本地eclipse里运行没有问题，想在集群上跑一下，看看在集群上性能如何，但是用spark-submit 提交程序时抛出一个异常Exception in thread “main” java.sql.SQLException: No suitable driver，一开始以为spark-submit提交时找不到oracle 驱动jar,折腾了半天才发现是代码问题。</p>
 <h2 id="1、猜测是否是缺失oracle驱动"><a href="#1、猜测是否是缺失oracle驱动" class="headerlink" title="1、猜测是否是缺失oracle驱动"></a>1、猜测是否是缺失oracle驱动</h2><p>由于在本地没有问题，所以不会想到是代码问题，根据提示想到的是spark-submit找不到oracle驱动，因为maven或sbt仓库里没有oracle驱动，在本地跑的时候，是将oracle驱动下载到本地，然后在eclipse设置build path就可以了。</p>
-<p>但是我在spark-submit 里已经通过–jars 加载oracle驱动了：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --class com.dkl.leanring.spark.sql.Oracle2HiveDemo --jars ojdbc5-11.2.0.3.jar spark-scala_2.11-1.0.jar</span><br></pre></td></tr></table></figure></p>
-<p>开始以为自己用法不对，但是上网搜了一下，发现就是这么用的~<br>然后尝试用–driver-class-path、–driver-library-path等都没成功。<br><a id="more"></a></p>
-<h2 id="2、sbt-assembly打包"><a href="#2、sbt-assembly打包" class="headerlink" title="2、sbt-assembly打包"></a>2、sbt-assembly打包</h2><p>网上查的sbt-assembly打包可以将所有依赖的jar包包括你写的代码全部打包在一起，于是尝试了一下<br>首先在项目目录中project/plugins.sbt添加<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">addSbtPlugin(&quot;com.eed3si9n&quot; % &quot;sbt-assembly&quot; % &quot;0.14.5&quot;)</span><br><span class="line">resolvers += Resolver.url(&quot;bintray-sbt-plugins&quot;, url(&quot;http://dl.bintray.com/sbt/sbt-plugin-releases&quot;))(Resolver.ivyStylePatterns)</span><br></pre></td></tr></table></figure></p>
-<p>其中0.14.5为版本号，需要与自己sbt对应上，否则报错，可在<a href="http://dl.bintray.com/sbt/sbt-plugin-releases/com.eed3si9n/sbt-assembly/查看版本" target="_blank" rel="noopener">http://dl.bintray.com/sbt/sbt-plugin-releases/com.eed3si9n/sbt-assembly/查看版本</a><br>然后在项目对应目录下执行sbt,然后输入plugins，即可看到sbtassembly插件了，如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">$ sbt</span><br><span class="line">[info] Loading settings from plugins.sbt ...</span><br><span class="line">[info] Loading global plugins from C:\Users\14123\.sbt\1.0\plugins</span><br><span class="line">[info] Loading settings from assembly.sbt,plugins.sbt ...</span><br><span class="line">[info] Loading project definition from D:\workspace\spark-scala\project</span><br><span class="line">[info] Loading settings from spark-scala.sbt ...</span><br><span class="line">[info] Set current project to spark-scala (in build file:/D:/workspace/spark-scala/)</span><br><span class="line">[info] sbt server started at local:sbt-server-8b6c904d40b181717b3f</span><br><span class="line">sbt:spark-scala&gt; plugins</span><br><span class="line">In file:/D:/workspace/spark-scala/</span><br><span class="line">        sbt.plugins.IvyPlugin: enabled in spark-scala</span><br><span class="line">        sbt.plugins.JvmPlugin: enabled in spark-scala</span><br><span class="line">        sbt.plugins.CorePlugin: enabled in spark-scala</span><br><span class="line">        sbt.plugins.JUnitXmlReportPlugin: enabled in spark-scala</span><br><span class="line">        sbt.plugins.Giter8TemplatePlugin: enabled in spark-scala</span><br><span class="line">        com.typesafe.sbteclipse.plugin.EclipsePlugin: enabled in spark-scala</span><br><span class="line">        sbtassembly.AssemblyPlugin: enabled in spark-scala</span><br><span class="line">sbt:spark-scala&gt;</span><br></pre></td></tr></table></figure></p>
-<p>但是这样执行sbt-assembly打包会报错，需要解决jar包冲突(deduplicate)问题<br>在项目的bulid.sbt里添加如下即可（只是其中一种解决策略，可根据自己项目实际情况自己设定）<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">assemblyMergeStrategy in assembly := &#123;</span><br><span class="line">    case m if m.toLowerCase.endsWith(&quot;manifest.mf&quot;) =&gt; MergeStrategy.discard</span><br><span class="line">    case m if m.startsWith(&quot;META-INF&quot;) =&gt; MergeStrategy.discard</span><br><span class="line">    case PathList(&quot;javax&quot;, &quot;servlet&quot;, xs @ _*) =&gt; MergeStrategy.first</span><br><span class="line">    case PathList(&quot;org&quot;, &quot;apache&quot;, xs @ _*) =&gt; MergeStrategy.first</span><br><span class="line">    case PathList(&quot;org&quot;, &quot;jboss&quot;, xs @ _*) =&gt; MergeStrategy.first</span><br><span class="line">    case &quot;about.html&quot;  =&gt; MergeStrategy.rename</span><br><span class="line">    case &quot;reference.conf&quot; =&gt; MergeStrategy.concat</span><br><span class="line">    case _ =&gt; MergeStrategy.first</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>其中不同旧版本和新版本sbt写法不一样，具体可上网看一下别人的博客或者在官网查看。</p>
+<p>但是我在spark-submit 里已经通过–jars 加载oracle驱动了：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --class com.dkl.leanring.spark.sql.Oracle2HiveDemo --jars ojdbc5-11.2.0.3.jar spark-scala_2.11-1.0.jar</span><br></pre></td></tr></table></figure><br>开始以为自己用法不对，但是上网搜了一下，发现就是这么用的~<br>然后尝试用–driver-class-path、–driver-library-path等都没成功。<br><span id="more"></span></p>
+<h2 id="2、sbt-assembly打包"><a href="#2、sbt-assembly打包" class="headerlink" title="2、sbt-assembly打包"></a>2、sbt-assembly打包</h2><p>网上查的sbt-assembly打包可以将所有依赖的jar包包括你写的代码全部打包在一起，于是尝试了一下<br>首先在项目目录中project/plugins.sbt添加<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">addSbtPlugin(&quot;com.eed3si9n&quot; % &quot;sbt-assembly&quot; % &quot;0.14.5&quot;)</span><br><span class="line">resolvers += Resolver.url(&quot;bintray-sbt-plugins&quot;, url(&quot;http://dl.bintray.com/sbt/sbt-plugin-releases&quot;))(Resolver.ivyStylePatterns)</span><br></pre></td></tr></table></figure><br>其中0.14.5为版本号，需要与自己sbt对应上，否则报错，可在<a href="http://dl.bintray.com/sbt/sbt-plugin-releases/com.eed3si9n/sbt-assembly/查看版本">http://dl.bintray.com/sbt/sbt-plugin-releases/com.eed3si9n/sbt-assembly/查看版本</a><br>然后在项目对应目录下执行sbt,然后输入plugins，即可看到sbtassembly插件了，如下：<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">$ sbt</span><br><span class="line">[info] Loading settings from plugins.sbt ...</span><br><span class="line">[info] Loading global plugins from C:\Users\14123\.sbt\1.0\plugins</span><br><span class="line">[info] Loading settings from assembly.sbt,plugins.sbt ...</span><br><span class="line">[info] Loading project definition from D:\workspace\spark-scala\project</span><br><span class="line">[info] Loading settings from spark-scala.sbt ...</span><br><span class="line">[info] Set current project to spark-scala (in build file:/D:/workspace/spark-scala/)</span><br><span class="line">[info] sbt server started at local:sbt-server-8b6c904d40b181717b3f</span><br><span class="line">sbt:spark-scala&gt; plugins</span><br><span class="line">In file:/D:/workspace/spark-scala/</span><br><span class="line">        sbt.plugins.IvyPlugin: enabled in spark-scala</span><br><span class="line">        sbt.plugins.JvmPlugin: enabled in spark-scala</span><br><span class="line">        sbt.plugins.CorePlugin: enabled in spark-scala</span><br><span class="line">        sbt.plugins.JUnitXmlReportPlugin: enabled in spark-scala</span><br><span class="line">        sbt.plugins.Giter8TemplatePlugin: enabled in spark-scala</span><br><span class="line">        com.typesafe.sbteclipse.plugin.EclipsePlugin: enabled in spark-scala</span><br><span class="line">        sbtassembly.AssemblyPlugin: enabled in spark-scala</span><br><span class="line">sbt:spark-scala&gt;</span><br><span class="line"></span><br></pre></td></tr></table></figure></p>
+<p>但是这样执行sbt-assembly打包会报错，需要解决jar包冲突(deduplicate)问题<br>在项目的bulid.sbt里添加如下即可（只是其中一种解决策略，可根据自己项目实际情况自己设定）<br><figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">assemblyMergeStrategy in assembly := &#123;</span><br><span class="line">    case m if m.toLowerCase.endsWith(&quot;manifest.mf&quot;) =&gt; MergeStrategy.discard</span><br><span class="line">    case m if m.startsWith(&quot;META-INF&quot;) =&gt; MergeStrategy.discard</span><br><span class="line">    case PathList(&quot;javax&quot;, &quot;servlet&quot;, xs @ _*) =&gt; MergeStrategy.first</span><br><span class="line">    case PathList(&quot;org&quot;, &quot;apache&quot;, xs @ _*) =&gt; MergeStrategy.first</span><br><span class="line">    case PathList(&quot;org&quot;, &quot;jboss&quot;, xs @ _*) =&gt; MergeStrategy.first</span><br><span class="line">    case &quot;about.html&quot;  =&gt; MergeStrategy.rename</span><br><span class="line">    case &quot;reference.conf&quot; =&gt; MergeStrategy.concat</span><br><span class="line">    case _ =&gt; MergeStrategy.first</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>其中不同旧版本和新版本sbt写法不一样，具体可上网看一下别人的博客或者在官网查看。</p>
 <p>这样就可以sbt-assembly进行打包了，发现这样打的jar包确实很大，用sbt package打的jar包大小1.48MB,sbt-assembly打的jar包大小194MB,将spark-scala-assembly-1.0.jar上传到服务器，然后执行submit,发现还是报同样的错，查看一下sbt-assembly日志，发现确实将oracle驱动加载上了~</p>
-<h2 id="3、真正原因"><a href="#3、真正原因" class="headerlink" title="3、真正原因"></a>3、真正原因</h2><p>这样就猜想不是缺少oracle驱动，于是上网查了好多，偶然发现可能是代码问题，下面是我写的从oracle取数的部分代码<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> allTablesDF = spark.read</span><br><span class="line">  .format(<span class="string">"jdbc"</span>)</span><br><span class="line">  .option(<span class="string">"url"</span>, <span class="string">"jdbc:oracle:thin:@192.168.44.128:1521:orcl"</span>)</span><br><span class="line">  .option(<span class="string">"dbtable"</span>, <span class="string">"(select table_name,owner from all_tables where  owner  in('BIGDATA'))a"</span>)</span><br><span class="line">  .option(<span class="string">"user"</span>, <span class="string">"bigdata"</span>)</span><br><span class="line">  .option(<span class="string">"password"</span>, <span class="string">"bigdata"</span>)</span><br><span class="line">  .load()</span><br></pre></td></tr></table></figure></p>
-<p>写法和我之前写的spark连接mysql的博客里的写法是一样的：<a href="http://dongkelun.com/2018/03/21/sparkMysql/">Spark Sql 连接mysql</a><br>这样写在eclipse运行是没问题的，但是在spark-submit提交时是不行的，需要加上驱动信息<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.option(&quot;driver&quot;, &quot;oracle.jdbc.driver.OracleDriver&quot;)</span><br></pre></td></tr></table></figure></p>
-<p>重新打包，再运行，发现果然没问题</p>
+<h2 id="3、真正原因"><a href="#3、真正原因" class="headerlink" title="3、真正原因"></a>3、真正原因</h2><p>这样就猜想不是缺少oracle驱动，于是上网查了好多，偶然发现可能是代码问题，下面是我写的从oracle取数的部分代码<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> allTablesDF = spark.read</span><br><span class="line">  .format(<span class="string">&quot;jdbc&quot;</span>)</span><br><span class="line">  .option(<span class="string">&quot;url&quot;</span>, <span class="string">&quot;jdbc:oracle:thin:@192.168.44.128:1521:orcl&quot;</span>)</span><br><span class="line">  .option(<span class="string">&quot;dbtable&quot;</span>, <span class="string">&quot;(select table_name,owner from all_tables where  owner  in(&#x27;BIGDATA&#x27;))a&quot;</span>)</span><br><span class="line">  .option(<span class="string">&quot;user&quot;</span>, <span class="string">&quot;bigdata&quot;</span>)</span><br><span class="line">  .option(<span class="string">&quot;password&quot;</span>, <span class="string">&quot;bigdata&quot;</span>)</span><br><span class="line">  .load()</span><br></pre></td></tr></table></figure><br>写法和我之前写的spark连接mysql的博客里的写法是一样的：<a href="http://dongkelun.com/2018/03/21/sparkMysql/">Spark Sql 连接mysql</a><br>这样写在eclipse运行是没问题的，但是在spark-submit提交时是不行的，需要加上驱动信息<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.option(&quot;driver&quot;, &quot;oracle.jdbc.driver.OracleDriver&quot;)</span><br></pre></td></tr></table></figure><br>重新打包，再运行，发现果然没问题</p>
 <h2 id="4、总结"><a href="#4、总结" class="headerlink" title="4、总结"></a>4、总结</h2><h3 id="4-1"><a href="#4-1" class="headerlink" title="4.1"></a>4.1</h3><p>其实在用spark提交之前写的spark连接mysql的程序也会报统一的错(如果$SPARK_HOME/jars没有mysql驱动)，和oracle驱动不在sbt仓库里没关系。<br>但是之前在spark-shell里测试spark连接hive时已经将mysql驱动拷贝过去了，所以mysql没有报错</p>
-<h3 id="4-2"><a href="#4-2" class="headerlink" title="4.2"></a>4.2</h3><p>在代码里加上driver之后再提交如果没有oracle驱动会报不同的错<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Exception in thread &quot;main&quot; java.lang.ClassNotFoundException: oracle.jdbc.driver.OracleDriver</span><br></pre></td></tr></table></figure></p>
-<h3 id="4-3"><a href="#4-3" class="headerlink" title="4.3"></a>4.3</h3><p>通过–jars指定jar和sbt assembly打包都可以，看自己习惯，但通过–jars需要注意先后顺序，如果是多个jar以逗号隔开即可<br>正确：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --class com.dkl.leanring.spark.sql.Oracle2HiveDemo --jars ojdbc5-11.2.0.3.jar spark-scala_2.11-1.0.jar </span><br><span class="line">spark-submit --jars ojdbc5-11.2.0.3.jar --class com.dkl.leanring.spark.sql.Oracle2HiveDemo  spark-scala_2.11-1.0.jar</span><br></pre></td></tr></table></figure></p>
-<p>错误：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --class com.dkl.leanring.spark.sql.Oracle2HiveDemo  spark-scala_2.11-1.0.jar --jars ojdbc5-11.2.0.3.jar</span><br><span class="line">spark-submit --jars ojdbc5-11.2.0.3.jar spark-scala_2.11-1.0.jar --class com.dkl.leanring.spark.sql.Oracle2HiveDemo </span><br><span class="line">...</span><br></pre></td></tr></table></figure></p>
-<p>也就是通过sbt package和sbt assembly生成的项目jar包一定要放在最后面</p>
-<h3 id="4-4"><a href="#4-4" class="headerlink" title="4.4"></a>4.4</h3><p>通过–driver-class-path也可以实现加载额外的jar<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --class com.dkl.leanring.spark.sql.Oracle2HiveDemo --driver-class-path lib/*  spark-scala_2.11-1.0.jar</span><br></pre></td></tr></table></figure></p>
-<p>但是这样lib下只能一个jar,两个jar就会报错，不知道什么原因~</p>
-<h3 id="4-5"><a href="#4-5" class="headerlink" title="4.5"></a>4.5</h3><p>将oracle驱动拷贝到$SPARK_HOME/jars,就可以不在代码里指定driver选项了，而且也不用通过–jars添加oracle驱动，一劳永逸.<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cp ojdbc5-11.2.0.3.jar <span class="variable">$SPARK_HOME</span>/jars</span><br><span class="line">spark-submit --class com.dkl.leanring.spark.sql.Oracle2HiveDemo  spark-scala_2.11-1.0.jar</span><br></pre></td></tr></table></figure></p>
-<p>具体这样设置可根据实际情况和偏好习惯使用。</p>
-<h2 id="附完整代码（测试用）"><a href="#附完整代码（测试用）" class="headerlink" title="附完整代码（测试用）"></a>附完整代码（测试用）</h2><p>比较简单就不加注释~<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.dkl.blog.spark.oracle</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SparkSession</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">Oracle2HiveDemo</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> spark = <span class="type">SparkSession</span></span><br><span class="line">      .builder()</span><br><span class="line">      .appName(<span class="string">"Oracle2HiveDemo"</span>)</span><br><span class="line">      .master(<span class="string">"local"</span>)</span><br><span class="line">      .enableHiveSupport()</span><br><span class="line">      .getOrCreate()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> allTablesDF = spark.read</span><br><span class="line">      .format(<span class="string">"jdbc"</span>)</span><br><span class="line">      .option(<span class="string">"url"</span>, <span class="string">"jdbc:oracle:thin:@192.168.44.128:1521:orcl"</span>)</span><br><span class="line">      .option(<span class="string">"dbtable"</span>, <span class="string">"(select table_name,owner from all_tables where  owner  in('BIGDATA'))a"</span>)</span><br><span class="line">      .option(<span class="string">"user"</span>, <span class="string">"bigdata"</span>)</span><br><span class="line">      .option(<span class="string">"password"</span>, <span class="string">"bigdata"</span>)</span><br><span class="line">      .option(<span class="string">"driver"</span>, <span class="string">"oracle.jdbc.driver.OracleDriver"</span>)</span><br><span class="line">      .load()</span><br><span class="line">    <span class="keyword">import</span> spark.implicits._</span><br><span class="line">    <span class="keyword">import</span> spark.sql</span><br><span class="line">    sql(<span class="string">"use oracle_test"</span>)</span><br><span class="line">    allTablesDF.rdd.collect().foreach(row =&gt; &#123;</span><br><span class="line">      <span class="keyword">val</span> tableName: <span class="type">String</span> = row(<span class="number">0</span>).toString()</span><br><span class="line">      <span class="keyword">val</span> dataBase: <span class="type">String</span> = row(<span class="number">1</span>).toString()</span><br><span class="line"></span><br><span class="line">      println(dataBase + <span class="string">"."</span> + tableName)</span><br><span class="line">      <span class="keyword">val</span> df = spark.read</span><br><span class="line">        .format(<span class="string">"jdbc"</span>)</span><br><span class="line">        .option(<span class="string">"url"</span>, <span class="string">"jdbc:oracle:thin:@192.168.44.128:1521:orcl"</span>)</span><br><span class="line">        .option(<span class="string">"dbtable"</span>, dataBase + <span class="string">"."</span> + tableName)</span><br><span class="line">        .option(<span class="string">"user"</span>, <span class="string">"bigdata"</span>)</span><br><span class="line">        .option(<span class="string">"password"</span>, <span class="string">"bigdata"</span>)</span><br><span class="line">        .option(<span class="string">"driver"</span>, <span class="string">"oracle.jdbc.driver.OracleDriver"</span>)</span><br><span class="line">        .load()</span><br><span class="line">      df.write.mode(<span class="string">"overwrite"</span>).saveAsTable(tableName)</span><br><span class="line"></span><br><span class="line">    &#125;)</span><br><span class="line"></span><br><span class="line">    spark.stop</span><br><span class="line"></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="4-2"><a href="#4-2" class="headerlink" title="4.2"></a>4.2</h3><p>在代码里加上driver之后再提交如果没有oracle驱动会报不同的错<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Exception in thread &quot;main&quot; java.lang.ClassNotFoundException: oracle.jdbc.driver.OracleDriver</span><br></pre></td></tr></table></figure></p>
+<h3 id="4-3"><a href="#4-3" class="headerlink" title="4.3"></a>4.3</h3><p>通过–jars指定jar和sbt assembly打包都可以，看自己习惯，但通过–jars需要注意先后顺序，如果是多个jar以逗号隔开即可<br>正确：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --class com.dkl.leanring.spark.sql.Oracle2HiveDemo --jars ojdbc5-11.2.0.3.jar spark-scala_2.11-1.0.jar </span><br><span class="line">spark-submit --jars ojdbc5-11.2.0.3.jar --class com.dkl.leanring.spark.sql.Oracle2HiveDemo  spark-scala_2.11-1.0.jar </span><br></pre></td></tr></table></figure><br>错误：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --class com.dkl.leanring.spark.sql.Oracle2HiveDemo  spark-scala_2.11-1.0.jar --jars ojdbc5-11.2.0.3.jar</span><br><span class="line">spark-submit --jars ojdbc5-11.2.0.3.jar spark-scala_2.11-1.0.jar --class com.dkl.leanring.spark.sql.Oracle2HiveDemo </span><br><span class="line">...</span><br></pre></td></tr></table></figure><br>也就是通过sbt package和sbt assembly生成的项目jar包一定要放在最后面</p>
+<h3 id="4-4"><a href="#4-4" class="headerlink" title="4.4"></a>4.4</h3><p>通过–driver-class-path也可以实现加载额外的jar<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --class com.dkl.leanring.spark.sql.Oracle2HiveDemo --driver-class-path lib/*  spark-scala_2.11-1.0.jar</span><br></pre></td></tr></table></figure><br>但是这样lib下只能一个jar,两个jar就会报错，不知道什么原因~</p>
+<h3 id="4-5"><a href="#4-5" class="headerlink" title="4.5"></a>4.5</h3><p>将oracle驱动拷贝到$SPARK_HOME/jars,就可以不在代码里指定driver选项了，而且也不用通过–jars添加oracle驱动，一劳永逸.<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cp</span> ojdbc5-11.2.0.3.jar <span class="variable">$SPARK_HOME</span>/jars</span><br><span class="line">spark-submit --class com.dkl.leanring.spark.sql.Oracle2HiveDemo  spark-scala_2.11-1.0.jar</span><br></pre></td></tr></table></figure><br>具体这样设置可根据实际情况和偏好习惯使用。</p>
+<h2 id="附完整代码（测试用）"><a href="#附完整代码（测试用）" class="headerlink" title="附完整代码（测试用）"></a>附完整代码（测试用）</h2><p>比较简单就不加注释~<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.dkl.blog.spark.oracle</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SparkSession</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">Oracle2HiveDemo</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> spark = <span class="type">SparkSession</span></span><br><span class="line">      .builder()</span><br><span class="line">      .appName(<span class="string">&quot;Oracle2HiveDemo&quot;</span>)</span><br><span class="line">      .master(<span class="string">&quot;local&quot;</span>)</span><br><span class="line">      .enableHiveSupport()</span><br><span class="line">      .getOrCreate()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> allTablesDF = spark.read</span><br><span class="line">      .format(<span class="string">&quot;jdbc&quot;</span>)</span><br><span class="line">      .option(<span class="string">&quot;url&quot;</span>, <span class="string">&quot;jdbc:oracle:thin:@192.168.44.128:1521:orcl&quot;</span>)</span><br><span class="line">      .option(<span class="string">&quot;dbtable&quot;</span>, <span class="string">&quot;(select table_name,owner from all_tables where  owner  in(&#x27;BIGDATA&#x27;))a&quot;</span>)</span><br><span class="line">      .option(<span class="string">&quot;user&quot;</span>, <span class="string">&quot;bigdata&quot;</span>)</span><br><span class="line">      .option(<span class="string">&quot;password&quot;</span>, <span class="string">&quot;bigdata&quot;</span>)</span><br><span class="line">      .option(<span class="string">&quot;driver&quot;</span>, <span class="string">&quot;oracle.jdbc.driver.OracleDriver&quot;</span>)</span><br><span class="line">      .load()</span><br><span class="line">    <span class="keyword">import</span> spark.implicits._</span><br><span class="line">    <span class="keyword">import</span> spark.sql</span><br><span class="line">    sql(<span class="string">&quot;use oracle_test&quot;</span>)</span><br><span class="line">    allTablesDF.rdd.collect().foreach(row =&gt; &#123;</span><br><span class="line">      <span class="keyword">val</span> tableName: <span class="type">String</span> = row(<span class="number">0</span>).toString()</span><br><span class="line">      <span class="keyword">val</span> dataBase: <span class="type">String</span> = row(<span class="number">1</span>).toString()</span><br><span class="line"></span><br><span class="line">      println(dataBase + <span class="string">&quot;.&quot;</span> + tableName)</span><br><span class="line">      <span class="keyword">val</span> df = spark.read</span><br><span class="line">        .format(<span class="string">&quot;jdbc&quot;</span>)</span><br><span class="line">        .option(<span class="string">&quot;url&quot;</span>, <span class="string">&quot;jdbc:oracle:thin:@192.168.44.128:1521:orcl&quot;</span>)</span><br><span class="line">        .option(<span class="string">&quot;dbtable&quot;</span>, dataBase + <span class="string">&quot;.&quot;</span> + tableName)</span><br><span class="line">        .option(<span class="string">&quot;user&quot;</span>, <span class="string">&quot;bigdata&quot;</span>)</span><br><span class="line">        .option(<span class="string">&quot;password&quot;</span>, <span class="string">&quot;bigdata&quot;</span>)</span><br><span class="line">        .option(<span class="string">&quot;driver&quot;</span>, <span class="string">&quot;oracle.jdbc.driver.OracleDriver&quot;</span>)</span><br><span class="line">        .load()</span><br><span class="line">      df.write.mode(<span class="string">&quot;overwrite&quot;</span>).saveAsTable(tableName)</span><br><span class="line"></span><br><span class="line">    &#125;)</span><br><span class="line"></span><br><span class="line">    spark.stop</span><br><span class="line"></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 
       
 
@@ -433,7 +425,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1、猜测是否是缺失oracle驱动"><span class="toc-number">2.</span> <span class="toc-text">1、猜测是否是缺失oracle驱动</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2、sbt-assembly打包"><span class="toc-number">3.</span> <span class="toc-text">2、sbt-assembly打包</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3、真正原因"><span class="toc-number">4.</span> <span class="toc-text">3、真正原因</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4、总结"><span class="toc-number">5.</span> <span class="toc-text">4、总结</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1"><span class="toc-number">5.1.</span> <span class="toc-text">4.1</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2"><span class="toc-number">5.2.</span> <span class="toc-text">4.2</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3"><span class="toc-number">5.3.</span> <span class="toc-text">4.3</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-4"><span class="toc-number">5.4.</span> <span class="toc-text">4.4</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-5"><span class="toc-number">5.5.</span> <span class="toc-text">4.5</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#附完整代码（测试用）"><span class="toc-number">6.</span> <span class="toc-text">附完整代码（测试用）</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1%E3%80%81%E7%8C%9C%E6%B5%8B%E6%98%AF%E5%90%A6%E6%98%AF%E7%BC%BA%E5%A4%B1oracle%E9%A9%B1%E5%8A%A8"><span class="toc-number">2.</span> <span class="toc-text">1、猜测是否是缺失oracle驱动</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2%E3%80%81sbt-assembly%E6%89%93%E5%8C%85"><span class="toc-number">3.</span> <span class="toc-text">2、sbt-assembly打包</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3%E3%80%81%E7%9C%9F%E6%AD%A3%E5%8E%9F%E5%9B%A0"><span class="toc-number">4.</span> <span class="toc-text">3、真正原因</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4%E3%80%81%E6%80%BB%E7%BB%93"><span class="toc-number">5.</span> <span class="toc-text">4、总结</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1"><span class="toc-number">5.1.</span> <span class="toc-text">4.1</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2"><span class="toc-number">5.2.</span> <span class="toc-text">4.2</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3"><span class="toc-number">5.3.</span> <span class="toc-text">4.3</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-4"><span class="toc-number">5.4.</span> <span class="toc-text">4.4</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-5"><span class="toc-number">5.5.</span> <span class="toc-text">4.5</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%99%84%E5%AE%8C%E6%95%B4%E4%BB%A3%E7%A0%81%EF%BC%88%E6%B5%8B%E8%AF%95%E7%94%A8%EF%BC%89"><span class="toc-number">6.</span> <span class="toc-text">附完整代码（测试用）</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -608,14 +600,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -625,6 +609,22 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -640,14 +640,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
@@ -660,23 +652,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -696,7 +672,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -708,15 +696,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -752,11 +736,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -788,15 +772,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -808,7 +784,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -816,7 +792,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -828,7 +804,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -836,11 +816,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -849,6 +829,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -864,15 +852,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -881,6 +865,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -893,10 +881,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -916,10 +900,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
@@ -928,7 +908,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -936,11 +916,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -968,7 +952,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -984,7 +984,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
+                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -992,11 +992,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1016,23 +1012,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ZooKeeper</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1041,6 +1029,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ollama</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
             
             <div class="clearfix"></div>

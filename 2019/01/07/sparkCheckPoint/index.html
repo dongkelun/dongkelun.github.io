@@ -10,17 +10,20 @@
   <title>Spark Checkpoint 使用及源码浅析 | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="前言总结一下Spark Checkpoint 用法及源码，包括RDD和Spark Streaming两种。 1、RDD 作用：持久化数据-将RDD的数据保存到可靠文件系统中（一般是HDFS），以便数据恢复容错、复用：在Spark程序中，如果某个RDD因为业务逻辑比较复杂，导致Transformation很多，计算很耗时，且该RDD后面用到很多次，那么有可能因为各种原因导致数据丢失、程序失败，之后S">
-<meta name="keywords" content="Spark,持久化,cache,persist">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Spark Checkpoint 使用及源码浅析">
 <meta property="og:url" content="https://dongkelun.com/2019/01/07/sparkCheckPoint/index.html">
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言总结一下Spark Checkpoint 用法及源码，包括RDD和Spark Streaming两种。 1、RDD 作用：持久化数据-将RDD的数据保存到可靠文件系统中（一般是HDFS），以便数据恢复容错、复用：在Spark程序中，如果某个RDD因为业务逻辑比较复杂，导致Transformation很多，计算很耗时，且该RDD后面用到很多次，那么有可能因为各种原因导致数据丢失、程序失败，之后S">
-<meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2019-01-10T05:38:16.455Z">
+<meta property="og:locale">
+<meta property="article:published_time" content="2019-01-06T16:00:00.000Z">
+<meta property="article:modified_time" content="2019-01-10T05:38:16.455Z">
+<meta property="article:author" content="董可伦">
+<meta property="article:tag" content="Spark">
+<meta property="article:tag" content="cache">
+<meta property="article:tag" content="persist">
+<meta property="article:tag" content="持久化">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Spark Checkpoint 使用及源码浅析">
-<meta name="twitter:description" content="前言总结一下Spark Checkpoint 用法及源码，包括RDD和Spark Streaming两种。 1、RDD 作用：持久化数据-将RDD的数据保存到可靠文件系统中（一般是HDFS），以便数据恢复容错、复用：在Spark程序中，如果某个RDD因为业务逻辑比较复杂，导致Transformation很多，计算很耗时，且该RDD后面用到很多次，那么有可能因为各种原因导致数据丢失、程序失败，之后S">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -38,7 +41,7 @@
 
   
 
-</head>
+<meta name="generator" content="Hexo 8.1.1"></head>
 
 <body>
   <div id="container" q-class="show:isCtnShow">
@@ -68,7 +71,7 @@
 			<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 		</a>
 		<hgroup>
-		  <h1 class="header-author"><a href="/">董可伦</a></h1>
+		  <h1 class="header-author"><a href="/"></a></h1>
 		</hgroup>
 		
 
@@ -140,7 +143,7 @@
 				<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 			</div>
 			<hgroup>
-			  <h1 class="header-author js-header-author">董可伦</h1>
+			  <h1 class="header-author js-header-author"></h1>
 			</hgroup>
 			
 			
@@ -266,25 +269,24 @@
         <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>总结一下Spark Checkpoint 用法及源码，包括RDD和Spark Streaming两种。</p>
 <h2 id="1、RDD"><a href="#1、RDD" class="headerlink" title="1、RDD"></a>1、RDD</h2><blockquote>
 <p>作用：持久化数据-将RDD的数据保存到可靠文件系统中（一般是HDFS），以便数据恢复<br>容错、复用：在Spark程序中，如果某个RDD因为业务逻辑比较复杂，导致Transformation很多，计算很耗时，且该RDD后面用到很多次，那么有可能因为各种原因导致数据丢失、程序失败，之后Spark会重新尝试执行程序（默认三次），就需要重新从头开始执行，而如果执行了Checkpoint，那么就会直接从HDFS文件读取相关数据信息，不需要从头开始执行，节省很多时间。<br>cache和persist：有了cache和persist，还需要Checkpoint么？需要，因为cache到内存，虽然最快，但是也最不可靠，即使persist到磁盘也不如HDFS文件系统可靠，且能cache到内存最好在内存，因为这样很快，然后和Checkpoint一起用，就能既保证了速度也保证了可靠性。</p>
-<h3 id="1-1-用法"><a href="#1-1-用法" class="headerlink" title="1.1 用法"></a>1.1 用法</h3><p>代码示例<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//首先设置Checkpoint路径，这会在hdfs建立文件夹</span></span><br><span class="line">sc.setCheckpointDir(<span class="string">"hdfs://ambari.master.com:8020/spark/dkl/checkpoint/checkpointdemo"</span>)</span><br><span class="line"><span class="comment">//强烈建议先把rdd持久化到内存、否则保存到文件时会触发一个新的job重新计算</span></span><br><span class="line"><span class="keyword">val</span> rdd = sc.parallelize(<span class="number">1</span> to <span class="number">1000</span>, <span class="number">10</span>).cache</span><br><span class="line"><span class="comment">//调用checkpoint，标记该RDD要Checkpoint，将checkpointData设为ReliableRDDCheckpointData</span></span><br><span class="line"><span class="comment">//transformation操作，直到action操作才会执行，所以必须在一个action算子之前执行</span></span><br><span class="line">rdd.checkpoint()</span><br><span class="line"><span class="comment">//直到action算子触发job，才会将rdd持久化到对应的hdfs文件中</span></span><br><span class="line">println(rdd.sum)</span><br></pre></td></tr></table></figure></p>
-</blockquote>
-<a id="more"></a>
-<h3 id="1-2-源码"><a href="#1-2-源码" class="headerlink" title="1.2 源码"></a>1.2 源码</h3><h4 id="1-2-1-setCheckpointDir"><a href="#1-2-1-setCheckpointDir" class="headerlink" title="1.2.1 setCheckpointDir"></a>1.2.1 setCheckpointDir</h4><blockquote>
+<h3 id="1-1-用法"><a href="#1-1-用法" class="headerlink" title="1.1 用法"></a>1.1 用法</h3><p>代码示例<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//首先设置Checkpoint路径，这会在hdfs建立文件夹</span></span><br><span class="line">sc.setCheckpointDir(<span class="string">&quot;hdfs://ambari.master.com:8020/spark/dkl/checkpoint/checkpointdemo&quot;</span>)</span><br><span class="line"><span class="comment">//强烈建议先把rdd持久化到内存、否则保存到文件时会触发一个新的job重新计算</span></span><br><span class="line"><span class="keyword">val</span> rdd = sc.parallelize(<span class="number">1</span> to <span class="number">1000</span>, <span class="number">10</span>).cache</span><br><span class="line"><span class="comment">//调用checkpoint，标记该RDD要Checkpoint，将checkpointData设为ReliableRDDCheckpointData</span></span><br><span class="line"><span class="comment">//transformation操作，直到action操作才会执行，所以必须在一个action算子之前执行</span></span><br><span class="line">rdd.checkpoint()</span><br><span class="line"><span class="comment">//直到action算子触发job，才会将rdd持久化到对应的hdfs文件中</span></span><br><span class="line">println(rdd.sum)</span><br><span class="line"></span><br></pre></td></tr></table></figure><br><span id="more"></span></p>
+<h3 id="1-2-源码"><a href="#1-2-源码" class="headerlink" title="1.2 源码"></a>1.2 源码</h3></blockquote>
+<h4 id="1-2-1-setCheckpointDir"><a href="#1-2-1-setCheckpointDir" class="headerlink" title="1.2.1 setCheckpointDir"></a>1.2.1 setCheckpointDir</h4><blockquote>
 <p>建立对应的文件夹（fs.mkdirs(path)）</p>
 </blockquote>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Set the directory under which RDDs are going to be checkpointed.</span></span><br><span class="line"><span class="comment">   * @param directory path to the directory where checkpoint files will be stored</span></span><br><span class="line"><span class="comment">   * (must be HDFS path if running in cluster)</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">setCheckpointDir</span></span>(directory: <span class="type">String</span>) &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// If we are running on a cluster, log a warning if the directory is local.</span></span><br><span class="line">    <span class="comment">// Otherwise, the driver may attempt to reconstruct the checkpointed RDD from</span></span><br><span class="line">    <span class="comment">// its own local file system, which is incorrect because the checkpoint files</span></span><br><span class="line">    <span class="comment">// are actually on the executor machines.</span></span><br><span class="line">    <span class="keyword">if</span> (!isLocal &amp;&amp; <span class="type">Utils</span>.nonLocalPaths(directory).isEmpty) &#123;</span><br><span class="line">      logWarning(<span class="string">"Spark is not running in local mode, therefore the checkpoint directory "</span> +</span><br><span class="line">        <span class="string">s"must not be on the local filesystem. Directory '<span class="subst">$directory</span>' "</span> +</span><br><span class="line">        <span class="string">"appears to be on the local filesystem."</span>)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    checkpointDir = <span class="type">Option</span>(directory).map &#123; dir =&gt;</span><br><span class="line">      <span class="keyword">val</span> path = <span class="keyword">new</span> <span class="type">Path</span>(dir, <span class="type">UUID</span>.randomUUID().toString)</span><br><span class="line">      <span class="keyword">val</span> fs = path.getFileSystem(hadoopConfiguration)</span><br><span class="line">      fs.mkdirs(path)</span><br><span class="line">      fs.getFileStatus(path).getPath.toString</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Set the directory under which RDDs are going to be checkpointed.</span></span><br><span class="line"><span class="comment">   * @param directory path to the directory where checkpoint files will be stored</span></span><br><span class="line"><span class="comment">   * (must be HDFS path if running in cluster)</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">setCheckpointDir</span></span>(directory: <span class="type">String</span>) &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// If we are running on a cluster, log a warning if the directory is local.</span></span><br><span class="line">    <span class="comment">// Otherwise, the driver may attempt to reconstruct the checkpointed RDD from</span></span><br><span class="line">    <span class="comment">// its own local file system, which is incorrect because the checkpoint files</span></span><br><span class="line">    <span class="comment">// are actually on the executor machines.</span></span><br><span class="line">    <span class="keyword">if</span> (!isLocal &amp;&amp; <span class="type">Utils</span>.nonLocalPaths(directory).isEmpty) &#123;</span><br><span class="line">      logWarning(<span class="string">&quot;Spark is not running in local mode, therefore the checkpoint directory &quot;</span> +</span><br><span class="line">        <span class="string">s&quot;must not be on the local filesystem. Directory &#x27;<span class="subst">$directory</span>&#x27; &quot;</span> +</span><br><span class="line">        <span class="string">&quot;appears to be on the local filesystem.&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    checkpointDir = <span class="type">Option</span>(directory).map &#123; dir =&gt;</span><br><span class="line">      <span class="keyword">val</span> path = <span class="keyword">new</span> <span class="type">Path</span>(dir, <span class="type">UUID</span>.randomUUID().toString)</span><br><span class="line">      <span class="keyword">val</span> fs = path.getFileSystem(hadoopConfiguration)</span><br><span class="line">      fs.mkdirs(path)</span><br><span class="line">      fs.getFileStatus(path).getPath.toString</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
 <h4 id="1-2-2-checkpoint"><a href="#1-2-2-checkpoint" class="headerlink" title="1.2.2 checkpoint"></a>1.2.2 checkpoint</h4><blockquote>
 <p>调用checkpoint，标记该RDD要Checkpoint，将checkpointData设为ReliableRDDCheckpointData,transformation操作，直到action操作才会执行，所以必须在一个action算子之前执行</p>
 </blockquote>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Mark this RDD for checkpointing. It will be saved to a file inside the checkpoint</span></span><br><span class="line"><span class="comment">   * directory set with `SparkContext#setCheckpointDir` and all references to its parent</span></span><br><span class="line"><span class="comment">   * RDDs will be removed. This function must be called before any job has been</span></span><br><span class="line"><span class="comment">   * executed on this RDD. It is strongly recommended that this RDD is persisted in</span></span><br><span class="line"><span class="comment">   * memory, otherwise saving it on a file will require recomputation.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">checkpoint</span></span>(): <span class="type">Unit</span> = <span class="type">RDDCheckpointData</span>.synchronized &#123;</span><br><span class="line">    <span class="comment">// <span class="doctag">NOTE:</span> we use a global lock here due to complexities downstream with ensuring</span></span><br><span class="line">    <span class="comment">// children RDD partitions point to the correct parent partitions. In the future</span></span><br><span class="line">    <span class="comment">// we should revisit this consideration.</span></span><br><span class="line">    <span class="keyword">if</span> (context.checkpointDir.isEmpty) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">SparkException</span>(<span class="string">"Checkpoint directory has not been set in the SparkContext"</span>)</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (checkpointData.isEmpty) &#123;</span><br><span class="line">      checkpointData = <span class="type">Some</span>(<span class="keyword">new</span> <span class="type">ReliableRDDCheckpointData</span>(<span class="keyword">this</span>))</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Mark this RDD for checkpointing. It will be saved to a file inside the checkpoint</span></span><br><span class="line"><span class="comment">   * directory set with `SparkContext#setCheckpointDir` and all references to its parent</span></span><br><span class="line"><span class="comment">   * RDDs will be removed. This function must be called before any job has been</span></span><br><span class="line"><span class="comment">   * executed on this RDD. It is strongly recommended that this RDD is persisted in</span></span><br><span class="line"><span class="comment">   * memory, otherwise saving it on a file will require recomputation.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">checkpoint</span></span>(): <span class="type">Unit</span> = <span class="type">RDDCheckpointData</span>.synchronized &#123;</span><br><span class="line">    <span class="comment">// <span class="doctag">NOTE:</span> we use a global lock here due to complexities downstream with ensuring</span></span><br><span class="line">    <span class="comment">// children RDD partitions point to the correct parent partitions. In the future</span></span><br><span class="line">    <span class="comment">// we should revisit this consideration.</span></span><br><span class="line">    <span class="keyword">if</span> (context.checkpointDir.isEmpty) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">SparkException</span>(<span class="string">&quot;Checkpoint directory has not been set in the SparkContext&quot;</span>)</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (checkpointData.isEmpty) &#123;</span><br><span class="line">      checkpointData = <span class="type">Some</span>(<span class="keyword">new</span> <span class="type">ReliableRDDCheckpointData</span>(<span class="keyword">this</span>))</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
 <h4 id="1-2-3-action算子"><a href="#1-2-3-action算子" class="headerlink" title="1.2.3 action算子"></a>1.2.3 action算子</h4><blockquote>
 <p>每个action算子都会调用sc.runJob方法，而runJob方法在最后会调用rdd.doCheckpoint()方法</p>
 </blockquote>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Run a function on a given set of partitions in an RDD and pass the results to the given</span></span><br><span class="line"><span class="comment"> * handler function. This is the main entry point for all actions in Spark.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * @param rdd target RDD to run tasks on</span></span><br><span class="line"><span class="comment"> * @param func a function to run on each partition of the RDD</span></span><br><span class="line"><span class="comment"> * @param partitions set of partitions to run on; some jobs may not want to compute on all</span></span><br><span class="line"><span class="comment"> * partitions of the target RDD, e.g. for operations like `first()`</span></span><br><span class="line"><span class="comment"> * @param resultHandler callback to pass each result to</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">runJob</span></span>[<span class="type">T</span>, <span class="type">U</span>: <span class="type">ClassTag</span>](</span><br><span class="line">    rdd: <span class="type">RDD</span>[<span class="type">T</span>],</span><br><span class="line">    func: (<span class="type">TaskContext</span>, <span class="type">Iterator</span>[<span class="type">T</span>]) =&gt; <span class="type">U</span>,</span><br><span class="line">    partitions: <span class="type">Seq</span>[<span class="type">Int</span>],</span><br><span class="line">    resultHandler: (<span class="type">Int</span>, <span class="type">U</span>) =&gt; <span class="type">Unit</span>): <span class="type">Unit</span> = &#123;</span><br><span class="line">  <span class="keyword">if</span> (stopped.get()) &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">IllegalStateException</span>(<span class="string">"SparkContext has been shutdown"</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">val</span> callSite = getCallSite</span><br><span class="line">  <span class="keyword">val</span> cleanedFunc = clean(func)</span><br><span class="line">  logInfo(<span class="string">"Starting job: "</span> + callSite.shortForm)</span><br><span class="line">  <span class="keyword">if</span> (conf.getBoolean(<span class="string">"spark.logLineage"</span>, <span class="literal">false</span>)) &#123;</span><br><span class="line">    logInfo(<span class="string">"RDD's recursive dependencies:\n"</span> + rdd.toDebugString)</span><br><span class="line">  &#125;</span><br><span class="line">  dagScheduler.runJob(rdd, cleanedFunc, partitions, callSite, resultHandler, localProperties.get)</span><br><span class="line">  progressBar.foreach(_.finishAll())</span><br><span class="line">  rdd.doCheckpoint()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Run a function on a given set of partitions in an RDD and pass the results to the given</span></span><br><span class="line"><span class="comment"> * handler function. This is the main entry point for all actions in Spark.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * @param rdd target RDD to run tasks on</span></span><br><span class="line"><span class="comment"> * @param func a function to run on each partition of the RDD</span></span><br><span class="line"><span class="comment"> * @param partitions set of partitions to run on; some jobs may not want to compute on all</span></span><br><span class="line"><span class="comment"> * partitions of the target RDD, e.g. for operations like `first()`</span></span><br><span class="line"><span class="comment"> * @param resultHandler callback to pass each result to</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">runJob</span></span>[<span class="type">T</span>, <span class="type">U</span>: <span class="type">ClassTag</span>](</span><br><span class="line">    rdd: <span class="type">RDD</span>[<span class="type">T</span>],</span><br><span class="line">    func: (<span class="type">TaskContext</span>, <span class="type">Iterator</span>[<span class="type">T</span>]) =&gt; <span class="type">U</span>,</span><br><span class="line">    partitions: <span class="type">Seq</span>[<span class="type">Int</span>],</span><br><span class="line">    resultHandler: (<span class="type">Int</span>, <span class="type">U</span>) =&gt; <span class="type">Unit</span>): <span class="type">Unit</span> = &#123;</span><br><span class="line">  <span class="keyword">if</span> (stopped.get()) &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">IllegalStateException</span>(<span class="string">&quot;SparkContext has been shutdown&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">val</span> callSite = getCallSite</span><br><span class="line">  <span class="keyword">val</span> cleanedFunc = clean(func)</span><br><span class="line">  logInfo(<span class="string">&quot;Starting job: &quot;</span> + callSite.shortForm)</span><br><span class="line">  <span class="keyword">if</span> (conf.getBoolean(<span class="string">&quot;spark.logLineage&quot;</span>, <span class="literal">false</span>)) &#123;</span><br><span class="line">    logInfo(<span class="string">&quot;RDD&#x27;s recursive dependencies:\n&quot;</span> + rdd.toDebugString)</span><br><span class="line">  &#125;</span><br><span class="line">  dagScheduler.runJob(rdd, cleanedFunc, partitions, callSite, resultHandler, localProperties.get)</span><br><span class="line">  progressBar.foreach(_.finishAll())</span><br><span class="line">  rdd.doCheckpoint()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h4 id="1-2-4-doCheckpoint"><a href="#1-2-4-doCheckpoint" class="headerlink" title="1.2.4 doCheckpoint"></a>1.2.4 doCheckpoint</h4><blockquote>
 <ol>
 <li><p>rdd.doCheckpoint()=&gt;checkpointData.get.checkpoint()</p>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Performs the checkpointing of this RDD by saving this. It is called after a job using this RDD</span></span><br><span class="line"><span class="comment">   * has completed (therefore the RDD has been materialized and potentially stored in memory).</span></span><br><span class="line"><span class="comment">   * doCheckpoint() is called recursively on the parent RDDs.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="keyword">private</span>[spark] <span class="function"><span class="keyword">def</span> <span class="title">doCheckpoint</span></span>(): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="type">RDDOperationScope</span>.withScope(sc, <span class="string">"checkpoint"</span>, allowNesting = <span class="literal">false</span>, ignoreParent = <span class="literal">true</span>) &#123;</span><br><span class="line">      <span class="keyword">if</span> (!doCheckpointCalled) &#123;</span><br><span class="line">        doCheckpointCalled = <span class="literal">true</span></span><br><span class="line">        <span class="keyword">if</span> (checkpointData.isDefined) &#123;</span><br><span class="line">          <span class="keyword">if</span> (checkpointAllMarkedAncestors) &#123;</span><br><span class="line">            <span class="comment">// TODO We can collect all the RDDs that needs to be checkpointed, and then checkpoint</span></span><br><span class="line">            <span class="comment">// them in parallel.</span></span><br><span class="line">            <span class="comment">// Checkpoint parents first because our lineage will be truncated after we</span></span><br><span class="line">            <span class="comment">// checkpoint ourselves</span></span><br><span class="line">            dependencies.foreach(_.rdd.doCheckpoint())</span><br><span class="line">          &#125;</span><br><span class="line">          checkpointData.get.checkpoint()</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">          dependencies.foreach(_.rdd.doCheckpoint())</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Performs the checkpointing of this RDD by saving this. It is called after a job using this RDD</span></span><br><span class="line"><span class="comment">   * has completed (therefore the RDD has been materialized and potentially stored in memory).</span></span><br><span class="line"><span class="comment">   * doCheckpoint() is called recursively on the parent RDDs.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="keyword">private</span>[spark] <span class="function"><span class="keyword">def</span> <span class="title">doCheckpoint</span></span>(): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="type">RDDOperationScope</span>.withScope(sc, <span class="string">&quot;checkpoint&quot;</span>, allowNesting = <span class="literal">false</span>, ignoreParent = <span class="literal">true</span>) &#123;</span><br><span class="line">      <span class="keyword">if</span> (!doCheckpointCalled) &#123;</span><br><span class="line">        doCheckpointCalled = <span class="literal">true</span></span><br><span class="line">        <span class="keyword">if</span> (checkpointData.isDefined) &#123;</span><br><span class="line">          <span class="keyword">if</span> (checkpointAllMarkedAncestors) &#123;</span><br><span class="line">            <span class="comment">// TODO We can collect all the RDDs that needs to be checkpointed, and then checkpoint</span></span><br><span class="line">            <span class="comment">// them in parallel.</span></span><br><span class="line">            <span class="comment">// Checkpoint parents first because our lineage will be truncated after we</span></span><br><span class="line">            <span class="comment">// checkpoint ourselves</span></span><br><span class="line">            dependencies.foreach(_.rdd.doCheckpoint())</span><br><span class="line">          &#125;</span><br><span class="line">          checkpointData.get.checkpoint()</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">          dependencies.foreach(_.rdd.doCheckpoint())</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
 </li>
 <li><p>checkpointData.get.checkpoint()=&gt;val newRDD = doCheckpoint()<br>cpState = CheckpointingInProgress,最开始cpState = Initialized（protected var cpState = Initialized）</p>
 </li>
@@ -293,20 +295,18 @@
 <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Materialize this RDD and persist its content.</span></span><br><span class="line"><span class="comment">   * This is called immediately after the first action invoked on this RDD has completed.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="keyword">final</span> <span class="function"><span class="keyword">def</span> <span class="title">checkpoint</span></span>(): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="comment">// Guard against multiple threads checkpointing the same RDD by</span></span><br><span class="line">    <span class="comment">// atomically flipping the state of this RDDCheckpointData</span></span><br><span class="line">    <span class="type">RDDCheckpointData</span>.synchronized &#123;</span><br><span class="line">      <span class="keyword">if</span> (cpState == <span class="type">Initialized</span>) &#123;</span><br><span class="line">        cpState = <span class="type">CheckpointingInProgress</span></span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> newRDD = doCheckpoint()</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Update our state and truncate the RDD lineage</span></span><br><span class="line">    <span class="type">RDDCheckpointData</span>.synchronized &#123;</span><br><span class="line">      cpRDD = <span class="type">Some</span>(newRDD)</span><br><span class="line">      cpState = <span class="type">Checkpointed</span></span><br><span class="line">      rdd.markCheckpointed()</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
 <blockquote>
 <ol>
-<li>上面的checkpoint方法将checkpointData设为ReliableRDDCheckpointData，所以会调用ReliableRDDCheckpointData的doCheckpoint方法<br>在第一个action算子执行完之后，该方法会立即执行，将RDD的内容写到可靠的文件系统（ReliableCheckpointRDD.writeRDDToCheckpointDirectory）<br>doCheckpoint():<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Materialize this RDD and write its content to a reliable DFS.</span></span><br><span class="line"><span class="comment">   * This is called immediately after the first action invoked on this RDD has completed.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="keyword">protected</span> <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">doCheckpoint</span></span>(): <span class="type">CheckpointRDD</span>[<span class="type">T</span>] = &#123;</span><br><span class="line">    <span class="keyword">val</span> newRDD = <span class="type">ReliableCheckpointRDD</span>.writeRDDToCheckpointDirectory(rdd, cpDir)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Optionally clean our checkpoint files if the reference is out of scope</span></span><br><span class="line">    <span class="keyword">if</span> (rdd.conf.getBoolean(<span class="string">"spark.cleaner.referenceTracking.cleanCheckpoints"</span>, <span class="literal">false</span>)) &#123;</span><br><span class="line">      rdd.context.cleaner.foreach &#123; cleaner =&gt;</span><br><span class="line">        cleaner.registerRDDCheckpointDataForCleanup(newRDD, rdd.id)</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    logInfo(<span class="string">s"Done checkpointing RDD <span class="subst">$&#123;rdd.id&#125;</span> to <span class="subst">$cpDir</span>, new parent is RDD <span class="subst">$&#123;newRDD.id&#125;</span>"</span>)</span><br><span class="line">    newRDD</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<li>上面的checkpoint方法将checkpointData设为ReliableRDDCheckpointData，所以会调用ReliableRDDCheckpointData的doCheckpoint方法<br>在第一个action算子执行完之后，该方法会立即执行，将RDD的内容写到可靠的文件系统（ReliableCheckpointRDD.writeRDDToCheckpointDirectory）<br>doCheckpoint():<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Materialize this RDD and write its content to a reliable DFS.</span></span><br><span class="line"><span class="comment">   * This is called immediately after the first action invoked on this RDD has completed.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="keyword">protected</span> <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">doCheckpoint</span></span>(): <span class="type">CheckpointRDD</span>[<span class="type">T</span>] = &#123;</span><br><span class="line">    <span class="keyword">val</span> newRDD = <span class="type">ReliableCheckpointRDD</span>.writeRDDToCheckpointDirectory(rdd, cpDir)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Optionally clean our checkpoint files if the reference is out of scope</span></span><br><span class="line">    <span class="keyword">if</span> (rdd.conf.getBoolean(<span class="string">&quot;spark.cleaner.referenceTracking.cleanCheckpoints&quot;</span>, <span class="literal">false</span>)) &#123;</span><br><span class="line">      rdd.context.cleaner.foreach &#123; cleaner =&gt;</span><br><span class="line">        cleaner.registerRDDCheckpointDataForCleanup(newRDD, rdd.id)</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    logInfo(<span class="string">s&quot;Done checkpointing RDD <span class="subst">$&#123;rdd.id&#125;</span> to <span class="subst">$cpDir</span>, new parent is RDD <span class="subst">$&#123;newRDD.id&#125;</span>&quot;</span>)</span><br><span class="line">    newRDD</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
 </li>
 </ol>
 </blockquote>
 <h4 id="1-2-5-writeRDDToCheckpointDirectory"><a href="#1-2-5-writeRDDToCheckpointDirectory" class="headerlink" title="1.2.5 writeRDDToCheckpointDirectory"></a>1.2.5 writeRDDToCheckpointDirectory</h4><blockquote>
-<p>可以看到这里会触发一个job<br>其中writePartitionToCheckpointFile是将分区数据写入checkpoint文件，writePartitionerToCheckpointDir是将分区写入checkpoint文件<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Write RDD to checkpoint files and return a ReliableCheckpointRDD representing the RDD.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">writeRDDToCheckpointDirectory</span></span>[<span class="type">T</span>: <span class="type">ClassTag</span>](</span><br><span class="line">      originalRDD: <span class="type">RDD</span>[<span class="type">T</span>],</span><br><span class="line">      checkpointDir: <span class="type">String</span>,</span><br><span class="line">      blockSize: <span class="type">Int</span> = <span class="number">-1</span>): <span class="type">ReliableCheckpointRDD</span>[<span class="type">T</span>] = &#123;</span><br><span class="line">    ...</span><br><span class="line">    sc.runJob(originalRDD,</span><br><span class="line">      writePartitionToCheckpointFile[<span class="type">T</span>](checkpointDirPath.toString, broadcastedConf) _)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (originalRDD.partitioner.nonEmpty) &#123;</span><br><span class="line">      writePartitionerToCheckpointDir(sc, originalRDD.partitioner.get, checkpointDirPath)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">   ...</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure></p>
-</blockquote>
-<h4 id="1-2-6-rdd-markCheckpointed"><a href="#1-2-6-rdd-markCheckpointed" class="headerlink" title="1.2.6 rdd.markCheckpointed()"></a>1.2.6 rdd.markCheckpointed()</h4><p>在checkpointData.get.checkpoint()方法里可以看到最后会先将cpState = Checkpointed，然后执行rdd.markCheckpointed()</p>
+<p>可以看到这里会触发一个job<br>其中writePartitionToCheckpointFile是将分区数据写入checkpoint文件，writePartitionerToCheckpointDir是将分区写入checkpoint文件<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Write RDD to checkpoint files and return a ReliableCheckpointRDD representing the RDD.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">writeRDDToCheckpointDirectory</span></span>[<span class="type">T</span>: <span class="type">ClassTag</span>](</span><br><span class="line">      originalRDD: <span class="type">RDD</span>[<span class="type">T</span>],</span><br><span class="line">      checkpointDir: <span class="type">String</span>,</span><br><span class="line">      blockSize: <span class="type">Int</span> = <span class="number">-1</span>): <span class="type">ReliableCheckpointRDD</span>[<span class="type">T</span>] = &#123;</span><br><span class="line">    ...</span><br><span class="line">    sc.runJob(originalRDD,</span><br><span class="line">      writePartitionToCheckpointFile[<span class="type">T</span>](checkpointDirPath.toString, broadcastedConf) _)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (originalRDD.partitioner.nonEmpty) &#123;</span><br><span class="line">      writePartitionerToCheckpointDir(sc, originalRDD.partitioner.get, checkpointDirPath)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">   ...</span><br><span class="line">  &#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure></p>
+<h4 id="1-2-6-rdd-markCheckpointed"><a href="#1-2-6-rdd-markCheckpointed" class="headerlink" title="1.2.6 rdd.markCheckpointed()"></a>1.2.6 rdd.markCheckpointed()</h4></blockquote>
+<p>在checkpointData.get.checkpoint()方法里可以看到最后会先将cpState = Checkpointed，然后执行rdd.markCheckpointed()</p>
 <blockquote>
 <p>从检查点文件创建新的RDD，清除旧的依赖和分区<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Changes the dependencies of this RDD from its original parents to a new RDD (`newRDD`)</span></span><br><span class="line"><span class="comment">   * created from the checkpoint file, and forget its old dependencies and partitions.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="keyword">private</span>[spark] <span class="function"><span class="keyword">def</span> <span class="title">markCheckpointed</span></span>(): <span class="type">Unit</span> = &#123;</span><br><span class="line">    clearDependencies()</span><br><span class="line">    partitions_ = <span class="literal">null</span></span><br><span class="line">    deps = <span class="literal">null</span>    <span class="comment">// Forget the constructor argument for dependencies too</span></span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure></p>
-</blockquote>
-<h3 id="1-2-7-读-checkpoint"><a href="#1-2-7-读-checkpoint" class="headerlink" title="1.2.7 读 checkpoint"></a>1.2.7 读 checkpoint</h3><p>当执行action算子时，会触发job，通过sc.runJob方法，将函数（action算子）以参数的形式提交job，接着划分stage、提交stage、提交task、执行task，最后在org.apache.spark.scheduler.ResultTask.runTask方法里会调用rdd.iterator来获取rdd分区数据<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">runTask</span></span>(context: <span class="type">TaskContext</span>): <span class="type">U</span> = &#123;</span><br><span class="line">    <span class="comment">// Deserialize the RDD and the func using the broadcast variables.</span></span><br><span class="line">    <span class="keyword">val</span> threadMXBean = <span class="type">ManagementFactory</span>.getThreadMXBean</span><br><span class="line">    <span class="keyword">val</span> deserializeStartTime = <span class="type">System</span>.currentTimeMillis()</span><br><span class="line">    <span class="keyword">val</span> deserializeStartCpuTime = <span class="keyword">if</span> (threadMXBean.isCurrentThreadCpuTimeSupported) &#123;</span><br><span class="line">      threadMXBean.getCurrentThreadCpuTime</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="number">0</span>L</span><br><span class="line">    <span class="keyword">val</span> ser = <span class="type">SparkEnv</span>.get.closureSerializer.newInstance()</span><br><span class="line">    <span class="keyword">val</span> (rdd, func) = ser.deserialize[(<span class="type">RDD</span>[<span class="type">T</span>], (<span class="type">TaskContext</span>, <span class="type">Iterator</span>[<span class="type">T</span>]) =&gt; <span class="type">U</span>)](</span><br><span class="line">      <span class="type">ByteBuffer</span>.wrap(taskBinary.value), <span class="type">Thread</span>.currentThread.getContextClassLoader)</span><br><span class="line">    _executorDeserializeTime = <span class="type">System</span>.currentTimeMillis() - deserializeStartTime</span><br><span class="line">    _executorDeserializeCpuTime = <span class="keyword">if</span> (threadMXBean.isCurrentThreadCpuTimeSupported) &#123;</span><br><span class="line">      threadMXBean.getCurrentThreadCpuTime - deserializeStartCpuTime</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="number">0</span>L</span><br><span class="line"></span><br><span class="line">    func(context, rdd.iterator(partition, context))</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure></p>
-<p>看一下rdd.iterator<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Internal method to this RDD; will read from cache if applicable, or otherwise compute it.</span></span><br><span class="line"><span class="comment">   * This should ''not'' be called by users directly, but is available for implementors of custom</span></span><br><span class="line"><span class="comment">   * subclasses of RDD.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="keyword">final</span> <span class="function"><span class="keyword">def</span> <span class="title">iterator</span></span>(split: <span class="type">Partition</span>, context: <span class="type">TaskContext</span>): <span class="type">Iterator</span>[<span class="type">T</span>] = &#123;</span><br><span class="line">    <span class="keyword">if</span> (storageLevel != <span class="type">StorageLevel</span>.<span class="type">NONE</span>) &#123; <span class="comment">//当cache或persist时</span></span><br><span class="line">      getOrCompute(split, context)</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;<span class="comment">//没有cache和persist时</span></span><br><span class="line">      computeOrReadCheckpoint(split, context)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure></p>
-<p>没有cache时调用computeOrReadCheckpoint<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Compute an RDD partition or read it from a checkpoint if the RDD is checkpointing.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="keyword">private</span>[spark] <span class="function"><span class="keyword">def</span> <span class="title">computeOrReadCheckpoint</span></span>(split: <span class="type">Partition</span>, context: <span class="type">TaskContext</span>): <span class="type">Iterator</span>[<span class="type">T</span>] =</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">if</span> (isCheckpointedAndMaterialized) &#123;<span class="comment">//已经checkpoint的话</span></span><br><span class="line">      firstParent[<span class="type">T</span>].iterator(split, context)</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      compute(split, context)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="1-2-7-读-checkpoint"><a href="#1-2-7-读-checkpoint" class="headerlink" title="1.2.7 读 checkpoint"></a>1.2.7 读 checkpoint</h3></blockquote>
+<p>当执行action算子时，会触发job，通过sc.runJob方法，将函数（action算子）以参数的形式提交job，接着划分stage、提交stage、提交task、执行task，最后在org.apache.spark.scheduler.ResultTask.runTask方法里会调用rdd.iterator来获取rdd分区数据<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">runTask</span></span>(context: <span class="type">TaskContext</span>): <span class="type">U</span> = &#123;</span><br><span class="line">    <span class="comment">// Deserialize the RDD and the func using the broadcast variables.</span></span><br><span class="line">    <span class="keyword">val</span> threadMXBean = <span class="type">ManagementFactory</span>.getThreadMXBean</span><br><span class="line">    <span class="keyword">val</span> deserializeStartTime = <span class="type">System</span>.currentTimeMillis()</span><br><span class="line">    <span class="keyword">val</span> deserializeStartCpuTime = <span class="keyword">if</span> (threadMXBean.isCurrentThreadCpuTimeSupported) &#123;</span><br><span class="line">      threadMXBean.getCurrentThreadCpuTime</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="number">0</span>L</span><br><span class="line">    <span class="keyword">val</span> ser = <span class="type">SparkEnv</span>.get.closureSerializer.newInstance()</span><br><span class="line">    <span class="keyword">val</span> (rdd, func) = ser.deserialize[(<span class="type">RDD</span>[<span class="type">T</span>], (<span class="type">TaskContext</span>, <span class="type">Iterator</span>[<span class="type">T</span>]) =&gt; <span class="type">U</span>)](</span><br><span class="line">      <span class="type">ByteBuffer</span>.wrap(taskBinary.value), <span class="type">Thread</span>.currentThread.getContextClassLoader)</span><br><span class="line">    _executorDeserializeTime = <span class="type">System</span>.currentTimeMillis() - deserializeStartTime</span><br><span class="line">    _executorDeserializeCpuTime = <span class="keyword">if</span> (threadMXBean.isCurrentThreadCpuTimeSupported) &#123;</span><br><span class="line">      threadMXBean.getCurrentThreadCpuTime - deserializeStartCpuTime</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="number">0</span>L</span><br><span class="line"></span><br><span class="line">    func(context, rdd.iterator(partition, context))</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure><br>看一下rdd.iterator<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Internal method to this RDD; will read from cache if applicable, or otherwise compute it.</span></span><br><span class="line"><span class="comment">   * This should &#x27;&#x27;not&#x27;&#x27; be called by users directly, but is available for implementors of custom</span></span><br><span class="line"><span class="comment">   * subclasses of RDD.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="keyword">final</span> <span class="function"><span class="keyword">def</span> <span class="title">iterator</span></span>(split: <span class="type">Partition</span>, context: <span class="type">TaskContext</span>): <span class="type">Iterator</span>[<span class="type">T</span>] = &#123;</span><br><span class="line">    <span class="keyword">if</span> (storageLevel != <span class="type">StorageLevel</span>.<span class="type">NONE</span>) &#123; <span class="comment">//当cache或persist时</span></span><br><span class="line">      getOrCompute(split, context)</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;<span class="comment">//没有cache和persist时</span></span><br><span class="line">      computeOrReadCheckpoint(split, context)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure><br>没有cache时调用computeOrReadCheckpoint<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Compute an RDD partition or read it from a checkpoint if the RDD is checkpointing.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="keyword">private</span>[spark] <span class="function"><span class="keyword">def</span> <span class="title">computeOrReadCheckpoint</span></span>(split: <span class="type">Partition</span>, context: <span class="type">TaskContext</span>): <span class="type">Iterator</span>[<span class="type">T</span>] =</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">if</span> (isCheckpointedAndMaterialized) &#123;<span class="comment">//已经checkpoint的话</span></span><br><span class="line">      firstParent[<span class="type">T</span>].iterator(split, context)</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      compute(split, context)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure></p>
 <h2 id="2、Spark-Streaming"><a href="#2、Spark-Streaming" class="headerlink" title="2、Spark Streaming"></a>2、Spark Streaming</h2>
       
 
@@ -463,7 +463,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1、RDD"><span class="toc-number">2.</span> <span class="toc-text">1、RDD</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-用法"><span class="toc-number">2.1.</span> <span class="toc-text">1.1 用法</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-源码"><span class="toc-number">2.2.</span> <span class="toc-text">1.2 源码</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-2-1-setCheckpointDir"><span class="toc-number">2.2.1.</span> <span class="toc-text">1.2.1 setCheckpointDir</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1-2-2-checkpoint"><span class="toc-number">2.2.2.</span> <span class="toc-text">1.2.2 checkpoint</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1-2-3-action算子"><span class="toc-number">2.2.3.</span> <span class="toc-text">1.2.3 action算子</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1-2-4-doCheckpoint"><span class="toc-number">2.2.4.</span> <span class="toc-text">1.2.4 doCheckpoint</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1-2-5-writeRDDToCheckpointDirectory"><span class="toc-number">2.2.5.</span> <span class="toc-text">1.2.5 writeRDDToCheckpointDirectory</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1-2-6-rdd-markCheckpointed"><span class="toc-number">2.2.6.</span> <span class="toc-text">1.2.6 rdd.markCheckpointed()</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-7-读-checkpoint"><span class="toc-number">2.3.</span> <span class="toc-text">1.2.7 读 checkpoint</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2、Spark-Streaming"><span class="toc-number">3.</span> <span class="toc-text">2、Spark Streaming</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1%E3%80%81RDD"><span class="toc-number">2.</span> <span class="toc-text">1、RDD</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-%E7%94%A8%E6%B3%95"><span class="toc-number">2.1.</span> <span class="toc-text">1.1 用法</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-%E6%BA%90%E7%A0%81"><span class="toc-number">2.2.</span> <span class="toc-text">1.2 源码</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-2-1-setCheckpointDir"><span class="toc-number">2.2.1.</span> <span class="toc-text">1.2.1 setCheckpointDir</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1-2-2-checkpoint"><span class="toc-number">2.2.2.</span> <span class="toc-text">1.2.2 checkpoint</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1-2-3-action%E7%AE%97%E5%AD%90"><span class="toc-number">2.2.3.</span> <span class="toc-text">1.2.3 action算子</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1-2-4-doCheckpoint"><span class="toc-number">2.2.4.</span> <span class="toc-text">1.2.4 doCheckpoint</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1-2-5-writeRDDToCheckpointDirectory"><span class="toc-number">2.2.5.</span> <span class="toc-text">1.2.5 writeRDDToCheckpointDirectory</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1-2-6-rdd-markCheckpointed"><span class="toc-number">2.2.6.</span> <span class="toc-text">1.2.6 rdd.markCheckpointed()</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-7-%E8%AF%BB-checkpoint"><span class="toc-number">2.3.</span> <span class="toc-text">1.2.7 读 checkpoint</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2%E3%80%81Spark-Streaming"><span class="toc-number">3.</span> <span class="toc-text">2、Spark Streaming</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -638,14 +638,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -655,6 +647,22 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -670,14 +678,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
@@ -690,23 +690,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -726,7 +710,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -738,15 +734,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -782,11 +774,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -818,15 +810,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -838,7 +822,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -846,7 +830,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -858,7 +842,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -866,11 +854,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -879,6 +867,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -894,15 +890,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -911,6 +903,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -923,10 +919,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -946,10 +938,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
@@ -958,7 +946,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -966,11 +954,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -998,7 +990,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1014,7 +1022,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
+                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1022,11 +1030,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1046,23 +1050,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ZooKeeper</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1071,6 +1067,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ollama</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
             
             <div class="clearfix"></div>

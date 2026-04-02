@@ -10,22 +10,23 @@
   <title>Hudi Flink SQL代码示例及本地调试 | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="前言之前在Flink Hudi DataStream API代码示例中总结了Hudi Flink DataStream API的代码及本地调试，并且在文中提到其实大家用Table API更多一些，但是我感觉Table API调试源码可能会比较难一点，因为可能会涉及到SQL解析，不清楚Table API的入口在哪里。但是在我总结的上篇文章Flink用户自定义连接器（Table API Connect">
-<meta name="keywords" content="Hudi,Flink">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Hudi Flink SQL代码示例及本地调试">
 <meta property="og:url" content="https://dongkelun.com/2023/05/29/hudiFlinkSQLCodeDebug/index.html">
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言之前在Flink Hudi DataStream API代码示例中总结了Hudi Flink DataStream API的代码及本地调试，并且在文中提到其实大家用Table API更多一些，但是我感觉Table API调试源码可能会比较难一点，因为可能会涉及到SQL解析，不清楚Table API的入口在哪里。但是在我总结的上篇文章Flink用户自定义连接器（Table API Connect">
-<meta property="og:locale" content="cn">
+<meta property="og:locale">
 <meta property="og:image" content="https://img.dongkelun.com/hudi/flinkSqlCodeDebug1.png">
 <meta property="og:image" content="https://img.dongkelun.com/hudi/flinkSqlCodeDebug2.png">
 <meta property="og:image" content="https://img.dongkelun.com/hudi/flinkSqlCodeDebug3.png">
 <meta property="og:image" content="https://img.dongkelun.com/hudi/flinkSqlCodeDebug4.png">
 <meta property="og:image" content="https://img.dongkelun.com/hudi/flinkSqlCodeDebug6.png">
-<meta property="og:updated_time" content="2023-07-31T11:39:08.906Z">
+<meta property="article:published_time" content="2023-05-28T16:00:00.000Z">
+<meta property="article:modified_time" content="2023-07-31T11:39:08.906Z">
+<meta property="article:author" content="董可伦">
+<meta property="article:tag" content="Flink">
+<meta property="article:tag" content="Hudi">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Hudi Flink SQL代码示例及本地调试">
-<meta name="twitter:description" content="前言之前在Flink Hudi DataStream API代码示例中总结了Hudi Flink DataStream API的代码及本地调试，并且在文中提到其实大家用Table API更多一些，但是我感觉Table API调试源码可能会比较难一点，因为可能会涉及到SQL解析，不清楚Table API的入口在哪里。但是在我总结的上篇文章Flink用户自定义连接器（Table API Connect">
 <meta name="twitter:image" content="https://img.dongkelun.com/hudi/flinkSqlCodeDebug1.png">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
@@ -44,7 +45,7 @@
 
   
 
-</head>
+<meta name="generator" content="Hexo 8.1.1"></head>
 
 <body>
   <div id="container" q-class="show:isCtnShow">
@@ -74,7 +75,7 @@
 			<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 		</a>
 		<hgroup>
-		  <h1 class="header-author"><a href="/">董可伦</a></h1>
+		  <h1 class="header-author"><a href="/"></a></h1>
 		</hgroup>
 		
 
@@ -146,7 +147,7 @@
 				<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 			</div>
 			<hgroup>
-			  <h1 class="header-author js-header-author">董可伦</h1>
+			  <h1 class="header-author js-header-author"></h1>
 			</hgroup>
 			
 			
@@ -233,11 +234,11 @@
 		<ul class="article-tag-list">
 			 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Flink</a>
         		</li>
       		 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Flink</a>
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">Hudi</a>
         		</li>
       		
 		</ul>
@@ -261,28 +262,27 @@
         
         
       
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>之前在<a href="https://mp.weixin.qq.com/s/83lMpbLCM3Mlb3fg_rEddw" target="_blank" rel="noopener">Flink Hudi DataStream API代码示例</a>中总结了Hudi Flink DataStream API的代码及本地调试，并且在文中提到其实大家用Table API更多一些，但是我感觉Table API调试源码可能会比较难一点，因为可能会涉及到SQL解析，不清楚Table API的入口在哪里。<br>但是在我总结的上篇文章<a href="https://mp.weixin.qq.com/s/ogEurXSHW-iiejzoB5oFBQ" target="_blank" rel="noopener">Flink用户自定义连接器（Table API Connectors）学习总结</a>中知道了其实Flink Table API读写Hudi是通过自定义实现了一个Hudi的Table API Connectors（’connector’ = ‘hudi’）,相关类为<code>HoodieTableFactory</code>、<code>HoodieTableSink</code>和<code>HoodieTableSource</code>，入口为<code>HoodieTableFactory</code>。</p>
-<a id="more"></a>
-<h2 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h2><p>GitHub地址：<a href="https://github.com/dongkelun/hudi-demo/tree/master/hudi0.13_flink1.15" target="_blank" rel="noopener">https://github.com/dongkelun/hudi-demo/tree/master/hudi0.13_flink1.15</a></p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.dkl.hudi.flink;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;</span><br><span class="line"><span class="keyword">import</span> org.apache.flink.table.api.EnvironmentSettings;</span><br><span class="line"><span class="keyword">import</span> org.apache.flink.table.api.bridge.java.StreamTableEnvironment;</span><br><span class="line"><span class="keyword">import</span> org.apache.hudi.configuration.FlinkOptions;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> <span class="keyword">static</span> org.apache.hudi.examples.quickstart.utils.QuickstartConfigurations.sql;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HudiFlinkSQL</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line">        StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env, EnvironmentSettings.inBatchMode());</span><br><span class="line">        String tableName = <span class="string">"t1"</span>;</span><br><span class="line">        <span class="keyword">if</span> (args.length &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            tableName = args[<span class="number">0</span>];</span><br><span class="line">        &#125;</span><br><span class="line">        String tablePath = <span class="string">"/tmp/flink/hudi/"</span> + tableName;</span><br><span class="line">        String hoodieTableDDL = sql(tableName)</span><br><span class="line">                .field(<span class="string">"id int"</span>)</span><br><span class="line">                .field(<span class="string">"name string"</span>)</span><br><span class="line">                .field(<span class="string">"price double"</span>)</span><br><span class="line">                .field(<span class="string">"ts bigint"</span>)</span><br><span class="line">                .field(<span class="string">"dt string"</span>)</span><br><span class="line">                .option(FlinkOptions.PATH, tablePath)</span><br><span class="line"><span class="comment">//                .option(FlinkOptions.READ_AS_STREAMING, true)</span></span><br><span class="line"><span class="comment">//                .option(FlinkOptions.TABLE_TYPE, "COPY_ON_WRITE")</span></span><br><span class="line">                .partitionField(<span class="string">"dt"</span>)</span><br><span class="line">                .pkField(<span class="string">"id"</span>)</span><br><span class="line">                .end();</span><br><span class="line">        tableEnv.executeSql(hoodieTableDDL);</span><br><span class="line">        tableEnv.executeSql(String.format(<span class="string">"insert into %s values (1,'hudi',10,100,'2023-05-28')"</span>, tableName));</span><br><span class="line">        tableEnv.executeSql(String.format(<span class="string">"select * from %s"</span>, tableName)).print();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>其实就是通过tableEnv.executeSql执行Flink SQL,其中创建Hudi表的SQL语句是利用Hudi源码中模块<code>hudi-examples-flink</code>里面的sql方法生成的，它会根据参数返回对应的创建Hudi表的SQL语句，示例：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">String tableName = <span class="string">"t1"</span>;</span><br><span class="line">String tablePath = <span class="string">"/tmp/flink/hudi/"</span> + tableName;</span><br><span class="line">String hoodieTableDDL = sql(tableName)</span><br><span class="line">        .option(FlinkOptions.PATH, tablePath)</span><br><span class="line">        .option(FlinkOptions.READ_AS_STREAMING, <span class="keyword">true</span>)</span><br><span class="line">        .option(FlinkOptions.TABLE_TYPE, <span class="string">"COPY_ON_WRITE"</span>)</span><br><span class="line">        .end();</span><br><span class="line">System.out.println(hoodieTableDDL);</span><br></pre></td></tr></table></figure></p>
-<p>输出<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> t1(</span><br><span class="line">  <span class="string">`uuid`</span> <span class="built_in">VARCHAR</span>(<span class="number">20</span>),</span><br><span class="line">  <span class="string">`name`</span> <span class="built_in">VARCHAR</span>(<span class="number">10</span>),</span><br><span class="line">  <span class="string">`age`</span> <span class="built_in">INT</span>,</span><br><span class="line">  <span class="string">`ts`</span> <span class="keyword">TIMESTAMP</span>(<span class="number">3</span>),</span><br><span class="line">  <span class="string">`partition`</span> <span class="built_in">VARCHAR</span>(<span class="number">10</span>),</span><br><span class="line">  PRIMARY <span class="keyword">KEY</span>(<span class="keyword">uuid</span>) <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span></span><br><span class="line">)</span><br><span class="line">PARTITIONED <span class="keyword">BY</span> (<span class="string">`partition`</span>)</span><br><span class="line"><span class="keyword">with</span> (</span><br><span class="line">  <span class="string">'connector'</span> = <span class="string">'hudi'</span>,</span><br><span class="line">  <span class="string">'read.streaming.enabled'</span> = <span class="string">'true'</span>,</span><br><span class="line">  <span class="string">'path'</span> = <span class="string">'/tmp/flink/hudi/t1'</span>,</span><br><span class="line">  <span class="string">'connector'</span> = <span class="string">'hudi'</span>,</span><br><span class="line">  <span class="string">'table.type'</span> = <span class="string">'COPY_ON_WRITE'</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure></p>
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>之前在<a href="https://mp.weixin.qq.com/s/83lMpbLCM3Mlb3fg_rEddw">Flink Hudi DataStream API代码示例</a>中总结了Hudi Flink DataStream API的代码及本地调试，并且在文中提到其实大家用Table API更多一些，但是我感觉Table API调试源码可能会比较难一点，因为可能会涉及到SQL解析，不清楚Table API的入口在哪里。<br>但是在我总结的上篇文章<a href="https://mp.weixin.qq.com/s/ogEurXSHW-iiejzoB5oFBQ">Flink用户自定义连接器（Table API Connectors）学习总结</a>中知道了其实Flink Table API读写Hudi是通过自定义实现了一个Hudi的Table API Connectors（’connector’ = ‘hudi’）,相关类为<code>HoodieTableFactory</code>、<code>HoodieTableSink</code>和<code>HoodieTableSource</code>，入口为<code>HoodieTableFactory</code>。</p>
+<span id="more"></span>
+<h2 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h2><p>GitHub地址：<a href="https://github.com/dongkelun/hudi-demo/tree/master/hudi0.13_flink1.15">https://github.com/dongkelun/hudi-demo/tree/master/hudi0.13_flink1.15</a></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.dkl.hudi.flink;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;</span><br><span class="line"><span class="keyword">import</span> org.apache.flink.table.api.EnvironmentSettings;</span><br><span class="line"><span class="keyword">import</span> org.apache.flink.table.api.bridge.java.StreamTableEnvironment;</span><br><span class="line"><span class="keyword">import</span> org.apache.hudi.configuration.FlinkOptions;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> <span class="keyword">static</span> org.apache.hudi.examples.quickstart.utils.QuickstartConfigurations.sql;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">HudiFlinkSQL</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">StreamExecutionEnvironment</span> <span class="variable">env</span> <span class="operator">=</span> StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line">        <span class="type">StreamTableEnvironment</span> <span class="variable">tableEnv</span> <span class="operator">=</span> StreamTableEnvironment.create(env, EnvironmentSettings.inBatchMode());</span><br><span class="line">        <span class="type">String</span> <span class="variable">tableName</span> <span class="operator">=</span> <span class="string">&quot;t1&quot;</span>;</span><br><span class="line">        <span class="keyword">if</span> (args.length &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            tableName = args[<span class="number">0</span>];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">String</span> <span class="variable">tablePath</span> <span class="operator">=</span> <span class="string">&quot;/tmp/flink/hudi/&quot;</span> + tableName;</span><br><span class="line">        <span class="type">String</span> <span class="variable">hoodieTableDDL</span> <span class="operator">=</span> sql(tableName)</span><br><span class="line">                .field(<span class="string">&quot;id int&quot;</span>)</span><br><span class="line">                .field(<span class="string">&quot;name string&quot;</span>)</span><br><span class="line">                .field(<span class="string">&quot;price double&quot;</span>)</span><br><span class="line">                .field(<span class="string">&quot;ts bigint&quot;</span>)</span><br><span class="line">                .field(<span class="string">&quot;dt string&quot;</span>)</span><br><span class="line">                .option(FlinkOptions.PATH, tablePath)</span><br><span class="line"><span class="comment">//                .option(FlinkOptions.READ_AS_STREAMING, true)</span></span><br><span class="line"><span class="comment">//                .option(FlinkOptions.TABLE_TYPE, &quot;COPY_ON_WRITE&quot;)</span></span><br><span class="line">                .partitionField(<span class="string">&quot;dt&quot;</span>)</span><br><span class="line">                .pkField(<span class="string">&quot;id&quot;</span>)</span><br><span class="line">                .end();</span><br><span class="line">        tableEnv.executeSql(hoodieTableDDL);</span><br><span class="line">        tableEnv.executeSql(String.format(<span class="string">&quot;insert into %s values (1,&#x27;hudi&#x27;,10,100,&#x27;2023-05-28&#x27;)&quot;</span>, tableName));</span><br><span class="line">        tableEnv.executeSql(String.format(<span class="string">&quot;select * from %s&quot;</span>, tableName)).print();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>其实就是通过tableEnv.executeSql执行Flink SQL,其中创建Hudi表的SQL语句是利用Hudi源码中模块<code>hudi-examples-flink</code>里面的sql方法生成的，它会根据参数返回对应的创建Hudi表的SQL语句，示例：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">String</span> <span class="variable">tableName</span> <span class="operator">=</span> <span class="string">&quot;t1&quot;</span>;</span><br><span class="line"><span class="type">String</span> <span class="variable">tablePath</span> <span class="operator">=</span> <span class="string">&quot;/tmp/flink/hudi/&quot;</span> + tableName;</span><br><span class="line"><span class="type">String</span> <span class="variable">hoodieTableDDL</span> <span class="operator">=</span> sql(tableName)</span><br><span class="line">        .option(FlinkOptions.PATH, tablePath)</span><br><span class="line">        .option(FlinkOptions.READ_AS_STREAMING, <span class="literal">true</span>)</span><br><span class="line">        .option(FlinkOptions.TABLE_TYPE, <span class="string">&quot;COPY_ON_WRITE&quot;</span>)</span><br><span class="line">        .end();</span><br><span class="line">System.out.println(hoodieTableDDL);</span><br></pre></td></tr></table></figure><br>输出<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create table</span> t1(</span><br><span class="line">  `uuid` <span class="type">VARCHAR</span>(<span class="number">20</span>),</span><br><span class="line">  `name` <span class="type">VARCHAR</span>(<span class="number">10</span>),</span><br><span class="line">  `age` <span class="type">INT</span>,</span><br><span class="line">  `ts` <span class="type">TIMESTAMP</span>(<span class="number">3</span>),</span><br><span class="line">  `<span class="keyword">partition</span>` <span class="type">VARCHAR</span>(<span class="number">10</span>),</span><br><span class="line">  <span class="keyword">PRIMARY KEY</span>(uuid) <span class="keyword">NOT</span> ENFORCED</span><br><span class="line">)</span><br><span class="line">PARTITIONED <span class="keyword">BY</span> (`<span class="keyword">partition</span>`)</span><br><span class="line"><span class="keyword">with</span> (</span><br><span class="line">  <span class="string">&#x27;connector&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;hudi&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;read.streaming.enabled&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;true&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;path&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;/tmp/flink/hudi/t1&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;connector&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;hudi&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;table.type&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;COPY_ON_WRITE&#x27;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure></p>
 <blockquote>
 <p>如果不指定字段的话，会有官方文档示例中几个默认字段，默认主键为uuid，默认为分区表，分区字段为partition</p>
 </blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">hoodieTableDDL = sql(tableName)</span><br><span class="line">        .field(<span class="string">"id int"</span>)</span><br><span class="line">        .field(<span class="string">"name string"</span>)</span><br><span class="line">        .field(<span class="string">"price double"</span>)</span><br><span class="line">        .field(<span class="string">"ts bigint"</span>)</span><br><span class="line">        .field(<span class="string">"dt string"</span>)</span><br><span class="line">        .option(FlinkOptions.PATH, tablePath)</span><br><span class="line">        .noPartition()</span><br><span class="line">        .pkField(<span class="string">"id"</span>)</span><br><span class="line">        .end();</span><br><span class="line">System.out.println(hoodieTableDDL);</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">hoodieTableDDL = sql(tableName)</span><br><span class="line">        .field(<span class="string">&quot;id int&quot;</span>)</span><br><span class="line">        .field(<span class="string">&quot;name string&quot;</span>)</span><br><span class="line">        .field(<span class="string">&quot;price double&quot;</span>)</span><br><span class="line">        .field(<span class="string">&quot;ts bigint&quot;</span>)</span><br><span class="line">        .field(<span class="string">&quot;dt string&quot;</span>)</span><br><span class="line">        .option(FlinkOptions.PATH, tablePath)</span><br><span class="line">        .noPartition()</span><br><span class="line">        .pkField(<span class="string">&quot;id&quot;</span>)</span><br><span class="line">        .end();</span><br><span class="line">System.out.println(hoodieTableDDL);</span><br></pre></td></tr></table></figure>
 <blockquote>
 <p>可以通过field方法指定表的字段，pkField指定表的主键，noPartition设置表为非分区表，partitionField指定表的分区字段</p>
 </blockquote>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> t1(</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span>,</span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="built_in">bigint</span>,</span><br><span class="line">  dt <span class="keyword">string</span>,</span><br><span class="line">  PRIMARY <span class="keyword">KEY</span>(<span class="keyword">id</span>) <span class="keyword">NOT</span> <span class="keyword">ENFORCED</span></span><br><span class="line">)</span><br><span class="line"><span class="keyword">with</span> (</span><br><span class="line">  <span class="string">'connector'</span> = <span class="string">'hudi'</span>,</span><br><span class="line">  <span class="string">'path'</span> = <span class="string">'/tmp/flink/hudi/t1'</span>,</span><br><span class="line">  <span class="string">'connector'</span> = <span class="string">'hudi'</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create table</span> t1(</span><br><span class="line">  id <span class="type">int</span>,</span><br><span class="line">  name string,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="type">bigint</span>,</span><br><span class="line">  dt string,</span><br><span class="line">  <span class="keyword">PRIMARY KEY</span>(id) <span class="keyword">NOT</span> ENFORCED</span><br><span class="line">)</span><br><span class="line"><span class="keyword">with</span> (</span><br><span class="line">  <span class="string">&#x27;connector&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;hudi&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;path&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;/tmp/flink/hudi/t1&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;connector&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;hudi&#x27;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
 <h2 id="本地运行调试"><a href="#本地运行调试" class="headerlink" title="本地运行调试"></a>本地运行调试</h2><h3 id="运行结果"><a href="#运行结果" class="headerlink" title="运行结果"></a>运行结果</h3><p><img src="https://img.dongkelun.com/hudi/flinkSqlCodeDebug1.png" alt=""></p>
-<h3 id="调试"><a href="#调试" class="headerlink" title="调试"></a>调试</h3><p>我们根据开头提到的文章<a href="https://mp.weixin.qq.com/s/ogEurXSHW-iiejzoB5oFBQ" target="_blank" rel="noopener">Flink用户自定义连接器（Table API Connectors）学习总结</a>可知入口为<code>HoodieTableFactory</code>，其中sink的入口为<code>createDynamicTableSink</code>,source的入口为<code>createDynamicTableSource</code></p>
-<p><img src="https://img.dongkelun.com/hudi/flinkSqlCodeDebug2.png" alt=""><br><img src="https://img.dongkelun.com/hudi/flinkSqlCodeDebug3.png" alt=""><br>本地调试源码的时候可能会遇到在Idea中源码下载不下来的情况，我们可以直接去官网下载对应的源码jar包，然后放到自己本地的仓库中，方便我们调试的时候阅读源码。比如hudi-flink对应的源码的下载地址：<a href="https://repo1.maven.org/maven2/org/apache/hudi/hudi-flink/0.13.0/hudi-flink-0.13.0-sources.jar" target="_blank" rel="noopener">https://repo1.maven.org/maven2/org/apache/hudi/hudi-flink/0.13.0/hudi-flink-0.13.0-sources.jar</a>,然后将hudi-flink-0.13.0-sources.jar放到路径 m2\repository\org\apache\hudi\hudi-flink\0.13.0 中就可以了</p>
+<h3 id="调试"><a href="#调试" class="headerlink" title="调试"></a>调试</h3><p>我们根据开头提到的文章<a href="https://mp.weixin.qq.com/s/ogEurXSHW-iiejzoB5oFBQ">Flink用户自定义连接器（Table API Connectors）学习总结</a>可知入口为<code>HoodieTableFactory</code>，其中sink的入口为<code>createDynamicTableSink</code>,source的入口为<code>createDynamicTableSource</code></p>
+<p><img src="https://img.dongkelun.com/hudi/flinkSqlCodeDebug2.png" alt=""><br><img src="https://img.dongkelun.com/hudi/flinkSqlCodeDebug3.png" alt=""><br>本地调试源码的时候可能会遇到在Idea中源码下载不下来的情况，我们可以直接去官网下载对应的源码jar包，然后放到自己本地的仓库中，方便我们调试的时候阅读源码。比如hudi-flink对应的源码的下载地址：<a href="https://repo1.maven.org/maven2/org/apache/hudi/hudi-flink/0.13.0/hudi-flink-0.13.0-sources.jar">https://repo1.maven.org/maven2/org/apache/hudi/hudi-flink/0.13.0/hudi-flink-0.13.0-sources.jar</a>,然后将hudi-flink-0.13.0-sources.jar放到路径 m2\repository\org\apache\hudi\hudi-flink\0.13.0 中就可以了</p>
 <blockquote>
 <p>我们发现Table API的入口和DataStream API的入口差不多，DataStream API的入口是在<code>HoodiePipeline</code>的<code>sink</code>和<code>source</code>方法里，而这两个方法也是分别调用了<code>HoodieTableFactory</code>的<code>createDynamicTableSink</code>和<code>createDynamicTableSource</code></p>
 </blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Returns the data stream sink with given catalog table.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> input        The input datastream</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> tablePath    The table path to the hoodie table in the catalog</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> catalogTable The hoodie catalog table</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> isBounded    A flag indicating whether the input data stream is bounded</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> DataStreamSink&lt;?&gt; sink(DataStream&lt;RowData&gt; input, ObjectIdentifier tablePath, ResolvedCatalogTable catalogTable, <span class="keyword">boolean</span> isBounded) &#123;</span><br><span class="line">  FactoryUtil.DefaultDynamicTableContext context = Utils.getTableContext(tablePath, catalogTable, Configuration.fromMap(catalogTable.getOptions()));</span><br><span class="line">  HoodieTableFactory hoodieTableFactory = <span class="keyword">new</span> HoodieTableFactory();</span><br><span class="line">  <span class="keyword">return</span> ((DataStreamSinkProvider) hoodieTableFactory.createDynamicTableSink(context)</span><br><span class="line">      .getSinkRuntimeProvider(<span class="keyword">new</span> SinkRuntimeProviderContext(isBounded)))</span><br><span class="line">      .consumeDataStream(input);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Returns the data stream source with given catalog table.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> execEnv      The execution environment</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> tablePath    The table path to the hoodie table in the catalog</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> catalogTable The hoodie catalog table</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">  <span class="function"><span class="keyword">private</span> <span class="keyword">static</span> DataStream&lt;RowData&gt; <span class="title">source</span><span class="params">(StreamExecutionEnvironment execEnv, ObjectIdentifier tablePath, ResolvedCatalogTable catalogTable)</span> </span>&#123;</span><br><span class="line">  FactoryUtil.DefaultDynamicTableContext context = Utils.getTableContext(tablePath, catalogTable, Configuration.fromMap(catalogTable.getOptions()));</span><br><span class="line">  HoodieTableFactory hoodieTableFactory = <span class="keyword">new</span> HoodieTableFactory();</span><br><span class="line">  DataStreamScanProvider dataStreamScanProvider = (DataStreamScanProvider) ((ScanTableSource) hoodieTableFactory</span><br><span class="line">      .createDynamicTableSource(context))</span><br><span class="line">      .getScanRuntimeProvider(<span class="keyword">new</span> ScanRuntimeProviderContext());</span><br><span class="line">  <span class="keyword">return</span> dataStreamScanProvider.produceDataStream(execEnv);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="源码调试"><a href="#源码调试" class="headerlink" title="源码调试"></a>源码调试</h2><p>我们还可以直接在源码里进行调试，这样方便我们直接看到修改源码后的效果。直接在源码里进行调试可能配置环境会比较麻烦一点，每个版本也不太一样。比如我在hudi 0.13.0源码中模块<code>hudi-examples-flink</code>里进行调试，需要做如下修改:<br><img src="https://img.dongkelun.com/hudi/flinkSqlCodeDebug4.png" alt=""><br>详细的pom修改可以看我提到github上的commit:<a href="https://github.com/dongkelun/hudi/commit/558910d4cab189d0cbfa9c69332f3e4e74e56b41" target="_blank" rel="noopener">https://github.com/dongkelun/hudi/commit/558910d4cab189d0cbfa9c69332f3e4e74e56b41</a></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Returns the data stream sink with given catalog table.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> input        The input datastream</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> tablePath    The table path to the hoodie table in the catalog</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> catalogTable The hoodie catalog table</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> isBounded    A flag indicating whether the input data stream is bounded</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> DataStreamSink&lt;?&gt; sink(DataStream&lt;RowData&gt; input, ObjectIdentifier tablePath, ResolvedCatalogTable catalogTable, <span class="type">boolean</span> isBounded) &#123;</span><br><span class="line">  FactoryUtil.<span class="type">DefaultDynamicTableContext</span> <span class="variable">context</span> <span class="operator">=</span> Utils.getTableContext(tablePath, catalogTable, Configuration.fromMap(catalogTable.getOptions()));</span><br><span class="line">  <span class="type">HoodieTableFactory</span> <span class="variable">hoodieTableFactory</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HoodieTableFactory</span>();</span><br><span class="line">  <span class="keyword">return</span> ((DataStreamSinkProvider) hoodieTableFactory.createDynamicTableSink(context)</span><br><span class="line">      .getSinkRuntimeProvider(<span class="keyword">new</span> <span class="title class_">SinkRuntimeProviderContext</span>(isBounded)))</span><br><span class="line">      .consumeDataStream(input);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Returns the data stream source with given catalog table.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> execEnv      The execution environment</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> tablePath    The table path to the hoodie table in the catalog</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> catalogTable The hoodie catalog table</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">static</span> DataStream&lt;RowData&gt; <span class="title function_">source</span><span class="params">(StreamExecutionEnvironment execEnv, ObjectIdentifier tablePath, ResolvedCatalogTable catalogTable)</span> &#123;</span><br><span class="line">  FactoryUtil.<span class="type">DefaultDynamicTableContext</span> <span class="variable">context</span> <span class="operator">=</span> Utils.getTableContext(tablePath, catalogTable, Configuration.fromMap(catalogTable.getOptions()));</span><br><span class="line">  <span class="type">HoodieTableFactory</span> <span class="variable">hoodieTableFactory</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HoodieTableFactory</span>();</span><br><span class="line">  <span class="type">DataStreamScanProvider</span> <span class="variable">dataStreamScanProvider</span> <span class="operator">=</span> (DataStreamScanProvider) ((ScanTableSource) hoodieTableFactory</span><br><span class="line">      .createDynamicTableSource(context))</span><br><span class="line">      .getScanRuntimeProvider(<span class="keyword">new</span> <span class="title class_">ScanRuntimeProviderContext</span>());</span><br><span class="line">  <span class="keyword">return</span> dataStreamScanProvider.produceDataStream(execEnv);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="源码调试"><a href="#源码调试" class="headerlink" title="源码调试"></a>源码调试</h2><p>我们还可以直接在源码里进行调试，这样方便我们直接看到修改源码后的效果。直接在源码里进行调试可能配置环境会比较麻烦一点，每个版本也不太一样。比如我在hudi 0.13.0源码中模块<code>hudi-examples-flink</code>里进行调试，需要做如下修改:<br><img src="https://img.dongkelun.com/hudi/flinkSqlCodeDebug4.png" alt=""><br>详细的pom修改可以看我提到github上的commit:<a href="https://github.com/dongkelun/hudi/commit/558910d4cab189d0cbfa9c69332f3e4e74e56b41">https://github.com/dongkelun/hudi/commit/558910d4cab189d0cbfa9c69332f3e4e74e56b41</a></p>
 <p>这样我们就可以本地直接运行源码中的类：<code>HoodieFlinkQuickstart</code>，也可以直接修改源码查看效果：<br><img src="https://img.dongkelun.com/hudi/flinkSqlCodeDebug6.png" alt=""></p>
 <blockquote>
 <p>源码里的demo和测试用例比较全，我们可以多看一看多调试一下，利于提升对源码的理解。</p>
@@ -443,7 +443,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#代码"><span class="toc-number">2.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#本地运行调试"><span class="toc-number">3.</span> <span class="toc-text">本地运行调试</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#运行结果"><span class="toc-number">3.1.</span> <span class="toc-text">运行结果</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#调试"><span class="toc-number">3.2.</span> <span class="toc-text">调试</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#源码调试"><span class="toc-number">4.</span> <span class="toc-text">源码调试</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81"><span class="toc-number">2.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%AC%E5%9C%B0%E8%BF%90%E8%A1%8C%E8%B0%83%E8%AF%95"><span class="toc-number">3.</span> <span class="toc-text">本地运行调试</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C"><span class="toc-number">3.1.</span> <span class="toc-text">运行结果</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%B0%83%E8%AF%95"><span class="toc-number">3.2.</span> <span class="toc-text">调试</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%BA%90%E7%A0%81%E8%B0%83%E8%AF%95"><span class="toc-number">4.</span> <span class="toc-text">源码调试</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -618,14 +618,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -635,6 +627,22 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -650,14 +658,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
@@ -670,23 +670,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -706,7 +690,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -718,15 +714,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -762,11 +754,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -798,15 +790,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -818,7 +802,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -826,7 +810,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -838,7 +822,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -846,11 +834,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -859,6 +847,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -874,15 +870,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -891,6 +883,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -903,10 +899,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -926,10 +918,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
@@ -938,7 +926,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -946,11 +934,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -978,7 +970,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -994,7 +1002,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
+                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1002,11 +1010,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1026,23 +1030,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ZooKeeper</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1051,6 +1047,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ollama</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
             
             <div class="clearfix"></div>

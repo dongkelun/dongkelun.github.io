@@ -9,18 +9,20 @@
   <link rel="dns-prefetch" href="https://dongkelun.com">
   <title>Spark操作Hive分区表 | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="前言前面学习总结了Hive分区表，现在学习总结一下Spark如何操作Hive分区表，包括利用Spark DataFrame创建Hive的分区表和Spark向已经存在Hive分区表里插入数据，并记录一下遇到的问题以及如何解决。 1、Spark创建分区表只写主要代码，完整代码见附录1234val data = Array((&quot;001&quot;, &quot;张三&quot;, 21, &quot;2018&quot;), (&quot;002&quot;, &quot;李四&quot;,">
-<meta name="keywords" content="Spark,Hive,Partition">
+  <meta name="description" content="前言前面学习总结了Hive分区表，现在学习总结一下Spark如何操作Hive分区表，包括利用Spark DataFrame创建Hive的分区表和Spark向已经存在Hive分区表里插入数据，并记录一下遇到的问题以及如何解决。 1、Spark创建分区表只写主要代码，完整代码见附录1234val data &#x3D; Array((&quot;001&quot;, &quot;张三&quot;, 21, &amp;q">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Spark操作Hive分区表">
 <meta property="og:url" content="https://dongkelun.com/2018/12/04/sparkHivePatition/index.html">
 <meta property="og:site_name" content="伦少的博客">
-<meta property="og:description" content="前言前面学习总结了Hive分区表，现在学习总结一下Spark如何操作Hive分区表，包括利用Spark DataFrame创建Hive的分区表和Spark向已经存在Hive分区表里插入数据，并记录一下遇到的问题以及如何解决。 1、Spark创建分区表只写主要代码，完整代码见附录1234val data = Array((&quot;001&quot;, &quot;张三&quot;, 21, &quot;2018&quot;), (&quot;002&quot;, &quot;李四&quot;,">
-<meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2018-12-04T13:51:30.896Z">
+<meta property="og:description" content="前言前面学习总结了Hive分区表，现在学习总结一下Spark如何操作Hive分区表，包括利用Spark DataFrame创建Hive的分区表和Spark向已经存在Hive分区表里插入数据，并记录一下遇到的问题以及如何解决。 1、Spark创建分区表只写主要代码，完整代码见附录1234val data &#x3D; Array((&quot;001&quot;, &quot;张三&quot;, 21, &amp;q">
+<meta property="og:locale">
+<meta property="article:published_time" content="2018-12-03T16:00:00.000Z">
+<meta property="article:modified_time" content="2018-12-04T13:51:30.896Z">
+<meta property="article:author" content="董可伦">
+<meta property="article:tag" content="Hive">
+<meta property="article:tag" content="Partition">
+<meta property="article:tag" content="Spark">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Spark操作Hive分区表">
-<meta name="twitter:description" content="前言前面学习总结了Hive分区表，现在学习总结一下Spark如何操作Hive分区表，包括利用Spark DataFrame创建Hive的分区表和Spark向已经存在Hive分区表里插入数据，并记录一下遇到的问题以及如何解决。 1、Spark创建分区表只写主要代码，完整代码见附录1234val data = Array((&quot;001&quot;, &quot;张三&quot;, 21, &quot;2018&quot;), (&quot;002&quot;, &quot;李四&quot;,">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -38,7 +40,7 @@
 
   
 
-</head>
+<meta name="generator" content="Hexo 8.1.1"></head>
 
 <body>
   <div id="container" q-class="show:isCtnShow">
@@ -68,7 +70,7 @@
 			<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 		</a>
 		<hgroup>
-		  <h1 class="header-author"><a href="/">董可伦</a></h1>
+		  <h1 class="header-author"><a href="/"></a></h1>
 		</hgroup>
 		
 
@@ -140,7 +142,7 @@
 				<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 			</div>
 			<hgroup>
-			  <h1 class="header-author js-header-author">董可伦</h1>
+			  <h1 class="header-author js-header-author"></h1>
 			</hgroup>
 			
 			
@@ -260,15 +262,12 @@
         
       
         <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>前面学习总结了<a href="https://dongkelun.com/2018/12/02/hivePartitionTable/">Hive分区表</a>，现在学习总结一下Spark如何操作Hive分区表，包括利用Spark DataFrame创建Hive的分区表和Spark向已经存在Hive分区表里插入数据，并记录一下遇到的问题以及如何解决。</p>
-<h2 id="1、Spark创建分区表"><a href="#1、Spark创建分区表" class="headerlink" title="1、Spark创建分区表"></a>1、Spark创建分区表</h2><p>只写主要代码，完整代码见附录<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> data = <span class="type">Array</span>((<span class="string">"001"</span>, <span class="string">"张三"</span>, <span class="number">21</span>, <span class="string">"2018"</span>), (<span class="string">"002"</span>, <span class="string">"李四"</span>, <span class="number">18</span>, <span class="string">"2017"</span>))</span><br><span class="line"><span class="keyword">val</span> df = spark.createDataFrame(data).toDF(<span class="string">"id"</span>, <span class="string">"name"</span>, <span class="string">"age"</span>, <span class="string">"year"</span>)</span><br><span class="line"><span class="comment">//可以将append改为overwrite，这样如果表已存在会删掉之前的表，新建表</span></span><br><span class="line">df.write.mode(<span class="string">"append"</span>).partitionBy(<span class="string">"year"</span>).saveAsTable(<span class="string">"new_test_partition"</span>)</span><br></pre></td></tr></table></figure></p>
-<a id="more"></a>
-<p>然后在Hive命令行里看一下,新建的表是否有分区字段year<br>用命令<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">desc new_test_partition;</span><br></pre></td></tr></table></figure></p>
-<p>或<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">show</span> <span class="keyword">create</span> <span class="keyword">table</span> new_test_partition;</span><br></pre></td></tr></table></figure></p>
-<p>根据下面的结果可以看到新建的表确实有分区字段year<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">hive&gt; desc new_test_partition;</span><br><span class="line">OK</span><br><span class="line">id                  	string              	                    </span><br><span class="line">name                	string              	                    </span><br><span class="line">age                 	int                 	                    </span><br><span class="line">year                	string              	                    </span><br><span class="line">	 	 </span><br><span class="line"># Partition Information	 	 </span><br><span class="line"># col_name            	data_type           	comment             </span><br><span class="line">	 	 </span><br><span class="line">year                	string              	                    </span><br><span class="line">Time taken: 0.432 seconds, Fetched: 9 row(s)</span><br></pre></td></tr></table></figure></p>
+<h2 id="1、Spark创建分区表"><a href="#1、Spark创建分区表" class="headerlink" title="1、Spark创建分区表"></a>1、Spark创建分区表</h2><p>只写主要代码，完整代码见附录<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> data = <span class="type">Array</span>((<span class="string">&quot;001&quot;</span>, <span class="string">&quot;张三&quot;</span>, <span class="number">21</span>, <span class="string">&quot;2018&quot;</span>), (<span class="string">&quot;002&quot;</span>, <span class="string">&quot;李四&quot;</span>, <span class="number">18</span>, <span class="string">&quot;2017&quot;</span>))</span><br><span class="line"><span class="keyword">val</span> df = spark.createDataFrame(data).toDF(<span class="string">&quot;id&quot;</span>, <span class="string">&quot;name&quot;</span>, <span class="string">&quot;age&quot;</span>, <span class="string">&quot;year&quot;</span>)</span><br><span class="line"><span class="comment">//可以将append改为overwrite，这样如果表已存在会删掉之前的表，新建表</span></span><br><span class="line">df.write.mode(<span class="string">&quot;append&quot;</span>).partitionBy(<span class="string">&quot;year&quot;</span>).saveAsTable(<span class="string">&quot;new_test_partition&quot;</span>)</span><br></pre></td></tr></table></figure><br><span id="more"></span><br>然后在Hive命令行里看一下,新建的表是否有分区字段year<br>用命令<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">desc</span> new_test_partition;</span><br></pre></td></tr></table></figure><br>或<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">show</span> <span class="keyword">create table</span> new_test_partition;</span><br></pre></td></tr></table></figure></p>
+<p>根据下面的结果可以看到新建的表确实有分区字段year<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">hive<span class="operator">&gt;</span> <span class="keyword">desc</span> new_test_partition;</span><br><span class="line">OK</span><br><span class="line">id                  	string              	                    </span><br><span class="line">name                	string              	                    </span><br><span class="line">age                 	<span class="type">int</span>                 	                    </span><br><span class="line"><span class="keyword">year</span>                	string              	                    </span><br><span class="line">	 	 </span><br><span class="line"># <span class="keyword">Partition</span> Information	 	 </span><br><span class="line"># col_name            	data_type           	comment             </span><br><span class="line">	 	 </span><br><span class="line"><span class="keyword">year</span>                	string              	                    </span><br><span class="line"><span class="type">Time</span> taken: <span class="number">0.432</span> seconds, Fetched: <span class="number">9</span> <span class="type">row</span>(s)</span><br><span class="line"></span><br></pre></td></tr></table></figure></p>
 <h2 id="2、向已存在的表插入数据"><a href="#2、向已存在的表插入数据" class="headerlink" title="2、向已存在的表插入数据"></a>2、向已存在的表插入数据</h2><h3 id="2-1-Spark创建的分区表"><a href="#2-1-Spark创建的分区表" class="headerlink" title="2.1 Spark创建的分区表"></a>2.1 Spark创建的分区表</h3><blockquote>
 <ul>
 <li>这种情况其实和建表语句一样就可以了</li>
-<li>不需要开启动态分区<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">df.write.mode(<span class="string">"append"</span>).partitionBy(<span class="string">"year"</span>).saveAsTable(<span class="string">"new_test_partition"</span>)</span><br></pre></td></tr></table></figure>
+<li>不需要开启动态分区<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">df.write.mode(<span class="string">&quot;append&quot;</span>).partitionBy(<span class="string">&quot;year&quot;</span>).saveAsTable(<span class="string">&quot;new_test_partition&quot;</span>)</span><br></pre></td></tr></table></figure>
 </li>
 </ul>
 </blockquote>
@@ -279,17 +278,15 @@
 <li>需要开启动态分区</li>
 <li>不开启会有异常：</li>
 </ul>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">Exception</span> in thread <span class="string">"main"</span> org.apache.spark.<span class="type">SparkException</span>: <span class="type">Dynamic</span> partition strict mode requires at least one static partition column. <span class="type">To</span> turn <span class="keyword">this</span> off set hive.exec.dynamic.partition.mode=nonstrict</span><br></pre></td></tr></table></figure>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">Exception</span> in thread <span class="string">&quot;main&quot;</span> org.apache.spark.<span class="type">SparkException</span>: <span class="type">Dynamic</span> partition strict mode requires at least one static partition column. <span class="type">To</span> turn <span class="keyword">this</span> off set hive.exec.dynamic.partition.mode=nonstrict</span><br></pre></td></tr></table></figure>
 </blockquote>
-<h4 id="2-2-1-建表"><a href="#2-2-1-建表" class="headerlink" title="2.2.1 建表"></a>2.2.1 建表</h4><p>用<a href="https://dongkelun.com/2018/12/02/hivePartitionTable/">Hive分区表学习总结</a>的建表语句建表（之前已经建过就不用重复建了）。<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> test_partition (</span><br><span class="line"><span class="keyword">id</span> <span class="keyword">string</span> <span class="keyword">comment</span> <span class="string">'ID'</span>, </span><br><span class="line"><span class="keyword">name</span> <span class="keyword">string</span> <span class="keyword">comment</span> <span class="string">'名字'</span>,</span><br><span class="line">age <span class="built_in">int</span> <span class="keyword">comment</span> <span class="string">'年龄'</span></span><br><span class="line">)</span><br><span class="line"><span class="keyword">comment</span> <span class="string">'测试分区'</span></span><br><span class="line">partitioned <span class="keyword">by</span> (<span class="keyword">year</span> <span class="built_in">int</span> <span class="keyword">comment</span> <span class="string">'年'</span>)</span><br><span class="line"><span class="keyword">ROW</span> <span class="keyword">FORMAT</span> <span class="keyword">DELIMITED</span> <span class="keyword">FIELDS</span> <span class="keyword">TERMINATED</span> <span class="keyword">BY</span> <span class="string">','</span> ;</span><br></pre></td></tr></table></figure></p>
-<h4 id="2-2-2-异常"><a href="#2-2-2-异常" class="headerlink" title="2.2.2 异常"></a>2.2.2 异常</h4><p>试着用上面的插入语句插入数据<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">df.write.mode(<span class="string">"append"</span>).partitionBy(<span class="string">"year"</span>).saveAsTable(<span class="string">"test_partition"</span>)</span><br></pre></td></tr></table></figure></p>
-<p>抛出异常<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">Exception</span> in thread <span class="string">"main"</span> org.apache.spark.sql.<span class="type">AnalysisException</span>: <span class="type">The</span> format of the existing table dkl.test_partition is `<span class="type">HiveFileFormat</span>`. <span class="type">It</span> doesn<span class="symbol">'t</span> <span class="keyword">match</span> the specified format `<span class="type">ParquetFileFormat</span>`.;</span><br></pre></td></tr></table></figure></p>
-<p>原因就是上面说的文件格式不一致造成的。</p>
-<h4 id="2-2-3-解决办法"><a href="#2-2-3-解决办法" class="headerlink" title="2.2.3 解决办法"></a>2.2.3 解决办法</h4><p>用fomat指定格式<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">df.write.mode(<span class="string">"append"</span>).format(<span class="string">"Hive"</span>).partitionBy(<span class="string">"year"</span>).saveAsTable(<span class="string">"test_partition"</span>)</span><br></pre></td></tr></table></figure></p>
-<h3 id="2-3-其他方法"><a href="#2-3-其他方法" class="headerlink" title="2.3 其他方法"></a>2.3 其他方法</h3><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">df.createOrReplaceTempView(<span class="string">"temp_table"</span>)</span><br><span class="line">sql(<span class="string">"insert into test_partition select * from temp_table"</span>)</span><br><span class="line">df.write.insertInto(<span class="string">"test_partition"</span>)</span><br></pre></td></tr></table></figure>
+<h4 id="2-2-1-建表"><a href="#2-2-1-建表" class="headerlink" title="2.2.1 建表"></a>2.2.1 建表</h4><p>用<a href="https://dongkelun.com/2018/12/02/hivePartitionTable/">Hive分区表学习总结</a>的建表语句建表（之前已经建过就不用重复建了）。<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create table</span> test_partition (</span><br><span class="line">id string comment <span class="string">&#x27;ID&#x27;</span>, </span><br><span class="line">name string comment <span class="string">&#x27;名字&#x27;</span>,</span><br><span class="line">age <span class="type">int</span> comment <span class="string">&#x27;年龄&#x27;</span></span><br><span class="line">)</span><br><span class="line">comment <span class="string">&#x27;测试分区&#x27;</span></span><br><span class="line">partitioned <span class="keyword">by</span> (<span class="keyword">year</span> <span class="type">int</span> comment <span class="string">&#x27;年&#x27;</span>)</span><br><span class="line"><span class="type">ROW</span> FORMAT DELIMITED FIELDS TERMINATED <span class="keyword">BY</span> <span class="string">&#x27;,&#x27;</span> ;</span><br><span class="line"></span><br></pre></td></tr></table></figure></p>
+<h4 id="2-2-2-异常"><a href="#2-2-2-异常" class="headerlink" title="2.2.2 异常"></a>2.2.2 异常</h4><p>试着用上面的插入语句插入数据<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">df.write.mode(<span class="string">&quot;append&quot;</span>).partitionBy(<span class="string">&quot;year&quot;</span>).saveAsTable(<span class="string">&quot;test_partition&quot;</span>)</span><br></pre></td></tr></table></figure><br>抛出异常<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">Exception</span> in thread <span class="string">&quot;main&quot;</span> org.apache.spark.sql.<span class="type">AnalysisException</span>: <span class="type">The</span> format of the existing table dkl.test_partition is `<span class="type">HiveFileFormat</span>`. <span class="type">It</span> doesn&#x27;t <span class="keyword">match</span> the specified format `<span class="type">ParquetFileFormat</span>`.;</span><br></pre></td></tr></table></figure><br>原因就是上面说的文件格式不一致造成的。</p>
+<h4 id="2-2-3-解决办法"><a href="#2-2-3-解决办法" class="headerlink" title="2.2.3 解决办法"></a>2.2.3 解决办法</h4><p>用fomat指定格式<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">df.write.mode(<span class="string">&quot;append&quot;</span>).format(<span class="string">&quot;Hive&quot;</span>).partitionBy(<span class="string">&quot;year&quot;</span>).saveAsTable(<span class="string">&quot;test_partition&quot;</span>)</span><br></pre></td></tr></table></figure></p>
+<h3 id="2-3-其他方法"><a href="#2-3-其他方法" class="headerlink" title="2.3 其他方法"></a>2.3 其他方法</h3><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">df.createOrReplaceTempView(<span class="string">&quot;temp_table&quot;</span>)</span><br><span class="line">sql(<span class="string">&quot;insert into test_partition select * from temp_table&quot;</span>)</span><br><span class="line">df.write.insertInto(<span class="string">&quot;test_partition&quot;</span>)</span><br></pre></td></tr></table></figure>
 <p>其中insertInto不需要也不能将df进行partitionBy，否则会抛出异常</p>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">df.write.partitionBy(<span class="string">"year"</span>).insertInto(<span class="string">"test_partition"</span>)</span><br><span class="line"><span class="type">Exception</span> in thread <span class="string">"main"</span> org.apache.spark.sql.<span class="type">AnalysisException</span>: insertInto() can<span class="symbol">'t</span> be used together <span class="keyword">with</span> partitionBy(). <span class="type">Partition</span> columns have already be defined <span class="keyword">for</span> the table. <span class="type">It</span> is not necessary to use partitionBy().;</span><br></pre></td></tr></table></figure>
-<h2 id="3、完整代码"><a href="#3、完整代码" class="headerlink" title="3、完整代码"></a>3、完整代码</h2><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.dkl.blog.spark.hive</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SparkSession</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 博客：Spark操作Hive分区表</span></span><br><span class="line"><span class="comment"> * https://dongkelun.com/2018/12/04/sparkHivePatition/</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">SparkHivePatition</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> spark = <span class="type">SparkSession</span></span><br><span class="line">      .builder()</span><br><span class="line">      .appName(<span class="string">"SparkHive"</span>)</span><br><span class="line">      .master(<span class="string">"local"</span>)</span><br><span class="line">      .config(<span class="string">"spark.sql.parquet.writeLegacyFormat"</span>, <span class="literal">true</span>)</span><br><span class="line">      .enableHiveSupport()</span><br><span class="line">      .getOrCreate()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">import</span> spark.sql</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> data = <span class="type">Array</span>((<span class="string">"001"</span>, <span class="string">"张三"</span>, <span class="number">21</span>, <span class="string">"2018"</span>), (<span class="string">"002"</span>, <span class="string">"李四"</span>, <span class="number">18</span>, <span class="string">"2017"</span>))</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> df = spark.createDataFrame(data).toDF(<span class="string">"id"</span>, <span class="string">"name"</span>, <span class="string">"age"</span>, <span class="string">"year"</span>)</span><br><span class="line">    <span class="comment">//创建临时表</span></span><br><span class="line">    df.createOrReplaceTempView(<span class="string">"temp_table"</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment">//切换hive的数据库</span></span><br><span class="line">    sql(<span class="string">"use dkl"</span>)</span><br><span class="line">    <span class="comment">//    1、创建分区表，可以将append改为overwrite，这样如果表已存在会删掉之前的表，新建表</span></span><br><span class="line">    df.write.mode(<span class="string">"append"</span>).partitionBy(<span class="string">"year"</span>).saveAsTable(<span class="string">"new_test_partition"</span>)</span><br><span class="line">    <span class="comment">//2、向Spark创建的分区表写入数据</span></span><br><span class="line">    df.write.mode(<span class="string">"append"</span>).partitionBy(<span class="string">"year"</span>).saveAsTable(<span class="string">"new_test_partition"</span>)</span><br><span class="line">    sql(<span class="string">"insert into new_test_partition select * from temp_table"</span>)</span><br><span class="line">    df.write.insertInto(<span class="string">"new_test_partition"</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment">//开启动态分区</span></span><br><span class="line">    sql(<span class="string">"set hive.exec.dynamic.partition.mode=nonstrict"</span>)</span><br><span class="line">    <span class="comment">//3、向在Hive里用Sql创建的分区表写入数据，抛出异常</span></span><br><span class="line">    <span class="comment">//    df.write.mode("append").partitionBy("year").saveAsTable("test_partition")</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 4、解决方法</span></span><br><span class="line">    df.write.mode(<span class="string">"append"</span>).format(<span class="string">"Hive"</span>).partitionBy(<span class="string">"year"</span>).saveAsTable(<span class="string">"test_partition"</span>)</span><br><span class="line"></span><br><span class="line">    sql(<span class="string">"insert into test_partition select * from temp_table"</span>)</span><br><span class="line">    df.write.insertInto(<span class="string">"test_partition"</span>)</span><br><span class="line">    <span class="comment">//这样会抛出异常</span></span><br><span class="line">    <span class="comment">//    df.write.partitionBy("year").insertInto("test_partition")</span></span><br><span class="line"></span><br><span class="line">    spark.stop</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">df.write.partitionBy(<span class="string">&quot;year&quot;</span>).insertInto(<span class="string">&quot;test_partition&quot;</span>)</span><br><span class="line"><span class="type">Exception</span> in thread <span class="string">&quot;main&quot;</span> org.apache.spark.sql.<span class="type">AnalysisException</span>: insertInto() can&#x27;t be used together <span class="keyword">with</span> partitionBy(). <span class="type">Partition</span> columns have already be defined <span class="keyword">for</span> the table. <span class="type">It</span> is not necessary to use partitionBy().;</span><br></pre></td></tr></table></figure>
+<h2 id="3、完整代码"><a href="#3、完整代码" class="headerlink" title="3、完整代码"></a>3、完整代码</h2><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.dkl.blog.spark.hive</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SparkSession</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 博客：Spark操作Hive分区表</span></span><br><span class="line"><span class="comment"> * https://dongkelun.com/2018/12/04/sparkHivePatition/</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">SparkHivePatition</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> spark = <span class="type">SparkSession</span></span><br><span class="line">      .builder()</span><br><span class="line">      .appName(<span class="string">&quot;SparkHive&quot;</span>)</span><br><span class="line">      .master(<span class="string">&quot;local&quot;</span>)</span><br><span class="line">      .config(<span class="string">&quot;spark.sql.parquet.writeLegacyFormat&quot;</span>, <span class="literal">true</span>)</span><br><span class="line">      .enableHiveSupport()</span><br><span class="line">      .getOrCreate()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">import</span> spark.sql</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> data = <span class="type">Array</span>((<span class="string">&quot;001&quot;</span>, <span class="string">&quot;张三&quot;</span>, <span class="number">21</span>, <span class="string">&quot;2018&quot;</span>), (<span class="string">&quot;002&quot;</span>, <span class="string">&quot;李四&quot;</span>, <span class="number">18</span>, <span class="string">&quot;2017&quot;</span>))</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> df = spark.createDataFrame(data).toDF(<span class="string">&quot;id&quot;</span>, <span class="string">&quot;name&quot;</span>, <span class="string">&quot;age&quot;</span>, <span class="string">&quot;year&quot;</span>)</span><br><span class="line">    <span class="comment">//创建临时表</span></span><br><span class="line">    df.createOrReplaceTempView(<span class="string">&quot;temp_table&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment">//切换hive的数据库</span></span><br><span class="line">    sql(<span class="string">&quot;use dkl&quot;</span>)</span><br><span class="line">    <span class="comment">//    1、创建分区表，可以将append改为overwrite，这样如果表已存在会删掉之前的表，新建表</span></span><br><span class="line">    df.write.mode(<span class="string">&quot;append&quot;</span>).partitionBy(<span class="string">&quot;year&quot;</span>).saveAsTable(<span class="string">&quot;new_test_partition&quot;</span>)</span><br><span class="line">    <span class="comment">//2、向Spark创建的分区表写入数据</span></span><br><span class="line">    df.write.mode(<span class="string">&quot;append&quot;</span>).partitionBy(<span class="string">&quot;year&quot;</span>).saveAsTable(<span class="string">&quot;new_test_partition&quot;</span>)</span><br><span class="line">    sql(<span class="string">&quot;insert into new_test_partition select * from temp_table&quot;</span>)</span><br><span class="line">    df.write.insertInto(<span class="string">&quot;new_test_partition&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment">//开启动态分区</span></span><br><span class="line">    sql(<span class="string">&quot;set hive.exec.dynamic.partition.mode=nonstrict&quot;</span>)</span><br><span class="line">    <span class="comment">//3、向在Hive里用Sql创建的分区表写入数据，抛出异常</span></span><br><span class="line">    <span class="comment">//    df.write.mode(&quot;append&quot;).partitionBy(&quot;year&quot;).saveAsTable(&quot;test_partition&quot;)</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 4、解决方法</span></span><br><span class="line">    df.write.mode(<span class="string">&quot;append&quot;</span>).format(<span class="string">&quot;Hive&quot;</span>).partitionBy(<span class="string">&quot;year&quot;</span>).saveAsTable(<span class="string">&quot;test_partition&quot;</span>)</span><br><span class="line"></span><br><span class="line">    sql(<span class="string">&quot;insert into test_partition select * from temp_table&quot;</span>)</span><br><span class="line">    df.write.insertInto(<span class="string">&quot;test_partition&quot;</span>)</span><br><span class="line">    <span class="comment">//这样会抛出异常</span></span><br><span class="line">    <span class="comment">//    df.write.partitionBy(&quot;year&quot;).insertInto(&quot;test_partition&quot;)</span></span><br><span class="line"></span><br><span class="line">    spark.stop</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 <h2 id="相关阅读"><a href="#相关阅读" class="headerlink" title="相关阅读"></a>相关阅读</h2><ul>
 <li><a href="https://dongkelun.com/2018/12/02/hivePartitionTable/">Hive分区表学习总结</a></li>
 <li><a href="https://dongkelun.com/2018/03/25/sparkHive/">Spark连接Hive（spark-shell和Eclipse两种方式）</a></li>
@@ -450,7 +447,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1、Spark创建分区表"><span class="toc-number">2.</span> <span class="toc-text">1、Spark创建分区表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2、向已存在的表插入数据"><span class="toc-number">3.</span> <span class="toc-text">2、向已存在的表插入数据</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-Spark创建的分区表"><span class="toc-number">3.1.</span> <span class="toc-text">2.1 Spark创建的分区表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-在Hive命令行创建的表"><span class="toc-number">3.2.</span> <span class="toc-text">2.2 在Hive命令行创建的表</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#2-2-1-建表"><span class="toc-number">3.2.1.</span> <span class="toc-text">2.2.1 建表</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-2-2-异常"><span class="toc-number">3.2.2.</span> <span class="toc-text">2.2.2 异常</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-2-3-解决办法"><span class="toc-number">3.2.3.</span> <span class="toc-text">2.2.3 解决办法</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-3-其他方法"><span class="toc-number">3.3.</span> <span class="toc-text">2.3 其他方法</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3、完整代码"><span class="toc-number">4.</span> <span class="toc-text">3、完整代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#相关阅读"><span class="toc-number">5.</span> <span class="toc-text">相关阅读</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1%E3%80%81Spark%E5%88%9B%E5%BB%BA%E5%88%86%E5%8C%BA%E8%A1%A8"><span class="toc-number">2.</span> <span class="toc-text">1、Spark创建分区表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2%E3%80%81%E5%90%91%E5%B7%B2%E5%AD%98%E5%9C%A8%E7%9A%84%E8%A1%A8%E6%8F%92%E5%85%A5%E6%95%B0%E6%8D%AE"><span class="toc-number">3.</span> <span class="toc-text">2、向已存在的表插入数据</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-Spark%E5%88%9B%E5%BB%BA%E7%9A%84%E5%88%86%E5%8C%BA%E8%A1%A8"><span class="toc-number">3.1.</span> <span class="toc-text">2.1 Spark创建的分区表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-%E5%9C%A8Hive%E5%91%BD%E4%BB%A4%E8%A1%8C%E5%88%9B%E5%BB%BA%E7%9A%84%E8%A1%A8"><span class="toc-number">3.2.</span> <span class="toc-text">2.2 在Hive命令行创建的表</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#2-2-1-%E5%BB%BA%E8%A1%A8"><span class="toc-number">3.2.1.</span> <span class="toc-text">2.2.1 建表</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-2-2-%E5%BC%82%E5%B8%B8"><span class="toc-number">3.2.2.</span> <span class="toc-text">2.2.2 异常</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-2-3-%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95"><span class="toc-number">3.2.3.</span> <span class="toc-text">2.2.3 解决办法</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-3-%E5%85%B6%E4%BB%96%E6%96%B9%E6%B3%95"><span class="toc-number">3.3.</span> <span class="toc-text">2.3 其他方法</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3%E3%80%81%E5%AE%8C%E6%95%B4%E4%BB%A3%E7%A0%81"><span class="toc-number">4.</span> <span class="toc-text">3、完整代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E9%98%85%E8%AF%BB"><span class="toc-number">5.</span> <span class="toc-text">相关阅读</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -625,14 +622,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -642,6 +631,22 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -657,14 +662,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
@@ -677,23 +674,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -713,7 +694,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -725,15 +718,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -769,11 +758,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -805,15 +794,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -825,7 +806,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -833,7 +814,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -845,7 +826,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -853,11 +838,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -866,6 +851,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -881,15 +874,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -898,6 +887,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -910,10 +903,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -933,10 +922,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
@@ -945,7 +930,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -953,11 +938,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -985,7 +974,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1001,7 +1006,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
+                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1009,11 +1014,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1033,23 +1034,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ZooKeeper</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1058,6 +1051,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ollama</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
             
             <div class="clearfix"></div>

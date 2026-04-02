@@ -10,17 +10,19 @@
   <title>spark ML算法之线性回归使用 | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="前言本文是讲如何使用spark ml进行线性回归，不涉及线性回归的原理。 1、数据格式1.1 普通标签格式1.1.1 格式为：1标签,特征值1 特征值2 特征值3... 12345671,1.92,3.13,43.5,4.454,5.029,9.97-2,-0.98 1.1.2 spark 读取1、Rdd旧版（mllib）的线性回归要求传入的参数类型为RDD[LabeledPoint]">
-<meta name="keywords" content="Spark,算法,ml">
 <meta property="og:type" content="article">
 <meta property="og:title" content="spark ML算法之线性回归使用">
 <meta property="og:url" content="https://dongkelun.com/2018/04/09/sparkMlLinearRegressionUsing/index.html">
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言本文是讲如何使用spark ml进行线性回归，不涉及线性回归的原理。 1、数据格式1.1 普通标签格式1.1.1 格式为：1标签,特征值1 特征值2 特征值3... 12345671,1.92,3.13,43.5,4.454,5.029,9.97-2,-0.98 1.1.2 spark 读取1、Rdd旧版（mllib）的线性回归要求传入的参数类型为RDD[LabeledPoint]">
-<meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2018-12-02T14:20:36.911Z">
+<meta property="og:locale">
+<meta property="article:published_time" content="2018-04-08T16:00:00.000Z">
+<meta property="article:modified_time" content="2018-12-02T14:20:36.911Z">
+<meta property="article:author" content="董可伦">
+<meta property="article:tag" content="Spark">
+<meta property="article:tag" content="ml">
+<meta property="article:tag" content="算法">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="spark ML算法之线性回归使用">
-<meta name="twitter:description" content="前言本文是讲如何使用spark ml进行线性回归，不涉及线性回归的原理。 1、数据格式1.1 普通标签格式1.1.1 格式为：1标签,特征值1 特征值2 特征值3... 12345671,1.92,3.13,43.5,4.454,5.029,9.97-2,-0.98 1.1.2 spark 读取1、Rdd旧版（mllib）的线性回归要求传入的参数类型为RDD[LabeledPoint]">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -38,7 +40,7 @@
 
   
 
-</head>
+<meta name="generator" content="Hexo 8.1.1"></head>
 
 <body>
   <div id="container" q-class="show:isCtnShow">
@@ -68,7 +70,7 @@
 			<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 		</a>
 		<hgroup>
-		  <h1 class="header-author"><a href="/">董可伦</a></h1>
+		  <h1 class="header-author"><a href="/"></a></h1>
 		</hgroup>
 		
 
@@ -140,7 +142,7 @@
 				<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 			</div>
 			<hgroup>
-			  <h1 class="header-author js-header-author">董可伦</h1>
+			  <h1 class="header-author js-header-author"></h1>
 			</hgroup>
 			
 			
@@ -261,25 +263,17 @@
       
         <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>本文是讲如何使用spark ml进行线性回归，不涉及线性回归的原理。</p>
 <h2 id="1、数据格式"><a href="#1、数据格式" class="headerlink" title="1、数据格式"></a>1、数据格式</h2><h3 id="1-1-普通标签格式"><a href="#1-1-普通标签格式" class="headerlink" title="1.1 普通标签格式"></a>1.1 普通标签格式</h3><h4 id="1-1-1-格式为："><a href="#1-1-1-格式为：" class="headerlink" title="1.1.1 格式为："></a>1.1.1 格式为：</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">标签,特征值1 特征值2 特征值3...</span><br></pre></td></tr></table></figure>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">1,1.9</span><br><span class="line">2,3.1</span><br><span class="line">3,4</span><br><span class="line">3.5,4.45</span><br><span class="line">4,5.02</span><br><span class="line">9,9.97</span><br><span class="line">-2,-0.98</span><br></pre></td></tr></table></figure>
-<h4 id="1-1-2-spark-读取"><a href="#1-1-2-spark-读取" class="headerlink" title="1.1.2 spark 读取"></a>1.1.2 spark 读取</h4><p>1、Rdd<br>旧版（mllib）的线性回归要求传入的参数类型为RDD[LabeledPoint]<br><a id="more"></a><br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.spark.<span class="type">SparkConf</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.<span class="type">SparkContext</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.mllib.linalg.<span class="type">Vectors</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.mllib.regression.<span class="type">LabeledPoint</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> data_path = <span class="string">"files/ml/linear_regression_data1.txt"</span></span><br><span class="line"><span class="keyword">val</span> data = sc.textFile(data_path)</span><br><span class="line"><span class="keyword">val</span> training = data.map &#123; line =&gt;</span><br><span class="line">  <span class="keyword">val</span> arr = line.split(',')</span><br><span class="line">  <span class="type">LabeledPoint</span>(arr(<span class="number">0</span>).toDouble, <span class="type">Vectors</span>.dense(arr(<span class="number">1</span>).split(' ').map(_.toDouble)))</span><br><span class="line">&#125;.cache()</span><br><span class="line">training.foreach(println)</span><br></pre></td></tr></table></figure></p>
-<p>结果：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">(1.0,[1.9])</span><br><span class="line">(2.0,[3.1])</span><br><span class="line">(3.0,[4.0])</span><br><span class="line">(3.5,[4.45])</span><br><span class="line">(4.0,[5.02])</span><br><span class="line">(9.0,[9.97])</span><br><span class="line">(-2.0,[-0.98])</span><br></pre></td></tr></table></figure></p>
-<p>一共有两列，第一列可以通过.label获得（类型为Double），第二列可以通过.features获得（类型为Vector[Double]）<br>2、 DataFrame<br>新版（ml）的线性回归要求传入的参数类型为Dataset[_]<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.spark.ml.linalg.<span class="type">Vectors</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">Row</span></span><br><span class="line"><span class="keyword">import</span> spark.implicits._</span><br><span class="line"><span class="keyword">val</span> data_path = <span class="string">"files/ml/linear_regression_data1.txt"</span></span><br><span class="line"><span class="keyword">val</span> data = spark.read.text(data_path)</span><br><span class="line"><span class="keyword">val</span> training = data.map &#123;</span><br><span class="line">  <span class="keyword">case</span> <span class="type">Row</span>(line: <span class="type">String</span>) =&gt;</span><br><span class="line">    <span class="keyword">var</span> arr = line.split(',')</span><br><span class="line">    (arr(<span class="number">0</span>).toDouble, <span class="type">Vectors</span>.dense(arr(<span class="number">1</span>).split(' ').map(_.toDouble)))</span><br><span class="line">&#125;.toDF(<span class="string">"label"</span>, <span class="string">"features"</span>)</span><br><span class="line">training.show()</span><br></pre></td></tr></table></figure></p>
-<p>结果：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">+-----+--------+</span><br><span class="line">|label|features|</span><br><span class="line">+-----+--------+</span><br><span class="line">|  1.0|   [1.9]|</span><br><span class="line">|  2.0|   [3.1]|</span><br><span class="line">|  3.0|   [4.0]|</span><br><span class="line">|  3.5|  [4.45]|</span><br><span class="line">|  4.0|  [5.02]|</span><br><span class="line">|  9.0|  [9.97]|</span><br><span class="line">| -2.0| [-0.98]|</span><br><span class="line">+-----+--------+</span><br></pre></td></tr></table></figure></p>
-<p>其中列名”label”, “features”固定，不能改为其他列名。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">1,1.9</span><br><span class="line">2,3.1</span><br><span class="line">3,4</span><br><span class="line">3.5,4.45</span><br><span class="line">4,5.02</span><br><span class="line">9,9.97</span><br><span class="line">-2,-0.98</span><br></pre></td></tr></table></figure>
+<h4 id="1-1-2-spark-读取"><a href="#1-1-2-spark-读取" class="headerlink" title="1.1.2 spark 读取"></a>1.1.2 spark 读取</h4><p>1、Rdd<br>旧版（mllib）的线性回归要求传入的参数类型为RDD[LabeledPoint]<br><span id="more"></span><br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.spark.<span class="type">SparkConf</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.<span class="type">SparkContext</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.mllib.linalg.<span class="type">Vectors</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.mllib.regression.<span class="type">LabeledPoint</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> data_path = <span class="string">&quot;files/ml/linear_regression_data1.txt&quot;</span></span><br><span class="line"><span class="keyword">val</span> data = sc.textFile(data_path)</span><br><span class="line"><span class="keyword">val</span> training = data.map &#123; line =&gt;</span><br><span class="line">  <span class="keyword">val</span> arr = line.split(&#x27;,&#x27;)</span><br><span class="line">  <span class="type">LabeledPoint</span>(arr(<span class="number">0</span>).toDouble, <span class="type">Vectors</span>.dense(arr(<span class="number">1</span>).split(&#x27; &#x27;).map(_.toDouble)))</span><br><span class="line">&#125;.cache()</span><br><span class="line">training.foreach(println)</span><br></pre></td></tr></table></figure><br>结果：<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">(1.0,[1.9])</span><br><span class="line">(2.0,[3.1])</span><br><span class="line">(3.0,[4.0])</span><br><span class="line">(3.5,[4.45])</span><br><span class="line">(4.0,[5.02])</span><br><span class="line">(9.0,[9.97])</span><br><span class="line">(-2.0,[-0.98])</span><br></pre></td></tr></table></figure><br>一共有两列，第一列可以通过.label获得（类型为Double），第二列可以通过.features获得（类型为Vector[Double]）<br>2、 DataFrame<br>新版（ml）的线性回归要求传入的参数类型为Dataset[_]<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.spark.ml.linalg.<span class="type">Vectors</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">Row</span></span><br><span class="line"><span class="keyword">import</span> spark.implicits._</span><br><span class="line"><span class="keyword">val</span> data_path = <span class="string">&quot;files/ml/linear_regression_data1.txt&quot;</span></span><br><span class="line"><span class="keyword">val</span> data = spark.read.text(data_path)</span><br><span class="line"><span class="keyword">val</span> training = data.map &#123;</span><br><span class="line">  <span class="keyword">case</span> <span class="type">Row</span>(line: <span class="type">String</span>) =&gt;</span><br><span class="line">    <span class="keyword">var</span> arr = line.split(&#x27;,&#x27;)</span><br><span class="line">    (arr(<span class="number">0</span>).toDouble, <span class="type">Vectors</span>.dense(arr(<span class="number">1</span>).split(&#x27; &#x27;).map(_.toDouble)))</span><br><span class="line">&#125;.toDF(<span class="string">&quot;label&quot;</span>, <span class="string">&quot;features&quot;</span>)</span><br><span class="line">training.show()</span><br></pre></td></tr></table></figure><br>结果：<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">+-----+--------+</span><br><span class="line">|label|features|</span><br><span class="line">+-----+--------+</span><br><span class="line">|  1.0|   [1.9]|</span><br><span class="line">|  2.0|   [3.1]|</span><br><span class="line">|  3.0|   [4.0]|</span><br><span class="line">|  3.5|  [4.45]|</span><br><span class="line">|  4.0|  [5.02]|</span><br><span class="line">|  9.0|  [9.97]|</span><br><span class="line">| -2.0| [-0.98]|</span><br><span class="line">+-----+--------+</span><br></pre></td></tr></table></figure><br>其中列名”label”, “features”固定，不能改为其他列名。</p>
 <h3 id="1-2-LIBSVM格式"><a href="#1-2-LIBSVM格式" class="headerlink" title="1.2 LIBSVM格式"></a>1.2 LIBSVM格式</h3><h4 id="1-2-1-格式为："><a href="#1-2-1-格式为：" class="headerlink" title="1.2.1 格式为："></a>1.2.1 格式为：</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">label index1:value1 index2:value2 ...</span><br></pre></td></tr></table></figure>
-<p>其中每一行的index必须为升序<br>为了便于理解，造几条多维数据：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">1 1:1.9 2:2 4:2 100:3 101:6</span><br><span class="line">2 1:3.1 2:2 4:2 100:3 101:6</span><br><span class="line">3 1:4 2:2 4:2 100:3 101:6</span><br><span class="line">3.5 1:4.45 2:2 4:2 100:3 101:6</span><br><span class="line">4 1:5.02 2:2 4:2 100:3 101:6</span><br><span class="line">9 1:9.97 4:2 100:3 101:6</span><br><span class="line">-2 1:-0.98 2:2 4:2 100:3 201:6</span><br></pre></td></tr></table></figure></p>
-<h4 id="1-2-2-spark-读取"><a href="#1-2-2-spark-读取" class="headerlink" title="1.2.2 spark 读取"></a>1.2.2 spark 读取</h4><p>1、Rdd<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.spark.<span class="type">SparkConf</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.<span class="type">SparkContext</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.mllib.util.<span class="type">MLUtils</span></span><br><span class="line"><span class="keyword">val</span> data_path = <span class="string">"files/ml/linear_regression_data2.txt"</span></span><br><span class="line"><span class="keyword">val</span> training = <span class="type">MLUtils</span>.loadLibSVMFile(sc, data_path)</span><br><span class="line">training.foreach(println)</span><br></pre></td></tr></table></figure></p>
-<p>结果：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">(1.0,(201,[0,1,3,99,100],[1.9,2.0,2.0,3.0,6.0]))</span><br><span class="line">(2.0,(201,[0,1,3,99,100],[3.1,2.0,2.0,3.0,6.0]))</span><br><span class="line">(3.0,(201,[0,1,3,99,100],[4.0,2.0,2.0,3.0,6.0]))</span><br><span class="line">(3.5,(201,[0,1,3,99,100],[4.45,2.0,2.0,3.0,6.0]))</span><br><span class="line">(4.0,(201,[0,1,3,99,100],[5.02,2.0,2.0,3.0,6.0]))</span><br><span class="line">(9.0,(201,[0,3,99,100],[9.97,2.0,3.0,6.0]))</span><br><span class="line">(-2.0,(201,[0,1,3,99,200],[-0.98,2.0,2.0,3.0,6.0]))</span><br></pre></td></tr></table></figure></p>
-<p>返回类型为RDD[LabeledPoint]，其中第一列为label,第二列vector的第一个值为max(index),第二个index-1组成的数组，第三个为value组成的数组。<br>2、DataFrame<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> data_path = <span class="string">"files/ml/linear_regression_data2.txt"</span></span><br><span class="line"><span class="keyword">val</span> data = spark.read.text(data_path)</span><br><span class="line"><span class="keyword">val</span> training = spark.read.format(<span class="string">"libsvm"</span>).load(data_path)</span><br><span class="line">training.show(<span class="literal">false</span>)</span><br></pre></td></tr></table></figure></p>
-<p>结果：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">+-----+--------------------------------------------+</span><br><span class="line">|label|features                                    |</span><br><span class="line">+-----+--------------------------------------------+</span><br><span class="line">|1.0  |(201,[0,1,3,99,100],[1.9,2.0,2.0,3.0,6.0])  |</span><br><span class="line">|2.0  |(201,[0,1,3,99,100],[3.1,2.0,2.0,3.0,6.0])  |</span><br><span class="line">|3.0  |(201,[0,1,3,99,100],[4.0,2.0,2.0,3.0,6.0])  |</span><br><span class="line">|3.5  |(201,[0,1,3,99,100],[4.45,2.0,2.0,3.0,6.0]) |</span><br><span class="line">|4.0  |(201,[0,1,3,99,100],[5.02,2.0,2.0,3.0,6.0]) |</span><br><span class="line">|9.0  |(201,[0,3,99,100],[9.97,2.0,3.0,6.0])       |</span><br><span class="line">|-2.0 |(201,[0,1,3,99,200],[-0.98,2.0,2.0,3.0,6.0])|</span><br><span class="line">+-----+--------------------------------------------+</span><br></pre></td></tr></table></figure></p>
-<h2 id="2、线性回归代码"><a href="#2、线性回归代码" class="headerlink" title="2、线性回归代码"></a>2、线性回归代码</h2><h3 id="2-1-数据"><a href="#2-1-数据" class="headerlink" title="2.1 数据"></a>2.1 数据</h3><p>用libsvm格式的数据：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">1 1:1.9</span><br><span class="line">2 1:3.1</span><br><span class="line">3 1:4</span><br><span class="line">3.5 1:4.45</span><br><span class="line">4 1:5.02</span><br><span class="line">9 1:9.97</span><br><span class="line">-2 1:-0.98</span><br></pre></td></tr></table></figure></p>
-<h3 id="2-2-旧版代码"><a href="#2-2-旧版代码" class="headerlink" title="2.2 旧版代码"></a>2.2 旧版代码</h3><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.dkl.leanring.spark.ml</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.log4j.&#123; <span class="type">Level</span>, <span class="type">Logger</span> &#125;</span><br><span class="line"><span class="keyword">import</span> org.apache.spark.&#123; <span class="type">SparkConf</span>, <span class="type">SparkContext</span> &#125;</span><br><span class="line"><span class="keyword">import</span> org.apache.spark.mllib.regression.<span class="type">LinearRegressionWithSGD</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.mllib.util.<span class="type">MLUtils</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.mllib.regression.<span class="type">LabeledPoint</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.mllib.linalg.<span class="type">Vectors</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.mllib.regression.<span class="type">LinearRegressionModel</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">OldLinearRegression</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]) &#123;</span><br><span class="line">    <span class="comment">// 构建Spark对象</span></span><br><span class="line">    <span class="keyword">val</span> conf = <span class="keyword">new</span> <span class="type">SparkConf</span>().setAppName(<span class="string">"OldLinearRegression"</span>).setMaster(<span class="string">"local"</span>)</span><br><span class="line">    <span class="keyword">val</span> sc = <span class="keyword">new</span> <span class="type">SparkContext</span>(conf)</span><br><span class="line">    <span class="type">Logger</span>.getRootLogger.setLevel(<span class="type">Level</span>.<span class="type">WARN</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment">//读取样本数据</span></span><br><span class="line">    <span class="keyword">val</span> data_path = <span class="string">"files/ml/linear_regression_data3.txt"</span></span><br><span class="line">    <span class="keyword">val</span> training = <span class="type">MLUtils</span>.loadLibSVMFile(sc, data_path)</span><br><span class="line">    <span class="keyword">val</span> numTraing = training.count()</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 新建线性回归模型，并设置训练参数</span></span><br><span class="line">    <span class="keyword">val</span> numIterations = <span class="number">10000</span></span><br><span class="line">    <span class="keyword">val</span> stepSize = <span class="number">0.5</span></span><br><span class="line">    <span class="keyword">val</span> miniBatchFraction = <span class="number">1.0</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">//书上的代码 intercept 永远为0</span></span><br><span class="line">    <span class="comment">//val model = LinearRegressionWithSGD.train(examples, numIterations, stepSize, miniBatchFraction)</span></span><br><span class="line">    <span class="keyword">var</span> lr = <span class="keyword">new</span> <span class="type">LinearRegressionWithSGD</span>().setIntercept(<span class="literal">true</span>)</span><br><span class="line">    lr.optimizer.setNumIterations(numIterations).setStepSize(stepSize).setMiniBatchFraction(miniBatchFraction)</span><br><span class="line">    <span class="keyword">val</span> model = lr.run(training)</span><br><span class="line">    println(model.weights)</span><br><span class="line">    println(model.intercept)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 对样本进行测试</span></span><br><span class="line">    <span class="keyword">val</span> prediction = model.predict(training.map(_.features))</span><br><span class="line">    <span class="keyword">val</span> predictionAndLabel = prediction.zip(training.map(_.label))</span><br><span class="line">    <span class="keyword">val</span> print_predict = predictionAndLabel.take(<span class="number">20</span>)</span><br><span class="line">    println(<span class="string">"prediction"</span> + <span class="string">"\t"</span> + <span class="string">"label"</span>)</span><br><span class="line">    <span class="keyword">for</span> (i &lt;- <span class="number">0</span> to print_predict.length - <span class="number">1</span>) &#123;</span><br><span class="line">      println(print_predict(i)._1 + <span class="string">"\t"</span> + print_predict(i)._2)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 计算测试误差</span></span><br><span class="line">    <span class="keyword">val</span> loss = predictionAndLabel.map &#123;</span><br><span class="line">      <span class="keyword">case</span> (p, l) =&gt;</span><br><span class="line">        <span class="keyword">val</span> err = p - l</span><br><span class="line">        err * err</span><br><span class="line">    &#125;.reduce(_ + _)</span><br><span class="line">    <span class="keyword">val</span> rmse = math.sqrt(loss / numTraing)</span><br><span class="line">    println(<span class="string">s"Test RMSE = <span class="subst">$rmse</span>."</span>)</span><br><span class="line"></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中每一行的index必须为升序<br>为了便于理解，造几条多维数据：<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">1 1:1.9 2:2 4:2 100:3 101:6</span><br><span class="line">2 1:3.1 2:2 4:2 100:3 101:6</span><br><span class="line">3 1:4 2:2 4:2 100:3 101:6</span><br><span class="line">3.5 1:4.45 2:2 4:2 100:3 101:6</span><br><span class="line">4 1:5.02 2:2 4:2 100:3 101:6</span><br><span class="line">9 1:9.97 4:2 100:3 101:6</span><br><span class="line">-2 1:-0.98 2:2 4:2 100:3 201:6</span><br></pre></td></tr></table></figure></p>
+<h4 id="1-2-2-spark-读取"><a href="#1-2-2-spark-读取" class="headerlink" title="1.2.2 spark 读取"></a>1.2.2 spark 读取</h4><p>1、Rdd<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.spark.<span class="type">SparkConf</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.<span class="type">SparkContext</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.mllib.util.<span class="type">MLUtils</span></span><br><span class="line"><span class="keyword">val</span> data_path = <span class="string">&quot;files/ml/linear_regression_data2.txt&quot;</span></span><br><span class="line"><span class="keyword">val</span> training = <span class="type">MLUtils</span>.loadLibSVMFile(sc, data_path)</span><br><span class="line">training.foreach(println)</span><br><span class="line"></span><br></pre></td></tr></table></figure><br>结果：<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">(1.0,(201,[0,1,3,99,100],[1.9,2.0,2.0,3.0,6.0]))</span><br><span class="line">(2.0,(201,[0,1,3,99,100],[3.1,2.0,2.0,3.0,6.0]))</span><br><span class="line">(3.0,(201,[0,1,3,99,100],[4.0,2.0,2.0,3.0,6.0]))</span><br><span class="line">(3.5,(201,[0,1,3,99,100],[4.45,2.0,2.0,3.0,6.0]))</span><br><span class="line">(4.0,(201,[0,1,3,99,100],[5.02,2.0,2.0,3.0,6.0]))</span><br><span class="line">(9.0,(201,[0,3,99,100],[9.97,2.0,3.0,6.0]))</span><br><span class="line">(-2.0,(201,[0,1,3,99,200],[-0.98,2.0,2.0,3.0,6.0]))</span><br></pre></td></tr></table></figure><br>返回类型为RDD[LabeledPoint]，其中第一列为label,第二列vector的第一个值为max(index),第二个index-1组成的数组，第三个为value组成的数组。<br>2、DataFrame<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> data_path = <span class="string">&quot;files/ml/linear_regression_data2.txt&quot;</span></span><br><span class="line"><span class="keyword">val</span> data = spark.read.text(data_path)</span><br><span class="line"><span class="keyword">val</span> training = spark.read.format(<span class="string">&quot;libsvm&quot;</span>).load(data_path)</span><br><span class="line">training.show(<span class="literal">false</span>)</span><br></pre></td></tr></table></figure><br>结果：<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">+-----+--------------------------------------------+</span><br><span class="line">|label|features                                    |</span><br><span class="line">+-----+--------------------------------------------+</span><br><span class="line">|1.0  |(201,[0,1,3,99,100],[1.9,2.0,2.0,3.0,6.0])  |</span><br><span class="line">|2.0  |(201,[0,1,3,99,100],[3.1,2.0,2.0,3.0,6.0])  |</span><br><span class="line">|3.0  |(201,[0,1,3,99,100],[4.0,2.0,2.0,3.0,6.0])  |</span><br><span class="line">|3.5  |(201,[0,1,3,99,100],[4.45,2.0,2.0,3.0,6.0]) |</span><br><span class="line">|4.0  |(201,[0,1,3,99,100],[5.02,2.0,2.0,3.0,6.0]) |</span><br><span class="line">|9.0  |(201,[0,3,99,100],[9.97,2.0,3.0,6.0])       |</span><br><span class="line">|-2.0 |(201,[0,1,3,99,200],[-0.98,2.0,2.0,3.0,6.0])|</span><br><span class="line">+-----+--------------------------------------------+</span><br></pre></td></tr></table></figure></p>
+<h2 id="2、线性回归代码"><a href="#2、线性回归代码" class="headerlink" title="2、线性回归代码"></a>2、线性回归代码</h2><h3 id="2-1-数据"><a href="#2-1-数据" class="headerlink" title="2.1 数据"></a>2.1 数据</h3><p>用libsvm格式的数据：<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">1 1:1.9</span><br><span class="line">2 1:3.1</span><br><span class="line">3 1:4</span><br><span class="line">3.5 1:4.45</span><br><span class="line">4 1:5.02</span><br><span class="line">9 1:9.97</span><br><span class="line">-2 1:-0.98</span><br></pre></td></tr></table></figure></p>
+<h3 id="2-2-旧版代码"><a href="#2-2-旧版代码" class="headerlink" title="2.2 旧版代码"></a>2.2 旧版代码</h3><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.dkl.leanring.spark.ml</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.log4j.&#123; <span class="type">Level</span>, <span class="type">Logger</span> &#125;</span><br><span class="line"><span class="keyword">import</span> org.apache.spark.&#123; <span class="type">SparkConf</span>, <span class="type">SparkContext</span> &#125;</span><br><span class="line"><span class="keyword">import</span> org.apache.spark.mllib.regression.<span class="type">LinearRegressionWithSGD</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.mllib.util.<span class="type">MLUtils</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.mllib.regression.<span class="type">LabeledPoint</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.mllib.linalg.<span class="type">Vectors</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.mllib.regression.<span class="type">LinearRegressionModel</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">OldLinearRegression</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]) &#123;</span><br><span class="line">    <span class="comment">// 构建Spark对象</span></span><br><span class="line">    <span class="keyword">val</span> conf = <span class="keyword">new</span> <span class="type">SparkConf</span>().setAppName(<span class="string">&quot;OldLinearRegression&quot;</span>).setMaster(<span class="string">&quot;local&quot;</span>)</span><br><span class="line">    <span class="keyword">val</span> sc = <span class="keyword">new</span> <span class="type">SparkContext</span>(conf)</span><br><span class="line">    <span class="type">Logger</span>.getRootLogger.setLevel(<span class="type">Level</span>.<span class="type">WARN</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment">//读取样本数据</span></span><br><span class="line">    <span class="keyword">val</span> data_path = <span class="string">&quot;files/ml/linear_regression_data3.txt&quot;</span></span><br><span class="line">    <span class="keyword">val</span> training = <span class="type">MLUtils</span>.loadLibSVMFile(sc, data_path)</span><br><span class="line">    <span class="keyword">val</span> numTraing = training.count()</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 新建线性回归模型，并设置训练参数</span></span><br><span class="line">    <span class="keyword">val</span> numIterations = <span class="number">10000</span></span><br><span class="line">    <span class="keyword">val</span> stepSize = <span class="number">0.5</span></span><br><span class="line">    <span class="keyword">val</span> miniBatchFraction = <span class="number">1.0</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">//书上的代码 intercept 永远为0</span></span><br><span class="line">    <span class="comment">//val model = LinearRegressionWithSGD.train(examples, numIterations, stepSize, miniBatchFraction)</span></span><br><span class="line">    <span class="keyword">var</span> lr = <span class="keyword">new</span> <span class="type">LinearRegressionWithSGD</span>().setIntercept(<span class="literal">true</span>)</span><br><span class="line">    lr.optimizer.setNumIterations(numIterations).setStepSize(stepSize).setMiniBatchFraction(miniBatchFraction)</span><br><span class="line">    <span class="keyword">val</span> model = lr.run(training)</span><br><span class="line">    println(model.weights)</span><br><span class="line">    println(model.intercept)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 对样本进行测试</span></span><br><span class="line">    <span class="keyword">val</span> prediction = model.predict(training.map(_.features))</span><br><span class="line">    <span class="keyword">val</span> predictionAndLabel = prediction.zip(training.map(_.label))</span><br><span class="line">    <span class="keyword">val</span> print_predict = predictionAndLabel.take(<span class="number">20</span>)</span><br><span class="line">    println(<span class="string">&quot;prediction&quot;</span> + <span class="string">&quot;\t&quot;</span> + <span class="string">&quot;label&quot;</span>)</span><br><span class="line">    <span class="keyword">for</span> (i &lt;- <span class="number">0</span> to print_predict.length - <span class="number">1</span>) &#123;</span><br><span class="line">      println(print_predict(i)._1 + <span class="string">&quot;\t&quot;</span> + print_predict(i)._2)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 计算测试误差</span></span><br><span class="line">    <span class="keyword">val</span> loss = predictionAndLabel.map &#123;</span><br><span class="line">      <span class="keyword">case</span> (p, l) =&gt;</span><br><span class="line">        <span class="keyword">val</span> err = p - l</span><br><span class="line">        err * err</span><br><span class="line">    &#125;.reduce(_ + _)</span><br><span class="line">    <span class="keyword">val</span> rmse = math.sqrt(loss / numTraing)</span><br><span class="line">    println(<span class="string">s&quot;Test RMSE = <span class="subst">$rmse</span>.&quot;</span>)</span><br><span class="line"></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>其中注释的第30行代码为书上的写法，但这样写intercept一直为0，也就是只适用于y=a*x的形式，不适用于y=ax+b,改为31、32替代即可。</p>
-<p>结果：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[0.992894785953067]</span><br><span class="line">-0.9446037936869749</span><br><span class="line">prediction	label</span><br><span class="line">0.9418962996238525	1.0</span><br><span class="line">2.133370042767533	2.0</span><br><span class="line">3.0269753501252934	3.0</span><br><span class="line">3.473778003804174	3.5</span><br><span class="line">4.039728031797421	4.0</span><br><span class="line">8.954557222265104	9.0</span><br><span class="line">-1.9176406839209805	-2.0</span><br><span class="line">Test RMSE = 0.06866615969192089.</span><br></pre></td></tr></table></figure></p>
-<p>即a=0.992894785953067,b=-0.9446037936869749,y=0.992894785953067*x-0.9446037936869749</p>
-<h3 id="2-3-新版代码"><a href="#2-3-新版代码" class="headerlink" title="2.3 新版代码"></a>2.3 新版代码</h3><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.dkl.leanring.spark.ml</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.ml.regression.<span class="type">LinearRegression</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SparkSession</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">NewLinearRegression</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> spark = <span class="type">SparkSession</span></span><br><span class="line">      .builder</span><br><span class="line">      .appName(<span class="string">"NewLinearRegression"</span>)</span><br><span class="line">      .master(<span class="string">"local"</span>)</span><br><span class="line">      .getOrCreate()</span><br><span class="line">    <span class="keyword">val</span> data_path = <span class="string">"files/ml/linear_regression_data3.txt"</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">import</span> spark.implicits._</span><br><span class="line">    <span class="keyword">import</span> org.apache.spark.ml.linalg.<span class="type">Vectors</span></span><br><span class="line">    <span class="keyword">import</span> org.apache.spark.sql.<span class="type">Row</span></span><br><span class="line">    <span class="keyword">val</span> training = spark.read.format(<span class="string">"libsvm"</span>).load(data_path)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> lr = <span class="keyword">new</span> <span class="type">LinearRegression</span>()</span><br><span class="line">      .setMaxIter(<span class="number">10000</span>)</span><br><span class="line">      .setRegParam(<span class="number">0.3</span>)</span><br><span class="line">      .setElasticNetParam(<span class="number">0.8</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> lrModel = lr.fit(training)</span><br><span class="line"></span><br><span class="line">    println(<span class="string">s"Coefficients: <span class="subst">$&#123;lrModel.coefficients&#125;</span> Intercept: <span class="subst">$&#123;lrModel.intercept&#125;</span>"</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> trainingSummary = lrModel.summary</span><br><span class="line">    println(<span class="string">s"numIterations: <span class="subst">$&#123;trainingSummary.totalIterations&#125;</span>"</span>)</span><br><span class="line">    println(<span class="string">s"objectiveHistory: [<span class="subst">$&#123;trainingSummary.objectiveHistory.mkString(",")&#125;</span>]"</span>)</span><br><span class="line">    trainingSummary.residuals.show()</span><br><span class="line">    println(<span class="string">s"RMSE: <span class="subst">$&#123;trainingSummary.rootMeanSquaredError&#125;</span>"</span>)</span><br><span class="line">    println(<span class="string">s"r2: <span class="subst">$&#123;trainingSummary.r2&#125;</span>"</span>)</span><br><span class="line">    trainingSummary.predictions.show()</span><br><span class="line"></span><br><span class="line">    spark.stop()</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>结果：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">Coefficients: [0.9072296333951224] Intercept: -0.630360819004294</span><br><span class="line">numIterations: 3</span><br><span class="line">objectiveHistory: [0.5,0.41543560544030766,0.08269406021049913]</span><br><span class="line">+--------------------+</span><br><span class="line">|           residuals|</span><br><span class="line">+--------------------+</span><br><span class="line">| -0.0933754844464385|</span><br><span class="line">|-0.18205104452058585|</span><br><span class="line">|0.001442285423804...|</span><br><span class="line">| 0.09318895039599973|</span><br><span class="line">| 0.07606805936077965|</span><br><span class="line">|  0.5852813740549223|</span><br><span class="line">| -0.4805541402684861|</span><br><span class="line">+--------------------+</span><br><span class="line"></span><br><span class="line">RMSE: 0.2999573166705823</span><br><span class="line">r2: 0.9906296595124621</span><br><span class="line">+-----+---------------+------------------+</span><br><span class="line">|label|       features|        prediction|</span><br><span class="line">+-----+---------------+------------------+</span><br><span class="line">|  1.0|  (1,[0],[1.9])|1.0933754844464385|</span><br><span class="line">|  2.0|  (1,[0],[3.1])| 2.182051044520586|</span><br><span class="line">|  3.0|  (1,[0],[4.0])|2.9985577145761955|</span><br><span class="line">|  3.5| (1,[0],[4.45])|3.4068110496040003|</span><br><span class="line">|  4.0| (1,[0],[5.02])|3.9239319406392204|</span><br><span class="line">|  9.0| (1,[0],[9.97])| 8.414718625945078|</span><br><span class="line">| -2.0|(1,[0],[-0.98])|-1.519445859731514|</span><br><span class="line">+-----+---------------+------------------+</span><br></pre></td></tr></table></figure></p>
+<p>结果：<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[0.992894785953067]</span><br><span class="line">-0.9446037936869749</span><br><span class="line">prediction	label</span><br><span class="line">0.9418962996238525	1.0</span><br><span class="line">2.133370042767533	2.0</span><br><span class="line">3.0269753501252934	3.0</span><br><span class="line">3.473778003804174	3.5</span><br><span class="line">4.039728031797421	4.0</span><br><span class="line">8.954557222265104	9.0</span><br><span class="line">-1.9176406839209805	-2.0</span><br><span class="line">Test RMSE = 0.06866615969192089.</span><br></pre></td></tr></table></figure><br>即a=0.992894785953067,b=-0.9446037936869749,y=0.992894785953067*x-0.9446037936869749</p>
+<h3 id="2-3-新版代码"><a href="#2-3-新版代码" class="headerlink" title="2.3 新版代码"></a>2.3 新版代码</h3><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.dkl.leanring.spark.ml</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.ml.regression.<span class="type">LinearRegression</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SparkSession</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">NewLinearRegression</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> spark = <span class="type">SparkSession</span></span><br><span class="line">      .builder</span><br><span class="line">      .appName(<span class="string">&quot;NewLinearRegression&quot;</span>)</span><br><span class="line">      .master(<span class="string">&quot;local&quot;</span>)</span><br><span class="line">      .getOrCreate()</span><br><span class="line">    <span class="keyword">val</span> data_path = <span class="string">&quot;files/ml/linear_regression_data3.txt&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">import</span> spark.implicits._</span><br><span class="line">    <span class="keyword">import</span> org.apache.spark.ml.linalg.<span class="type">Vectors</span></span><br><span class="line">    <span class="keyword">import</span> org.apache.spark.sql.<span class="type">Row</span></span><br><span class="line">    <span class="keyword">val</span> training = spark.read.format(<span class="string">&quot;libsvm&quot;</span>).load(data_path)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> lr = <span class="keyword">new</span> <span class="type">LinearRegression</span>()</span><br><span class="line">      .setMaxIter(<span class="number">10000</span>)</span><br><span class="line">      .setRegParam(<span class="number">0.3</span>)</span><br><span class="line">      .setElasticNetParam(<span class="number">0.8</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> lrModel = lr.fit(training)</span><br><span class="line"></span><br><span class="line">    println(<span class="string">s&quot;Coefficients: <span class="subst">$&#123;lrModel.coefficients&#125;</span> Intercept: <span class="subst">$&#123;lrModel.intercept&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> trainingSummary = lrModel.summary</span><br><span class="line">    println(<span class="string">s&quot;numIterations: <span class="subst">$&#123;trainingSummary.totalIterations&#125;</span>&quot;</span>)</span><br><span class="line">    println(<span class="string">s&quot;objectiveHistory: [<span class="subst">$&#123;trainingSummary.objectiveHistory.mkString(&quot;,&quot;)&#125;</span>]&quot;</span>)</span><br><span class="line">    trainingSummary.residuals.show()</span><br><span class="line">    println(<span class="string">s&quot;RMSE: <span class="subst">$&#123;trainingSummary.rootMeanSquaredError&#125;</span>&quot;</span>)</span><br><span class="line">    println(<span class="string">s&quot;r2: <span class="subst">$&#123;trainingSummary.r2&#125;</span>&quot;</span>)</span><br><span class="line">    trainingSummary.predictions.show()</span><br><span class="line"></span><br><span class="line">    spark.stop()</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>结果：<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">Coefficients: [0.9072296333951224] Intercept: -0.630360819004294</span><br><span class="line">numIterations: 3</span><br><span class="line">objectiveHistory: [0.5,0.41543560544030766,0.08269406021049913]</span><br><span class="line">+--------------------+</span><br><span class="line">|           residuals|</span><br><span class="line">+--------------------+</span><br><span class="line">| -0.0933754844464385|</span><br><span class="line">|-0.18205104452058585|</span><br><span class="line">|0.001442285423804...|</span><br><span class="line">| 0.09318895039599973|</span><br><span class="line">| 0.07606805936077965|</span><br><span class="line">|  0.5852813740549223|</span><br><span class="line">| -0.4805541402684861|</span><br><span class="line">+--------------------+</span><br><span class="line"></span><br><span class="line">RMSE: 0.2999573166705823</span><br><span class="line">r2: 0.9906296595124621</span><br><span class="line">+-----+---------------+------------------+</span><br><span class="line">|label|       features|        prediction|</span><br><span class="line">+-----+---------------+------------------+</span><br><span class="line">|  1.0|  (1,[0],[1.9])|1.0933754844464385|</span><br><span class="line">|  2.0|  (1,[0],[3.1])| 2.182051044520586|</span><br><span class="line">|  3.0|  (1,[0],[4.0])|2.9985577145761955|</span><br><span class="line">|  3.5| (1,[0],[4.45])|3.4068110496040003|</span><br><span class="line">|  4.0| (1,[0],[5.02])|3.9239319406392204|</span><br><span class="line">|  9.0| (1,[0],[9.97])| 8.414718625945078|</span><br><span class="line">| -2.0|(1,[0],[-0.98])|-1.519445859731514|</span><br><span class="line">+-----+---------------+------------------+</span><br></pre></td></tr></table></figure></p>
 
       
 
@@ -436,7 +430,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1、数据格式"><span class="toc-number">2.</span> <span class="toc-text">1、数据格式</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-普通标签格式"><span class="toc-number">2.1.</span> <span class="toc-text">1.1 普通标签格式</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-1-1-格式为："><span class="toc-number">2.1.1.</span> <span class="toc-text">1.1.1 格式为：</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1-1-2-spark-读取"><span class="toc-number">2.1.2.</span> <span class="toc-text">1.1.2 spark 读取</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-LIBSVM格式"><span class="toc-number">2.2.</span> <span class="toc-text">1.2 LIBSVM格式</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-2-1-格式为："><span class="toc-number">2.2.1.</span> <span class="toc-text">1.2.1 格式为：</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1-2-2-spark-读取"><span class="toc-number">2.2.2.</span> <span class="toc-text">1.2.2 spark 读取</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2、线性回归代码"><span class="toc-number">3.</span> <span class="toc-text">2、线性回归代码</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-数据"><span class="toc-number">3.1.</span> <span class="toc-text">2.1 数据</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-旧版代码"><span class="toc-number">3.2.</span> <span class="toc-text">2.2 旧版代码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-3-新版代码"><span class="toc-number">3.3.</span> <span class="toc-text">2.3 新版代码</span></a></li></ol></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1%E3%80%81%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F"><span class="toc-number">2.</span> <span class="toc-text">1、数据格式</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-%E6%99%AE%E9%80%9A%E6%A0%87%E7%AD%BE%E6%A0%BC%E5%BC%8F"><span class="toc-number">2.1.</span> <span class="toc-text">1.1 普通标签格式</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-1-1-%E6%A0%BC%E5%BC%8F%E4%B8%BA%EF%BC%9A"><span class="toc-number">2.1.1.</span> <span class="toc-text">1.1.1 格式为：</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1-1-2-spark-%E8%AF%BB%E5%8F%96"><span class="toc-number">2.1.2.</span> <span class="toc-text">1.1.2 spark 读取</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-LIBSVM%E6%A0%BC%E5%BC%8F"><span class="toc-number">2.2.</span> <span class="toc-text">1.2 LIBSVM格式</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-2-1-%E6%A0%BC%E5%BC%8F%E4%B8%BA%EF%BC%9A"><span class="toc-number">2.2.1.</span> <span class="toc-text">1.2.1 格式为：</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1-2-2-spark-%E8%AF%BB%E5%8F%96"><span class="toc-number">2.2.2.</span> <span class="toc-text">1.2.2 spark 读取</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2%E3%80%81%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92%E4%BB%A3%E7%A0%81"><span class="toc-number">3.</span> <span class="toc-text">2、线性回归代码</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-%E6%95%B0%E6%8D%AE"><span class="toc-number">3.1.</span> <span class="toc-text">2.1 数据</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-%E6%97%A7%E7%89%88%E4%BB%A3%E7%A0%81"><span class="toc-number">3.2.</span> <span class="toc-text">2.2 旧版代码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-3-%E6%96%B0%E7%89%88%E4%BB%A3%E7%A0%81"><span class="toc-number">3.3.</span> <span class="toc-text">2.3 新版代码</span></a></li></ol></li></ol>
                     </div>
                 </span>
             </div>
@@ -611,14 +605,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -628,6 +614,22 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -643,14 +645,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
@@ -663,23 +657,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -699,7 +677,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -711,15 +701,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -755,11 +741,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -791,15 +777,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -811,7 +789,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -819,7 +797,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -831,7 +809,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -839,11 +821,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -852,6 +834,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -867,15 +857,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -884,6 +870,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -896,10 +886,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -919,10 +905,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
@@ -931,7 +913,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -939,11 +921,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -971,7 +957,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -987,7 +989,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
+                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -995,11 +997,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1019,23 +1017,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ZooKeeper</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1044,6 +1034,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ollama</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
             
             <div class="clearfix"></div>

@@ -10,17 +10,18 @@
   <title>Hudi源码 | Insert源码分析总结（二）(WorkloadProfile) | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="前言接上篇文章：Hudi源码 | Insert源码分析总结（一）(整体流程)，继续进行Apache Hudi Insert源码分析总结，本文主要分析上文提到的WorkloadProfile 版本Hudi 0.9.0 入口入口在上篇文章中讲到的BaseJavaCommitActionExecutor的execute">
-<meta name="keywords" content="源码,Hudi">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Hudi源码 | Insert源码分析总结（二）(WorkloadProfile)">
 <meta property="og:url" content="https://dongkelun.com/2022/11/16/hudiSourceCode-javaInsert2/index.html">
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言接上篇文章：Hudi源码 | Insert源码分析总结（一）(整体流程)，继续进行Apache Hudi Insert源码分析总结，本文主要分析上文提到的WorkloadProfile 版本Hudi 0.9.0 入口入口在上篇文章中讲到的BaseJavaCommitActionExecutor的execute">
-<meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2022-11-27T07:52:27.308Z">
+<meta property="og:locale">
+<meta property="article:published_time" content="2022-11-15T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-11-27T07:52:27.308Z">
+<meta property="article:author" content="董可伦">
+<meta property="article:tag" content="Hudi">
+<meta property="article:tag" content="源码">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Hudi源码 | Insert源码分析总结（二）(WorkloadProfile)">
-<meta name="twitter:description" content="前言接上篇文章：Hudi源码 | Insert源码分析总结（一）(整体流程)，继续进行Apache Hudi Insert源码分析总结，本文主要分析上文提到的WorkloadProfile 版本Hudi 0.9.0 入口入口在上篇文章中讲到的BaseJavaCommitActionExecutor的execute">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -38,7 +39,7 @@
 
   
 
-</head>
+<meta name="generator" content="Hexo 8.1.1"></head>
 
 <body>
   <div id="container" q-class="show:isCtnShow">
@@ -68,7 +69,7 @@
 			<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 		</a>
 		<hgroup>
-		  <h1 class="header-author"><a href="/">董可伦</a></h1>
+		  <h1 class="header-author"><a href="/"></a></h1>
 		</hgroup>
 		
 
@@ -140,7 +141,7 @@
 				<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 			</div>
 			<hgroup>
-			  <h1 class="header-author js-header-author">董可伦</h1>
+			  <h1 class="header-author js-header-author"></h1>
 			</hgroup>
 			
 			
@@ -255,34 +256,34 @@
         
         
       
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>接上篇文章：<a href="https://mp.weixin.qq.com/s/JF9UfsNHhtKZOawKKZ1LFA" target="_blank" rel="noopener">Hudi源码 | Insert源码分析总结（一）(整体流程)</a>，继续进行Apache Hudi Insert源码分析总结，本文主要分析上文提到的<code>WorkloadProfile</code></p>
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>接上篇文章：<a href="https://mp.weixin.qq.com/s/JF9UfsNHhtKZOawKKZ1LFA">Hudi源码 | Insert源码分析总结（一）(整体流程)</a>，继续进行Apache Hudi Insert源码分析总结，本文主要分析上文提到的<code>WorkloadProfile</code></p>
 <h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>Hudi 0.9.0</p>
 <h2 id="入口"><a href="#入口" class="headerlink" title="入口"></a>入口</h2><p>入口在上篇文章中讲到的<code>BaseJavaCommitActionExecutor</code>的<code>execute</code></p>
-<a id="more"></a>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">WorkloadProfile profile = <span class="keyword">null</span>;</span><br><span class="line"><span class="keyword">if</span> (isWorkloadProfileNeeded()) &#123; <span class="comment">// 始终为true</span></span><br><span class="line">  <span class="comment">// 构建WorkloadProfile，构建WorkloadProfile的目的主要是为给getPartitioner使用</span></span><br><span class="line">  <span class="comment">// WorkloadProfile包含了分区路径对应的insert/upsert数量以及upsert数据对应的文件位置信息</span></span><br><span class="line">  <span class="comment">// 数量信息是为了分桶，或者说是为了分几个文件，这里涉及了小文件合并、文件大小等原理</span></span><br><span class="line">  <span class="comment">// 位置信息是为了获取要更新的文件</span></span><br><span class="line">  <span class="comment">// 对于upsert数据，我们复用原来的fileId</span></span><br><span class="line">  <span class="comment">// 对于insert数据，我们生成新的fileId,如果record数比较多，则分多个文件写</span></span><br><span class="line">  profile = <span class="keyword">new</span> WorkloadProfile(buildProfile(inputRecords));</span><br><span class="line">  LOG.info(<span class="string">"Workload profile :"</span> + profile);</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="comment">// 将WorkloadProfile元数据信息持久化到.inflight文件中，.commit.request-&gt;.commit.inflight.</span></span><br><span class="line">    <span class="comment">// 这一步主要是为了mor表的rollback,rollback时可以从.inflight文件中读取对应的元数据信息</span></span><br><span class="line">    saveWorkloadProfileMetadataToInflight(profile, instantTime);</span><br><span class="line">  &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">    HoodieTableMetaClient metaClient = table.getMetaClient();</span><br><span class="line">    HoodieInstant inflightInstant = <span class="keyword">new</span> HoodieInstant(HoodieInstant.State.INFLIGHT, metaClient.getCommitActionType(), instantTime);</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="keyword">if</span> (!metaClient.getFs().exists(<span class="keyword">new</span> Path(metaClient.getMetaPath(), inflightInstant.getFileName()))) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> HoodieCommitException(<span class="string">"Failed to commit "</span> + instantTime + <span class="string">" unable to save inflight metadata "</span>, e);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException ex) &#123;</span><br><span class="line">      LOG.error(<span class="string">"Check file exists failed"</span>);</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> HoodieCommitException(<span class="string">"Failed to commit "</span> + instantTime + <span class="string">" unable to save inflight metadata "</span>, ex);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="WorkloadProfile"><a href="#WorkloadProfile" class="headerlink" title="WorkloadProfile"></a>WorkloadProfile</h2><p>首先看一下<code>WorkloadProfile</code>的构造函数，看看需要哪些参数。它有两个构造函数，一个只有一个参数：<code>Pair&lt;HashMap&lt;String, WorkloadStat&gt;, WorkloadStat&gt;</code> profile，另外一个相比于第一个只是多了一个写操作类型：WriteOperationType。对于profile,它的left是分区统计信息，right是全局统计信息。统计信息是通过WorkloadStat实现的。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">WorkloadProfile</span><span class="params">(Pair&lt;HashMap&lt;String, WorkloadStat&gt;, WorkloadStat&gt; profile)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">this</span>.partitionPathStatMap = profile.getLeft();</span><br><span class="line">  <span class="keyword">this</span>.globalStat = profile.getRight();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">WorkloadProfile</span><span class="params">(Pair&lt;HashMap&lt;String, WorkloadStat&gt;, WorkloadStat&gt; profile, WriteOperationType operationType)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">this</span>(profile);</span><br><span class="line">  <span class="keyword">this</span>.operationType = operationType;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<span id="more"></span>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">WorkloadProfile</span> <span class="variable">profile</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line"><span class="keyword">if</span> (isWorkloadProfileNeeded()) &#123; <span class="comment">// 始终为true</span></span><br><span class="line">  <span class="comment">// 构建WorkloadProfile，构建WorkloadProfile的目的主要是为给getPartitioner使用</span></span><br><span class="line">  <span class="comment">// WorkloadProfile包含了分区路径对应的insert/upsert数量以及upsert数据对应的文件位置信息</span></span><br><span class="line">  <span class="comment">// 数量信息是为了分桶，或者说是为了分几个文件，这里涉及了小文件合并、文件大小等原理</span></span><br><span class="line">  <span class="comment">// 位置信息是为了获取要更新的文件</span></span><br><span class="line">  <span class="comment">// 对于upsert数据，我们复用原来的fileId</span></span><br><span class="line">  <span class="comment">// 对于insert数据，我们生成新的fileId,如果record数比较多，则分多个文件写</span></span><br><span class="line">  profile = <span class="keyword">new</span> <span class="title class_">WorkloadProfile</span>(buildProfile(inputRecords));</span><br><span class="line">  LOG.info(<span class="string">&quot;Workload profile :&quot;</span> + profile);</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="comment">// 将WorkloadProfile元数据信息持久化到.inflight文件中，.commit.request-&gt;.commit.inflight.</span></span><br><span class="line">    <span class="comment">// 这一步主要是为了mor表的rollback,rollback时可以从.inflight文件中读取对应的元数据信息</span></span><br><span class="line">    saveWorkloadProfileMetadataToInflight(profile, instantTime);</span><br><span class="line">  &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">    <span class="type">HoodieTableMetaClient</span> <span class="variable">metaClient</span> <span class="operator">=</span> table.getMetaClient();</span><br><span class="line">    <span class="type">HoodieInstant</span> <span class="variable">inflightInstant</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HoodieInstant</span>(HoodieInstant.State.INFLIGHT, metaClient.getCommitActionType(), instantTime);</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="keyword">if</span> (!metaClient.getFs().exists(<span class="keyword">new</span> <span class="title class_">Path</span>(metaClient.getMetaPath(), inflightInstant.getFileName()))) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">HoodieCommitException</span>(<span class="string">&quot;Failed to commit &quot;</span> + instantTime + <span class="string">&quot; unable to save inflight metadata &quot;</span>, e);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException ex) &#123;</span><br><span class="line">      LOG.error(<span class="string">&quot;Check file exists failed&quot;</span>);</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">HoodieCommitException</span>(<span class="string">&quot;Failed to commit &quot;</span> + instantTime + <span class="string">&quot; unable to save inflight metadata &quot;</span>, ex);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="WorkloadProfile"><a href="#WorkloadProfile" class="headerlink" title="WorkloadProfile"></a>WorkloadProfile</h2><p>首先看一下<code>WorkloadProfile</code>的构造函数，看看需要哪些参数。它有两个构造函数，一个只有一个参数：<code>Pair&lt;HashMap&lt;String, WorkloadStat&gt;, WorkloadStat&gt;</code> profile，另外一个相比于第一个只是多了一个写操作类型：WriteOperationType。对于profile,它的left是分区统计信息，right是全局统计信息。统计信息是通过WorkloadStat实现的。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="title function_">WorkloadProfile</span><span class="params">(Pair&lt;HashMap&lt;String, WorkloadStat&gt;, WorkloadStat&gt; profile)</span> &#123;</span><br><span class="line">  <span class="built_in">this</span>.partitionPathStatMap = profile.getLeft();</span><br><span class="line">  <span class="built_in">this</span>.globalStat = profile.getRight();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="title function_">WorkloadProfile</span><span class="params">(Pair&lt;HashMap&lt;String, WorkloadStat&gt;, WorkloadStat&gt; profile, WriteOperationType operationType)</span> &#123;</span><br><span class="line">  <span class="built_in">this</span>(profile);</span><br><span class="line">  <span class="built_in">this</span>.operationType = operationType;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <h2 id="buildProfile"><a href="#buildProfile" class="headerlink" title="buildProfile"></a>buildProfile</h2><p><code>buildProfile</code>就是将<code>inputRecords</code>构造成<code>WorkloadProfile</code>所需要的<code>profile</code>。首先初始化一个分区统计信息<code>partitionPathStatMap</code>和全局统计信息<code>globalStat</code>。然后将inputRecords通过map和groupingBy得到每个分区路径对应的文件位置信息和记录数量：partitionLocationCounts。其中文件位置信息是通过record.getCurrentLocation得到的,保存在HoodieRecordLocation中。而record中位置信息是通过上篇文章提到的<code>tag</code>方法通过读取索引信息得到的。不过tag方法只有upsert/delete等才会调用,对于insert方法是不会触发的，也就是这里的record中的location都为空。然后遍历partitionLocationCounts.entrySet()，其实就是按照分区执行，获取分区路径、记录数、文件位置。如果partitionPathStatMap没有该分区，则将该分区放进去，并且初始化value即WorkloadStat。接着判断文件信息是否存在，如果文件位置信息存在，则代表是update（有对应的历史数据），对于update，对应的分区下的WorkloadStat调用addUpdates，全局WorkloadStat调用addUpdates。如果文件位置信息不存在，则代表是insert数据（新数据），对于insert,对应分区下的WorkloadStat调用addInserts,使insert数加上对应的记录数,全局WorkloadStat中的insert数也加上对应的记录数,最后返回WorkloadProfile所需要的Pair.of(partitionPathStatMap, globalStat)</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> Pair&lt;HashMap&lt;String, WorkloadStat&gt;, WorkloadStat&gt; buildProfile(List&lt;HoodieRecord&lt;T&gt;&gt; inputRecords) &#123;</span><br><span class="line">  <span class="comment">// 分区路径，WorkloadStat</span></span><br><span class="line">  HashMap&lt;String, WorkloadStat&gt; partitionPathStatMap = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">  <span class="comment">// 全局WorkloadStat</span></span><br><span class="line">  WorkloadStat globalStat = <span class="keyword">new</span> WorkloadStat();</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 返回(分区路径，文件位置信息)，记录数</span></span><br><span class="line">  <span class="comment">// 也就是partitionLocationCounts：分区路径、文件位置、记录数</span></span><br><span class="line">  Map&lt;Pair&lt;String, Option&lt;HoodieRecordLocation&gt;&gt;, Long&gt; partitionLocationCounts = inputRecords</span><br><span class="line">      .stream()</span><br><span class="line">      .map(record -&gt; Pair.of(</span><br><span class="line">          <span class="comment">// (分区路径，文件位置信息)，record</span></span><br><span class="line">          Pair.of(record.getPartitionPath(), Option.ofNullable(record.getCurrentLocation())), record))</span><br><span class="line">          <span class="comment">// 根据分区路径groupBy，统计每个分区对应的数量</span></span><br><span class="line">      .collect(Collectors.groupingBy(Pair::getLeft, Collectors.counting()));</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 遍历partitionLocationCounts(k,v)</span></span><br><span class="line">  <span class="keyword">for</span> (Map.Entry&lt;Pair&lt;String, Option&lt;HoodieRecordLocation&gt;&gt;, Long&gt; e : partitionLocationCounts.entrySet()) &#123;</span><br><span class="line">    <span class="comment">// 分区路径</span></span><br><span class="line">    String partitionPath = e.getKey().getLeft();</span><br><span class="line">    <span class="comment">// 记录数</span></span><br><span class="line">    Long count = e.getValue();</span><br><span class="line">    <span class="comment">// 文件位置HoodieRecordLocation</span></span><br><span class="line">    Option&lt;HoodieRecordLocation&gt; locOption = e.getKey().getRight();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果partitionPathStatMap没有该分区，则将该分区放进去，并且初始化value WorkloadStat</span></span><br><span class="line">    <span class="keyword">if</span> (!partitionPathStatMap.containsKey(partitionPath)) &#123;</span><br><span class="line">      partitionPathStatMap.put(partitionPath, <span class="keyword">new</span> WorkloadStat());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果文件位置信息存在，则代表是update</span></span><br><span class="line">    <span class="comment">// 获取文件位置信息是在前面的tag方法中，对于insert方法，不需要tag</span></span><br><span class="line">    <span class="keyword">if</span> (locOption.isPresent()) &#123;</span><br><span class="line">      <span class="comment">// update</span></span><br><span class="line">      <span class="comment">// 对应分区下的WorkloadStat调用addUpdates</span></span><br><span class="line">      partitionPathStatMap.get(partitionPath).addUpdates(locOption.get(), count);</span><br><span class="line">      <span class="comment">// 全局WorkloadStat调用addUpdates</span></span><br><span class="line">      globalStat.addUpdates(locOption.get(), count);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">// 否则是insert</span></span><br><span class="line">      <span class="comment">// insert</span></span><br><span class="line">      <span class="comment">// 对应分区下的WorkloadStat调用addInserts,使insert数+count</span></span><br><span class="line">      partitionPathStatMap.get(partitionPath).addInserts(count);</span><br><span class="line">      <span class="comment">// 全局WorkloadStat中的insert数+count</span></span><br><span class="line">      globalStat.addInserts(count);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 返回分区统计信息和全局统计信息</span></span><br><span class="line">  <span class="keyword">return</span> Pair.of(partitionPathStatMap, globalStat);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> Pair&lt;HashMap&lt;String, WorkloadStat&gt;, WorkloadStat&gt; <span class="title function_">buildProfile</span><span class="params">(List&lt;HoodieRecord&lt;T&gt;&gt; inputRecords)</span> &#123;</span><br><span class="line">  <span class="comment">// 分区路径，WorkloadStat</span></span><br><span class="line">  HashMap&lt;String, WorkloadStat&gt; partitionPathStatMap = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">  <span class="comment">// 全局WorkloadStat</span></span><br><span class="line">  <span class="type">WorkloadStat</span> <span class="variable">globalStat</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">WorkloadStat</span>();</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 返回(分区路径，文件位置信息)，记录数</span></span><br><span class="line">  <span class="comment">// 也就是partitionLocationCounts：分区路径、文件位置、记录数</span></span><br><span class="line">  Map&lt;Pair&lt;String, Option&lt;HoodieRecordLocation&gt;&gt;, Long&gt; partitionLocationCounts = inputRecords</span><br><span class="line">      .stream()</span><br><span class="line">      .map(record -&gt; Pair.of(</span><br><span class="line">          <span class="comment">// (分区路径，文件位置信息)，record</span></span><br><span class="line">          Pair.of(record.getPartitionPath(), Option.ofNullable(record.getCurrentLocation())), record))</span><br><span class="line">          <span class="comment">// 根据分区路径groupBy，统计每个分区对应的数量</span></span><br><span class="line">      .collect(Collectors.groupingBy(Pair::getLeft, Collectors.counting()));</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 遍历partitionLocationCounts(k,v)</span></span><br><span class="line">  <span class="keyword">for</span> (Map.Entry&lt;Pair&lt;String, Option&lt;HoodieRecordLocation&gt;&gt;, Long&gt; e : partitionLocationCounts.entrySet()) &#123;</span><br><span class="line">    <span class="comment">// 分区路径</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">partitionPath</span> <span class="operator">=</span> e.getKey().getLeft();</span><br><span class="line">    <span class="comment">// 记录数</span></span><br><span class="line">    <span class="type">Long</span> <span class="variable">count</span> <span class="operator">=</span> e.getValue();</span><br><span class="line">    <span class="comment">// 文件位置HoodieRecordLocation</span></span><br><span class="line">    Option&lt;HoodieRecordLocation&gt; locOption = e.getKey().getRight();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果partitionPathStatMap没有该分区，则将该分区放进去，并且初始化value WorkloadStat</span></span><br><span class="line">    <span class="keyword">if</span> (!partitionPathStatMap.containsKey(partitionPath)) &#123;</span><br><span class="line">      partitionPathStatMap.put(partitionPath, <span class="keyword">new</span> <span class="title class_">WorkloadStat</span>());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果文件位置信息存在，则代表是update</span></span><br><span class="line">    <span class="comment">// 获取文件位置信息是在前面的tag方法中，对于insert方法，不需要tag</span></span><br><span class="line">    <span class="keyword">if</span> (locOption.isPresent()) &#123;</span><br><span class="line">      <span class="comment">// update</span></span><br><span class="line">      <span class="comment">// 对应分区下的WorkloadStat调用addUpdates</span></span><br><span class="line">      partitionPathStatMap.get(partitionPath).addUpdates(locOption.get(), count);</span><br><span class="line">      <span class="comment">// 全局WorkloadStat调用addUpdates</span></span><br><span class="line">      globalStat.addUpdates(locOption.get(), count);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">// 否则是insert</span></span><br><span class="line">      <span class="comment">// insert</span></span><br><span class="line">      <span class="comment">// 对应分区下的WorkloadStat调用addInserts,使insert数+count</span></span><br><span class="line">      partitionPathStatMap.get(partitionPath).addInserts(count);</span><br><span class="line">      <span class="comment">// 全局WorkloadStat中的insert数+count</span></span><br><span class="line">      globalStat.addInserts(count);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 返回分区统计信息和全局统计信息</span></span><br><span class="line">  <span class="keyword">return</span> Pair.of(partitionPathStatMap, globalStat);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h2 id="WorkloadStat"><a href="#WorkloadStat" class="headerlink" title="WorkloadStat"></a>WorkloadStat</h2><p>主要是看一下它的addInserts和addUpdates方法。addInserts方法很简单，就是将numInsert更新为numInserts加上对应的记录数。addUpdates稍微复杂一点，主要是更新updateLocationToCount，updateLocationToCount保存的是(fileId,(instantTime,记录数))。主要逻辑：如果updateLocationToCount中没有该fileId，则直接将fileId,(instantTime,记录数)放进updateLocationToCount，如果有的话，则更新该fileId对应的value。value为pair,将value的left即instantTime更新为location.getInstantTime()。将value的right即记录数更新为numUpdates + accNumUpdates。其中numUpdates为参数即本次记录数，accNumUpdates是已经存在的累计数量。最后再将numUpdates更新numUpdates+对应的记录数。(numUpdates在后面并没有用到)</p>
 <p>总结一下，WorkloadStat的作用主要记录insert累计数和update累计数。不过update需要以fileId为维度进行累计，这是因为update有明确要更新的fileId，而insert是没有的。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">long</span> numInserts = <span class="number">0L</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">long</span> numUpdates = <span class="number">0L</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// fileId,(instantTime,记录数)</span></span><br><span class="line"><span class="keyword">private</span> HashMap&lt;String, Pair&lt;String, Long&gt;&gt; updateLocationToCount;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * numInserts数初始值0，addInserts将numInserts加上对应的记录数</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">long</span> <span class="title">addInserts</span><span class="params">(<span class="keyword">long</span> numInserts)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">this</span>.numInserts += numInserts;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> *  accNumUpdates初始值0</span></span><br><span class="line"><span class="comment"> * 如果updateLocationToCount中有对应的fileId，</span></span><br><span class="line"><span class="comment"> * 则先获取updateLocationToCount对应的fileId对应的记录数赋值给accNumUpdates</span></span><br><span class="line"><span class="comment"> * 最后将updateLocationToCount</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">long</span> <span class="title">addUpdates</span><span class="params">(HoodieRecordLocation location, <span class="keyword">long</span> numUpdates)</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 初始值0</span></span><br><span class="line">  <span class="keyword">long</span> accNumUpdates = <span class="number">0</span>;</span><br><span class="line">  <span class="comment">// 如果已经存在了对应的fileId</span></span><br><span class="line">  <span class="keyword">if</span> (updateLocationToCount.containsKey(location.getFileId())) &#123;</span><br><span class="line">    <span class="comment">// 将updateLocationToCount中对应的数取出来赋值给accNumUpdates</span></span><br><span class="line">    accNumUpdates = updateLocationToCount.get(location.getFileId()).getRight();</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 更新updateLocationToCount中该fileId对应的value。value为pair,将value的left即instantTime更新为location.getInstantTime()</span></span><br><span class="line">  <span class="comment">// 将value的right即记录数更新为numUpdates + accNumUpdates</span></span><br><span class="line">  updateLocationToCount.put(</span><br><span class="line">      location.getFileId(),</span><br><span class="line">      Pair.of(location.getInstantTime(), numUpdates + accNumUpdates));</span><br><span class="line">  <span class="comment">// numUpdates初始值为0，每次调用addUpdates都将numUpdates加上对应的record数</span></span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">this</span>.numUpdates += numUpdates;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="saveWorkloadProfileMetadataToInflight"><a href="#saveWorkloadProfileMetadataToInflight" class="headerlink" title="saveWorkloadProfileMetadataToInflight"></a>saveWorkloadProfileMetadataToInflight</h2><p>上篇文章讲到将WorkloadProfile元数据信息持久化到.inflight文件中，我们来看一下是如何持久化的。主要逻辑就是遍历profile中的分区，获取对应的WorkloadStat，然后将对应的partitionPath、numInserts/numUpdates、fileId、instantTime放到HoodieWriteStat中，再将HoodieWriteStat放到HoodieCommitMetadata中，最后调用activeTimeline.transitionRequestedToInflight将HoodieCommitMetadata转成json持久化到<code>.inflight</code>中<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 将WorkloadProfile元数据信息持久化到.inflight文件中，.commit.request-&gt;.commit.inflight.</span></span><br><span class="line"><span class="comment">// 这一步主要是为了mor表的rollback,rollback时可以从.inflight文件中读取对应的元数据信息</span></span><br><span class="line">saveWorkloadProfileMetadataToInflight(profile, instantTime);</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">saveWorkloadProfileMetadataToInflight</span><span class="params">(WorkloadProfile profile, String instantTime)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> HoodieCommitException </span>&#123;</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    HoodieCommitMetadata metadata = <span class="keyword">new</span> HoodieCommitMetadata();</span><br><span class="line">    <span class="comment">// 按照分区路径遍历</span></span><br><span class="line">    profile.getPartitionPaths().forEach(path -&gt; &#123;</span><br><span class="line">      <span class="comment">// 获取对应分区的WorkloadStat</span></span><br><span class="line">      WorkloadStat partitionStat = profile.getWorkloadStat(path);</span><br><span class="line">      <span class="comment">// 创建一个新的HoodieWriteStat，先进行insert</span></span><br><span class="line">      HoodieWriteStat insertStat = <span class="keyword">new</span> HoodieWriteStat();</span><br><span class="line">      <span class="comment">// 将WorkloadStat中的numInserts赋值给insertStat</span></span><br><span class="line">      insertStat.setNumInserts(partitionStat.getNumInserts());</span><br><span class="line">      <span class="comment">// insertStat的fileId为空</span></span><br><span class="line">      insertStat.setFileId(<span class="string">""</span>);</span><br><span class="line">      <span class="comment">// prevCommit为null</span></span><br><span class="line">      insertStat.setPrevCommit(HoodieWriteStat.NULL_COMMIT);</span><br><span class="line">      <span class="comment">// 将path和insertStat添加到metadata中</span></span><br><span class="line">      metadata.addWriteStat(path, insertStat);</span><br><span class="line"></span><br><span class="line">      <span class="comment">// 接着进行update的逻辑</span></span><br><span class="line">      partitionStat.getUpdateLocationToCount().forEach((key, value) -&gt; &#123;</span><br><span class="line">        <span class="comment">// 创建一个新的HoodieWriteStat</span></span><br><span class="line">        HoodieWriteStat writeStat = <span class="keyword">new</span> HoodieWriteStat();</span><br><span class="line">        <span class="comment">// 设置fileId</span></span><br><span class="line">        writeStat.setFileId(key);</span><br><span class="line">        <span class="comment">// TODO : Write baseCommitTime is possible here ?</span></span><br><span class="line">        <span class="comment">// prevCommit设为WorkloadStat中的instantTime</span></span><br><span class="line">        writeStat.setPrevCommit(value.getKey());</span><br><span class="line">        <span class="comment">// 设置更新数</span></span><br><span class="line">        writeStat.setNumUpdateWrites(value.getValue());</span><br><span class="line">        <span class="comment">// 将path和writeStat添加到metadata中</span></span><br><span class="line">        metadata.addWriteStat(path, writeStat);</span><br><span class="line">      &#125;);</span><br><span class="line">    &#125;);</span><br><span class="line">    <span class="comment">// 设置操作类型</span></span><br><span class="line">    metadata.setOperationType(operationType);</span><br><span class="line"></span><br><span class="line">    HoodieActiveTimeline activeTimeline = table.getActiveTimeline();</span><br><span class="line">    String commitActionType = getCommitActionType();</span><br><span class="line">    HoodieInstant requested = <span class="keyword">new</span> HoodieInstant(State.REQUESTED, commitActionType, instantTime);</span><br><span class="line">    <span class="comment">// 将.request转为.inflight，其实就是创建一个新的.inflight,将metadata转成json持久化到.inflight</span></span><br><span class="line">    activeTimeline.transitionRequestedToInflight(requested,</span><br><span class="line">        Option.of(metadata.toJsonString().getBytes(StandardCharsets.UTF_8)),</span><br><span class="line">        config.shouldAllowMultiWriteOnSameInstant());</span><br><span class="line">  &#125; <span class="keyword">catch</span> (IOException io) &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> HoodieCommitException(<span class="string">"Failed to commit "</span> + instantTime + <span class="string">" unable to save inflight metadata "</span>, io);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="type">long</span> <span class="variable">numInserts</span> <span class="operator">=</span> <span class="number">0L</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="type">long</span> <span class="variable">numUpdates</span> <span class="operator">=</span> <span class="number">0L</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// fileId,(instantTime,记录数)</span></span><br><span class="line"><span class="keyword">private</span> HashMap&lt;String, Pair&lt;String, Long&gt;&gt; updateLocationToCount;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * numInserts数初始值0，addInserts将numInserts加上对应的记录数</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">long</span> <span class="title function_">addInserts</span><span class="params">(<span class="type">long</span> numInserts)</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> <span class="built_in">this</span>.numInserts += numInserts;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> *  accNumUpdates初始值0</span></span><br><span class="line"><span class="comment"> * 如果updateLocationToCount中有对应的fileId，</span></span><br><span class="line"><span class="comment"> * 则先获取updateLocationToCount对应的fileId对应的记录数赋值给accNumUpdates</span></span><br><span class="line"><span class="comment"> * 最后将updateLocationToCount</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">long</span> <span class="title function_">addUpdates</span><span class="params">(HoodieRecordLocation location, <span class="type">long</span> numUpdates)</span> &#123;</span><br><span class="line">  <span class="comment">// 初始值0</span></span><br><span class="line">  <span class="type">long</span> <span class="variable">accNumUpdates</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">  <span class="comment">// 如果已经存在了对应的fileId</span></span><br><span class="line">  <span class="keyword">if</span> (updateLocationToCount.containsKey(location.getFileId())) &#123;</span><br><span class="line">    <span class="comment">// 将updateLocationToCount中对应的数取出来赋值给accNumUpdates</span></span><br><span class="line">    accNumUpdates = updateLocationToCount.get(location.getFileId()).getRight();</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 更新updateLocationToCount中该fileId对应的value。value为pair,将value的left即instantTime更新为location.getInstantTime()</span></span><br><span class="line">  <span class="comment">// 将value的right即记录数更新为numUpdates + accNumUpdates</span></span><br><span class="line">  updateLocationToCount.put(</span><br><span class="line">      location.getFileId(),</span><br><span class="line">      Pair.of(location.getInstantTime(), numUpdates + accNumUpdates));</span><br><span class="line">  <span class="comment">// numUpdates初始值为0，每次调用addUpdates都将numUpdates加上对应的record数</span></span><br><span class="line">  <span class="keyword">return</span> <span class="built_in">this</span>.numUpdates += numUpdates;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h2 id="saveWorkloadProfileMetadataToInflight"><a href="#saveWorkloadProfileMetadataToInflight" class="headerlink" title="saveWorkloadProfileMetadataToInflight"></a>saveWorkloadProfileMetadataToInflight</h2><p>上篇文章讲到将WorkloadProfile元数据信息持久化到.inflight文件中，我们来看一下是如何持久化的。主要逻辑就是遍历profile中的分区，获取对应的WorkloadStat，然后将对应的partitionPath、numInserts/numUpdates、fileId、instantTime放到HoodieWriteStat中，再将HoodieWriteStat放到HoodieCommitMetadata中，最后调用activeTimeline.transitionRequestedToInflight将HoodieCommitMetadata转成json持久化到<code>.inflight</code>中<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 将WorkloadProfile元数据信息持久化到.inflight文件中，.commit.request-&gt;.commit.inflight.</span></span><br><span class="line"><span class="comment">// 这一步主要是为了mor表的rollback,rollback时可以从.inflight文件中读取对应的元数据信息</span></span><br><span class="line">saveWorkloadProfileMetadataToInflight(profile, instantTime);</span><br><span class="line"></span><br><span class="line"><span class="keyword">void</span> <span class="title function_">saveWorkloadProfileMetadataToInflight</span><span class="params">(WorkloadProfile profile, String instantTime)</span></span><br><span class="line">    <span class="keyword">throws</span> HoodieCommitException &#123;</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="type">HoodieCommitMetadata</span> <span class="variable">metadata</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HoodieCommitMetadata</span>();</span><br><span class="line">    <span class="comment">// 按照分区路径遍历</span></span><br><span class="line">    profile.getPartitionPaths().forEach(path -&gt; &#123;</span><br><span class="line">      <span class="comment">// 获取对应分区的WorkloadStat</span></span><br><span class="line">      <span class="type">WorkloadStat</span> <span class="variable">partitionStat</span> <span class="operator">=</span> profile.getWorkloadStat(path);</span><br><span class="line">      <span class="comment">// 创建一个新的HoodieWriteStat，先进行insert</span></span><br><span class="line">      <span class="type">HoodieWriteStat</span> <span class="variable">insertStat</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HoodieWriteStat</span>();</span><br><span class="line">      <span class="comment">// 将WorkloadStat中的numInserts赋值给insertStat</span></span><br><span class="line">      insertStat.setNumInserts(partitionStat.getNumInserts());</span><br><span class="line">      <span class="comment">// insertStat的fileId为空</span></span><br><span class="line">      insertStat.setFileId(<span class="string">&quot;&quot;</span>);</span><br><span class="line">      <span class="comment">// prevCommit为null</span></span><br><span class="line">      insertStat.setPrevCommit(HoodieWriteStat.NULL_COMMIT);</span><br><span class="line">      <span class="comment">// 将path和insertStat添加到metadata中</span></span><br><span class="line">      metadata.addWriteStat(path, insertStat);</span><br><span class="line"></span><br><span class="line">      <span class="comment">// 接着进行update的逻辑</span></span><br><span class="line">      partitionStat.getUpdateLocationToCount().forEach((key, value) -&gt; &#123;</span><br><span class="line">        <span class="comment">// 创建一个新的HoodieWriteStat</span></span><br><span class="line">        <span class="type">HoodieWriteStat</span> <span class="variable">writeStat</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HoodieWriteStat</span>();</span><br><span class="line">        <span class="comment">// 设置fileId</span></span><br><span class="line">        writeStat.setFileId(key);</span><br><span class="line">        <span class="comment">// TODO : Write baseCommitTime is possible here ?</span></span><br><span class="line">        <span class="comment">// prevCommit设为WorkloadStat中的instantTime</span></span><br><span class="line">        writeStat.setPrevCommit(value.getKey());</span><br><span class="line">        <span class="comment">// 设置更新数</span></span><br><span class="line">        writeStat.setNumUpdateWrites(value.getValue());</span><br><span class="line">        <span class="comment">// 将path和writeStat添加到metadata中</span></span><br><span class="line">        metadata.addWriteStat(path, writeStat);</span><br><span class="line">      &#125;);</span><br><span class="line">    &#125;);</span><br><span class="line">    <span class="comment">// 设置操作类型</span></span><br><span class="line">    metadata.setOperationType(operationType);</span><br><span class="line"></span><br><span class="line">    <span class="type">HoodieActiveTimeline</span> <span class="variable">activeTimeline</span> <span class="operator">=</span> table.getActiveTimeline();</span><br><span class="line">    <span class="type">String</span> <span class="variable">commitActionType</span> <span class="operator">=</span> getCommitActionType();</span><br><span class="line">    <span class="type">HoodieInstant</span> <span class="variable">requested</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HoodieInstant</span>(State.REQUESTED, commitActionType, instantTime);</span><br><span class="line">    <span class="comment">// 将.request转为.inflight，其实就是创建一个新的.inflight,将metadata转成json持久化到.inflight</span></span><br><span class="line">    activeTimeline.transitionRequestedToInflight(requested,</span><br><span class="line">        Option.of(metadata.toJsonString().getBytes(StandardCharsets.UTF_8)),</span><br><span class="line">        config.shouldAllowMultiWriteOnSameInstant());</span><br><span class="line">  &#125; <span class="keyword">catch</span> (IOException io) &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">HoodieCommitException</span>(<span class="string">&quot;Failed to commit &quot;</span> + instantTime + <span class="string">&quot; unable to save inflight metadata &quot;</span>, io);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>关于<code>WorkloadProfile</code>的分析一共就这么多，主要是统计<code>record</code>中每个分区路径对应的insert/upsert数量以及upsert数据对应的<code>fileId</code>和<code>instantTime</code>,先持久化到<code>.inflight</code>文件中，然后给后面的<code>getPartitioner</code>使用。关于<code>WorkloadProfile</code>统计的这些信息是如何在<code>getPartitioner</code>中使用的，我们放在下篇文章中分析。</p>
-<h2 id="注释代码"><a href="#注释代码" class="headerlink" title="注释代码"></a>注释代码</h2><p>github: <a href="https://github.com/dongkelun/hudi/tree/0.9.0-learning-comments" target="_blank" rel="noopener">https://github.com/dongkelun/hudi/tree/0.9.0-learning-comments</a><br>gitee: <a href="https://gitee.com/dongkelun/hudi/tree/0.9.0-learning-comments" target="_blank" rel="noopener">https://gitee.com/dongkelun/hudi/tree/0.9.0-learning-comments</a></p>
+<h2 id="注释代码"><a href="#注释代码" class="headerlink" title="注释代码"></a>注释代码</h2><p>github: <a href="https://github.com/dongkelun/hudi/tree/0.9.0-learning-comments">https://github.com/dongkelun/hudi/tree/0.9.0-learning-comments</a><br>gitee: <a href="https://gitee.com/dongkelun/hudi/tree/0.9.0-learning-comments">https://gitee.com/dongkelun/hudi/tree/0.9.0-learning-comments</a></p>
 <h2 id="相关阅读"><a href="#相关阅读" class="headerlink" title="相关阅读"></a>相关阅读</h2><ul>
-<li><a href="https://mp.weixin.qq.com/s/U0C3GzbcU25KrWv4S7zu_g" target="_blank" rel="noopener">开源经验分享 | 如何从一名小白成为Apache Hudi Contributor</a></li>
-<li><a href="https://mp.weixin.qq.com/s/JF9UfsNHhtKZOawKKZ1LFA" target="_blank" rel="noopener">Hudi源码 | Insert源码分析总结（一）(整体流程)</a></li>
-<li><a href="https://mp.weixin.qq.com/s/5raMUByVGDyVYMeAdW-LRw" target="_blank" rel="noopener">Hudi Java Client总结|读取Hive写Hudi代码示例</a></li>
-<li><a href="https://mp.weixin.qq.com/s/9SOH3kOid0GSN31hF6M4dg" target="_blank" rel="noopener">Hudi源码|bootstrap源码分析总结（写Hudi）</a></li>
-<li><a href="https://mp.weixin.qq.com/s/YbVnkVyf7EbTAxNshX9gRA" target="_blank" rel="noopener">Hudi Clean Policy 清理策略实现分析</a></li>
-<li><a href="https://mp.weixin.qq.com/s/97CpClzK1skczpszc8VeEg" target="_blank" rel="noopener">Hudi Clean 清理文件实现分析</a></li>
-<li><a href="https://mp.weixin.qq.com/s/rdvCSHV5ObUSGMl9FciMfA" target="_blank" rel="noopener">Hudi查询类型/视图总结</a></li>
-<li><a href="https://mp.weixin.qq.com/s/vrBvB0SOCNPrMKHSUn4VOg" target="_blank" rel="noopener">Hudi preCombinedField 总结(二)-源码分析</a></li>
-<li><a href="https://mp.weixin.qq.com/s/8LiNiFe_kUS0oyN27PGTwg" target="_blank" rel="noopener">Hudi Spark SQL源码学习总结-Create Table</a></li>
-<li><a href="https://mp.weixin.qq.com/s/djuWfw0_abiifNnE7Usghg" target="_blank" rel="noopener">Hudi Spark SQL源码学习总结-CTAS</a></li>
-<li><a href="https://mp.weixin.qq.com/s/FlKoYL4ZqtYdzoxUOWx31w" target="_blank" rel="noopener">Hudi Spark源码学习总结-df.write.format(“hudi”).save</a></li>
-<li><a href="https://mp.weixin.qq.com/s/FiJIyyondhZoofSWRTzADw" target="_blank" rel="noopener">Hudi Spark源码学习总结-spark.read.format(“hudi”).load</a></li>
-<li><a href="https://mp.weixin.qq.com/s/slscIdvbCB_BUPdWlFVt1Q" target="_blank" rel="noopener">Hudi Spark SQL源码学习总结-select（查询）</a></li>
+<li><a href="https://mp.weixin.qq.com/s/U0C3GzbcU25KrWv4S7zu_g">开源经验分享 | 如何从一名小白成为Apache Hudi Contributor</a></li>
+<li><a href="https://mp.weixin.qq.com/s/JF9UfsNHhtKZOawKKZ1LFA">Hudi源码 | Insert源码分析总结（一）(整体流程)</a></li>
+<li><a href="https://mp.weixin.qq.com/s/5raMUByVGDyVYMeAdW-LRw">Hudi Java Client总结|读取Hive写Hudi代码示例</a></li>
+<li><a href="https://mp.weixin.qq.com/s/9SOH3kOid0GSN31hF6M4dg">Hudi源码|bootstrap源码分析总结（写Hudi）</a></li>
+<li><a href="https://mp.weixin.qq.com/s/YbVnkVyf7EbTAxNshX9gRA">Hudi Clean Policy 清理策略实现分析</a></li>
+<li><a href="https://mp.weixin.qq.com/s/97CpClzK1skczpszc8VeEg">Hudi Clean 清理文件实现分析</a></li>
+<li><a href="https://mp.weixin.qq.com/s/rdvCSHV5ObUSGMl9FciMfA">Hudi查询类型/视图总结</a></li>
+<li><a href="https://mp.weixin.qq.com/s/vrBvB0SOCNPrMKHSUn4VOg">Hudi preCombinedField 总结(二)-源码分析</a></li>
+<li><a href="https://mp.weixin.qq.com/s/8LiNiFe_kUS0oyN27PGTwg">Hudi Spark SQL源码学习总结-Create Table</a></li>
+<li><a href="https://mp.weixin.qq.com/s/djuWfw0_abiifNnE7Usghg">Hudi Spark SQL源码学习总结-CTAS</a></li>
+<li><a href="https://mp.weixin.qq.com/s/FlKoYL4ZqtYdzoxUOWx31w">Hudi Spark源码学习总结-df.write.format(“hudi”).save</a></li>
+<li><a href="https://mp.weixin.qq.com/s/FiJIyyondhZoofSWRTzADw">Hudi Spark源码学习总结-spark.read.format(“hudi”).load</a></li>
+<li><a href="https://mp.weixin.qq.com/s/slscIdvbCB_BUPdWlFVt1Q">Hudi Spark SQL源码学习总结-select（查询）</a></li>
 </ul>
 
       
@@ -440,7 +441,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#版本"><span class="toc-number">2.</span> <span class="toc-text">版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#入口"><span class="toc-number">3.</span> <span class="toc-text">入口</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#WorkloadProfile"><span class="toc-number">4.</span> <span class="toc-text">WorkloadProfile</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#buildProfile"><span class="toc-number">5.</span> <span class="toc-text">buildProfile</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#WorkloadStat"><span class="toc-number">6.</span> <span class="toc-text">WorkloadStat</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#saveWorkloadProfileMetadataToInflight"><span class="toc-number">7.</span> <span class="toc-text">saveWorkloadProfileMetadataToInflight</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">8.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#注释代码"><span class="toc-number">9.</span> <span class="toc-text">注释代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#相关阅读"><span class="toc-number">10.</span> <span class="toc-text">相关阅读</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%89%88%E6%9C%AC"><span class="toc-number">2.</span> <span class="toc-text">版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%A5%E5%8F%A3"><span class="toc-number">3.</span> <span class="toc-text">入口</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#WorkloadProfile"><span class="toc-number">4.</span> <span class="toc-text">WorkloadProfile</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#buildProfile"><span class="toc-number">5.</span> <span class="toc-text">buildProfile</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#WorkloadStat"><span class="toc-number">6.</span> <span class="toc-text">WorkloadStat</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#saveWorkloadProfileMetadataToInflight"><span class="toc-number">7.</span> <span class="toc-text">saveWorkloadProfileMetadataToInflight</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">8.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B3%A8%E9%87%8A%E4%BB%A3%E7%A0%81"><span class="toc-number">9.</span> <span class="toc-text">注释代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E9%98%85%E8%AF%BB"><span class="toc-number">10.</span> <span class="toc-text">相关阅读</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -615,14 +616,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -632,6 +625,22 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -647,14 +656,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
@@ -667,23 +668,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -703,7 +688,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -715,15 +712,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -759,11 +752,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -795,15 +788,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -815,7 +800,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -823,7 +808,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -835,7 +820,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -843,11 +832,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -856,6 +845,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -871,15 +868,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -888,6 +881,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -900,10 +897,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -923,10 +916,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
@@ -935,7 +924,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -943,11 +932,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -975,7 +968,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -991,7 +1000,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
+                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -999,11 +1008,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1023,23 +1028,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ZooKeeper</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1048,6 +1045,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ollama</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
             
             <div class="clearfix"></div>

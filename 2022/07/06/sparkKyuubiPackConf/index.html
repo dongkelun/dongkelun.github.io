@@ -10,13 +10,12 @@
   <title>Spark3.12+Kyuubi1.5.2+kyuubi-spark-authz源码编译打包+部署配置HA | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="前言记录Spark3.1.2+Kyuubi1.5.2从源码打包到部署配置过程，虽然之前总结过一篇Kyuubi配置的文章：Kyuubi 安装配置总结，但是这次和之前还是有不同的:  1、Kyuubi版本升级 当时最新版本1.4.0，现在要升级到最新版1.5.2，并且1.4.0打包的时候很快完成没有任何问题，1.5.2打包时比较慢，且遇到了比较棘手的问题，这里记录一下解决过程 2、当时没有配置Spar">
-<meta name="keywords" content="Spark,Kyuubi,Ranger">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Spark3.12+Kyuubi1.5.2+kyuubi-spark-authz源码编译打包+部署配置HA">
 <meta property="og:url" content="https://dongkelun.com/2022/07/06/sparkKyuubiPackConf/index.html">
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言记录Spark3.1.2+Kyuubi1.5.2从源码打包到部署配置过程，虽然之前总结过一篇Kyuubi配置的文章：Kyuubi 安装配置总结，但是这次和之前还是有不同的:  1、Kyuubi版本升级 当时最新版本1.4.0，现在要升级到最新版1.5.2，并且1.4.0打包的时候很快完成没有任何问题，1.5.2打包时比较慢，且遇到了比较棘手的问题，这里记录一下解决过程 2、当时没有配置Spar">
-<meta property="og:locale" content="cn">
+<meta property="og:locale">
 <meta property="og:image" content="https://img.dongkelun.com/kyuubi/k_auth1.png">
 <meta property="og:image" content="https://img.dongkelun.com/kyuubi/k_auth2.png">
 <meta property="og:image" content="https://img.dongkelun.com/kyuubi/k_auth3.png">
@@ -26,10 +25,13 @@
 <meta property="og:image" content="https://img.dongkelun.com/kyuubi/k_auth7.png">
 <meta property="og:image" content="https://img.dongkelun.com/kyuubi/k_auth8.png">
 <meta property="og:image" content="https://img.dongkelun.com/kyuubi/k_auth9.png">
-<meta property="og:updated_time" content="2023-05-19T06:31:03.025Z">
+<meta property="article:published_time" content="2022-07-05T16:00:00.000Z">
+<meta property="article:modified_time" content="2023-05-19T06:31:03.025Z">
+<meta property="article:author" content="董可伦">
+<meta property="article:tag" content="Kyuubi">
+<meta property="article:tag" content="Ranger">
+<meta property="article:tag" content="Spark">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Spark3.12+Kyuubi1.5.2+kyuubi-spark-authz源码编译打包+部署配置HA">
-<meta name="twitter:description" content="前言记录Spark3.1.2+Kyuubi1.5.2从源码打包到部署配置过程，虽然之前总结过一篇Kyuubi配置的文章：Kyuubi 安装配置总结，但是这次和之前还是有不同的:  1、Kyuubi版本升级 当时最新版本1.4.0，现在要升级到最新版1.5.2，并且1.4.0打包的时候很快完成没有任何问题，1.5.2打包时比较慢，且遇到了比较棘手的问题，这里记录一下解决过程 2、当时没有配置Spar">
 <meta name="twitter:image" content="https://img.dongkelun.com/kyuubi/k_auth1.png">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
@@ -48,7 +50,7 @@
 
   
 
-</head>
+<meta name="generator" content="Hexo 8.1.1"></head>
 
 <body>
   <div id="container" q-class="show:isCtnShow">
@@ -78,7 +80,7 @@
 			<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 		</a>
 		<hgroup>
-		  <h1 class="header-author"><a href="/">董可伦</a></h1>
+		  <h1 class="header-author"><a href="/"></a></h1>
 		</hgroup>
 		
 
@@ -150,7 +152,7 @@
 				<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 			</div>
 			<hgroup>
-			  <h1 class="header-author js-header-author">董可伦</h1>
+			  <h1 class="header-author js-header-author"></h1>
 			</hgroup>
 			
 			
@@ -274,17 +276,14 @@
 <li>1、Kyuubi版本升级 当时最新版本1.4.0，现在要升级到最新版1.5.2，并且1.4.0打包的时候很快完成没有任何问题，1.5.2打包时比较慢，且遇到了比较棘手的问题，这里记录一下解决过程</li>
 <li>2、当时没有配置Spark的权限，虽然之前总结了一篇<a href="https://dongkelun.com/2021/12/02/submarinSparkRanger/">利用Submarin集成Spark-Ranger</a>,但是这次用的不是Submarin,用的是kyuubi自带的kyuubi-spark-authz插件，而且解决了当时没有解决的问题，正好更新一下，之所以不用submarin，是因为submarin在新版本已经被去掉了，不再维护，而kyuubi-spark-authz和submarin的作者是同一个人，且kyuubi一直在维护，即使有问题也可以在社区提问题解决，这样还少学习配置一个组件，减少了维护成本</li>
 </ul>
-<a id="more"></a>
+<span id="more"></span>
 <h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><p>先讲完整的配置，再讲如何编译打包</p>
 <h3 id="Spark3-1-2"><a href="#Spark3-1-2" class="headerlink" title="Spark3.1.2"></a>Spark3.1.2</h3><p>前提：我的环境上有一个ambari自带的Spark2.4.5，路径<code>/usr/hdp/3.1.0.0-78/spark2/</code></p>
-<p>解压Spark3.1.2的tgz包，将其放到路径 <code>/opt/hdp</code>(新建临时目录)，并改名为spark3,然后拷贝之前spark2的配置到spark3的配置目录中,已经存在的模板，输入<code>no</code>不用覆盖<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cp /usr/hdp/3.1.0.0-78/spark2/conf/* /opt/hdp/spark3/conf/</span><br></pre></td></tr></table></figure></p>
-<p>如果是在windows上自己打的包，传到服务器Linux上可能存在编码不一致问题，执行一下命令：</p>
+<p>解压Spark3.1.2的tgz包，将其放到路径 <code>/opt/hdp</code>(新建临时目录)，并改名为spark3,然后拷贝之前spark2的配置到spark3的配置目录中,已经存在的模板，输入<code>no</code>不用覆盖<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cp</span> /usr/hdp/3.1.0.0-78/spark2/conf/* /opt/hdp/spark3/conf/</span><br></pre></td></tr></table></figure><br>如果是在windows上自己打的包，传到服务器Linux上可能存在编码不一致问题，执行一下命令：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">yum install -y dos2unix</span><br><span class="line">dos2unix /opt/hdp/spark3/bin/*</span><br></pre></td></tr></table></figure>
 <p>这里因为有一个Spark2版本了，所以不配置环境变量，直接使用全路径验证测试</p>
-<h4 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h4><p>1、验证测试用例<code>SparkPi</code><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/opt/hdp/spark3/bin/spark-submit --master yarn --deploy-mode client  --class  org.apache.spark.examples.SparkPi --principal spark/indata-10-110-105-164.indata.com@INDATA.COM --keytab /etc/security/keytabs/spark.service.keytab  /opt/hdp/spark3/examples/jars/spark-examples_2.12-3.1.2.jar</span><br></pre></td></tr></table></figure></p>
-<p>正确输出<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Pi is roughly 3.1389356946784734</span><br></pre></td></tr></table></figure></p>
-<p>2、验证<code>spark-shell</code>,登录成功，可以成功的读取hive表中数据即可<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/opt/hdp/spark3/bin/spark-shell --principal spark/indata-10-110-105-164.indata.com@INDATA.COM --keytab /etc/security/keytabs/spark.service.keytab</span><br><span class="line"> spark.sql(<span class="string">"select * from test"</span>).show</span><br></pre></td></tr></table></figure></p>
-<p>3、验证Spark Thrfit server<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">/opt/hdp/spark3/bin/spark-submit --master yarn --deploy-mode client --executor-memory 2G --num-executors 3 --executor-cores 2 --driver-memory 3G --driver-cores 2 --class org.apache.spark.sql.hive.thriftserver.HiveThriftServer2 --name spark3-thrift-server --hiveconf hive.server2.thrift.http.port=20003 --principal spark/indata-10-110-105-164.indata.com@INDATA.COM --keytab /etc/security/keytabs/spark.service.keytab</span><br><span class="line"></span><br><span class="line">/opt/hdp/spark3/bin/beeline -u <span class="string">"jdbc:hive2://10.110.105.164:20003/default;principal=HTTP/indata-10-110-105-164.indata.com@INDATA.COM?hive.server2.transport.mode=http;hive.server2.thrift.http.path=cliservice"</span></span><br><span class="line"></span><br><span class="line">select * from <span class="built_in">test</span></span><br></pre></td></tr></table></figure></p>
+<h4 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h4><p>1、验证测试用例<code>SparkPi</code><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/opt/hdp/spark3/bin/spark-submit --master yarn --deploy-mode client  --class  org.apache.spark.examples.SparkPi --principal spark/indata-10-110-105-164.indata.com@INDATA.COM --keytab /etc/security/keytabs/spark.service.keytab  /opt/hdp/spark3/examples/jars/spark-examples_2.12-3.1.2.jar</span><br></pre></td></tr></table></figure><br>正确输出<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Pi is roughly 3.1389356946784734</span><br></pre></td></tr></table></figure></p>
+<p>2、验证<code>spark-shell</code>,登录成功，可以成功的读取hive表中数据即可<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/opt/hdp/spark3/bin/spark-shell --principal spark/indata-10-110-105-164.indata.com@INDATA.COM --keytab /etc/security/keytabs/spark.service.keytab</span><br><span class="line"> spark.sql(<span class="string">&quot;select * from test&quot;</span>).show</span><br></pre></td></tr></table></figure><br>3、验证Spark Thrfit server<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">/opt/hdp/spark3/bin/spark-submit --master yarn --deploy-mode client --executor-memory 2G --num-executors 3 --executor-cores 2 --driver-memory 3G --driver-cores 2 --class org.apache.spark.sql.hive.thriftserver.HiveThriftServer2 --name spark3-thrift-server --hiveconf hive.server2.thrift.http.port=20003 --principal spark/indata-10-110-105-164.indata.com@INDATA.COM --keytab /etc/security/keytabs/spark.service.keytab</span><br><span class="line"></span><br><span class="line">/opt/hdp/spark3/bin/beeline -u <span class="string">&quot;jdbc:hive2://10.110.105.164:20003/default;principal=HTTP/indata-10-110-105-164.indata.com@INDATA.COM?hive.server2.transport.mode=http;hive.server2.thrift.http.path=cliservice&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> * from <span class="built_in">test</span></span><br></pre></td></tr></table></figure></p>
 <p>简单的验证成功后，就可以认为我们编译安装的Spark3没有问题</p>
 <h3 id="kyuubi-spark-authz"><a href="#kyuubi-spark-authz" class="headerlink" title="kyuubi-spark-authz"></a>kyuubi-spark-authz</h3><p>kyuubi-spark-authz，在最新发布的1.5.2版本并没有，我们需要拉取master分支（1.6.0-SNAPSHOT）的代码，自己打包,这里ranger版本为1.2.0</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mvn clean package -pl :kyuubi-spark-authz_2.12 -Dspark.version=3.1.2 -Dranger.version=1.2.0 -DskipTests</span><br></pre></td></tr></table></figure>
@@ -296,24 +295,23 @@
 <p><img src="https://img.dongkelun.com/kyuubi/k_auth2.png" alt=""></p>
 <p><img src="https://img.dongkelun.com/kyuubi/k_auth3.png" alt=""></p>
 <h4 id="配置spark"><a href="#配置spark" class="headerlink" title="配置spark"></a>配置spark</h4><p>根据官网文档，在<code>$SPARK_HOME/conf</code>创建下面两个配置文件</p>
-<p>ranger-spark-security.xml<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>ranger.plugin.spark.policy.rest.url<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">value</span>&gt;</span>http://yourIp:16080<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>ranger.plugin.spark.service.name<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">value</span>&gt;</span>sparkServer<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>ranger.plugin.spark.policy.cache.dir<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">value</span>&gt;</span>/etc/ranger/sparkServer/policycache<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>ranger.plugin.spark.policy.pollIntervalMs<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">value</span>&gt;</span>30000<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>ranger.plugin.spark.policy.source.impl<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">value</span>&gt;</span>org.apache.ranger.admin.client.RangerAdminRESTClient<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
-<p>ranger-spark-audit.xml<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>xasecure.audit.is.enabled<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">value</span>&gt;</span>true<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>xasecure.audit.destination.db<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">value</span>&gt;</span>false<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>xasecure.audit.destination.db.jdbc.driver<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">value</span>&gt;</span>com.mysql.jdbc.Driver<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>xasecure.audit.destination.db.jdbc.url<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">value</span>&gt;</span>jdbc:mysql://yourIp:3306/ranger<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>xasecure.audit.destination.db.password<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">value</span>&gt;</span>ranger<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>xasecure.audit.destination.db.user<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">value</span>&gt;</span>ranger<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line">   <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">name</span>&gt;</span>xasecure.audit.jaas.Client.option.keyTab<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">value</span>&gt;</span>/etc/security/keytabs/hive.service.keytab<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">name</span>&gt;</span>xasecure.audit.jaas.Client.option.principal<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">value</span>&gt;</span>hive/_HOST@INDATA.COM<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>ranger-spark-security.xml<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>ranger.plugin.spark.policy.rest.url<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">value</span>&gt;</span>http://yourIp:16080<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>ranger.plugin.spark.service.name<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">value</span>&gt;</span>sparkServer<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>ranger.plugin.spark.policy.cache.dir<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">value</span>&gt;</span>/etc/ranger/sparkServer/policycache<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>ranger.plugin.spark.policy.pollIntervalMs<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">value</span>&gt;</span>30000<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>ranger.plugin.spark.policy.source.impl<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">value</span>&gt;</span>org.apache.ranger.admin.client.RangerAdminRESTClient<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure></p>
+<p>ranger-spark-audit.xml<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>xasecure.audit.is.enabled<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">value</span>&gt;</span>true<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>xasecure.audit.destination.db<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">value</span>&gt;</span>false<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>xasecure.audit.destination.db.jdbc.driver<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">value</span>&gt;</span>com.mysql.jdbc.Driver<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>xasecure.audit.destination.db.jdbc.url<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">value</span>&gt;</span>jdbc:mysql://yourIp:3306/ranger<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>xasecure.audit.destination.db.password<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">value</span>&gt;</span>ranger<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>xasecure.audit.destination.db.user<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">value</span>&gt;</span>ranger<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line">   <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">name</span>&gt;</span>xasecure.audit.jaas.Client.option.keyTab<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">value</span>&gt;</span>/etc/security/keytabs/hive.service.keytab<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">name</span>&gt;</span>xasecure.audit.jaas.Client.option.principal<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">value</span>&gt;</span>hive/_HOST@INDATA.COM<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line"></span><br></pre></td></tr></table></figure></p>
 <p>至于具体的ip、端口、用户名、密码信息可以在之前已经配置好的hive-ranger插件配置文件里查看，也可以在ambari界面搜索<br>需要注意的是16080端口对应的地址可能填ip有问题，需要填写ip对应的域名hostname,具体取决于自己的环境配置</p>
-<h4 id="验证-1"><a href="#验证-1" class="headerlink" title="验证"></a>验证</h4><h5 id="验证spark用户"><a href="#验证spark用户" class="headerlink" title="验证spark用户"></a>验证spark用户</h5><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/opt/hdp/spark3/bin/spark-sql --master yarn --deploy-mode client --conf <span class="string">'spark.sql.extensions=org.apache.kyuubi.plugin.spark.authz.ranger.RangerSparkExtension'</span> --principal spark/indata-10-110-105-164.indata.com@INDATA.COM --keytab /etc/security/keytabs/spark.service.keytab</span><br></pre></td></tr></table></figure>
-<p>没有default权限：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> <span class="keyword">default</span>;</span><br><span class="line"></span><br><span class="line">Permission denied: user [spark] does not have [_any] privilege on [default]</span><br></pre></td></tr></table></figure></p>
-<p>hudi库可以正常读取<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> hudi;</span><br><span class="line"><span class="keyword">show</span> <span class="keyword">tables</span>;</span><br></pre></td></tr></table></figure></p>
-<p><img src="https://img.dongkelun.com/kyuubi/k_auth4.png" alt=""></p>
-<h5 id="验证hive用户"><a href="#验证hive用户" class="headerlink" title="验证hive用户"></a>验证hive用户</h5><p>切换hive认证用户<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/opt/hdp/spark3/bin/spark-sql --master yarn --deploy-mode client --conf <span class="string">'spark.sql.extensions=org.apache.kyuubi.plugin.spark.authz.ranger.RangerSparkExtension'</span> --principal hive/indata-10-110-105-164.indata.com@INDATA.COM --keytab /etc/security/keytabs/hive.service.keytab</span><br></pre></td></tr></table></figure></p>
-<p>default库可以正常读取：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> <span class="keyword">default</span>;</span><br><span class="line"><span class="keyword">show</span> <span class="keyword">tables</span>;</span><br></pre></td></tr></table></figure></p>
-<p>没有Hudi库权限<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> hudi;</span><br><span class="line"></span><br><span class="line">Permission denied: user [hive] does not have [_any] privilege on [hudi]</span><br></pre></td></tr></table></figure></p>
+<h4 id="验证-1"><a href="#验证-1" class="headerlink" title="验证"></a>验证</h4><h5 id="验证spark用户"><a href="#验证spark用户" class="headerlink" title="验证spark用户"></a>验证spark用户</h5><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/opt/hdp/spark3/bin/spark-sql --master yarn --deploy-mode client --conf <span class="string">&#x27;spark.sql.extensions=org.apache.kyuubi.plugin.spark.authz.ranger.RangerSparkExtension&#x27;</span> --principal spark/indata-10-110-105-164.indata.com@INDATA.COM --keytab /etc/security/keytabs/spark.service.keytab</span><br></pre></td></tr></table></figure>
+<p>没有default权限：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">use <span class="keyword">default</span>;</span><br><span class="line"></span><br><span class="line">Permission denied: <span class="keyword">user</span> [spark] does <span class="keyword">not</span> have [_any] privilege <span class="keyword">on</span> [<span class="keyword">default</span>]</span><br></pre></td></tr></table></figure></p>
+<p>hudi库可以正常读取<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">use hudi;</span><br><span class="line"><span class="keyword">show</span> tables;</span><br></pre></td></tr></table></figure><br><img src="https://img.dongkelun.com/kyuubi/k_auth4.png" alt=""></p>
+<h5 id="验证hive用户"><a href="#验证hive用户" class="headerlink" title="验证hive用户"></a>验证hive用户</h5><p>切换hive认证用户<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/opt/hdp/spark3/bin/spark-sql --master yarn --deploy-mode client --conf <span class="string">&#x27;spark.sql.extensions=org.apache.kyuubi.plugin.spark.authz.ranger.RangerSparkExtension&#x27;</span> --principal hive/indata-10-110-105-164.indata.com@INDATA.COM --keytab /etc/security/keytabs/hive.service.keytab</span><br></pre></td></tr></table></figure></p>
+<p>default库可以正常读取：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">use <span class="keyword">default</span>;</span><br><span class="line"><span class="keyword">show</span> tables;</span><br></pre></td></tr></table></figure></p>
+<p>没有Hudi库权限<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">use hudi;</span><br><span class="line"></span><br><span class="line">Permission denied: <span class="keyword">user</span> [hive] does <span class="keyword">not</span> have [_any] privilege <span class="keyword">on</span> [hudi]</span><br></pre></td></tr></table></figure></p>
 <p><img src="https://img.dongkelun.com/kyuubi/k_auth5.png" alt=""></p>
 <h4 id="支持hudi"><a href="#支持hudi" class="headerlink" title="支持hudi"></a>支持hudi</h4><p>首先将对应版本的Hudi包，拷贝到<code>/opt/hdp/spark3/jars/</code>，这里用的版本为：<code>hudi-spark3.1.2-bundle_2.12-0.10.1.jar</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/opt/hdp/spark3/bin/spark-sql --master yarn --deploy-mode client --conf &apos;spark.sql.extensions=org.apache.kyuubi.plugin.spark.authz.ranger.RangerSparkExtension,org.apache.spark.sql.hudi.HoodieSparkSessionExtension&apos; --principal spark/indata-10-110-105-164.indata.com@INDATA.COM --keytab /etc/security/keytabs/spark.service.keytab</span><br></pre></td></tr></table></figure>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> hudi;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> test_hudi_table_kyuubi (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span>,</span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="keyword">long</span>,</span><br><span class="line">  dt <span class="keyword">string</span></span><br><span class="line">) <span class="keyword">using</span> hudi</span><br><span class="line"> partitioned <span class="keyword">by</span> (dt)</span><br><span class="line"> options (</span><br><span class="line">  primaryKey = <span class="string">'id'</span>,</span><br><span class="line">  preCombineField = <span class="string">'ts'</span>,</span><br><span class="line">  <span class="keyword">type</span> = <span class="string">'cow'</span></span><br><span class="line"> );</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/opt/hdp/spark3/bin/spark-sql --master yarn --deploy-mode client --conf &#x27;spark.sql.extensions=org.apache.kyuubi.plugin.spark.authz.ranger.RangerSparkExtension,org.apache.spark.sql.hudi.HoodieSparkSessionExtension&#x27; --principal spark/indata-10-110-105-164.indata.com@INDATA.COM --keytab /etc/security/keytabs/spark.service.keytab</span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">use hudi;</span><br><span class="line"><span class="keyword">create table</span> test_hudi_table_kyuubi (</span><br><span class="line">  id <span class="type">int</span>,</span><br><span class="line">  name string,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts long,</span><br><span class="line">  dt string</span><br><span class="line">) <span class="keyword">using</span> hudi</span><br><span class="line"> partitioned <span class="keyword">by</span> (dt)</span><br><span class="line"> options (</span><br><span class="line">  primaryKey <span class="operator">=</span> <span class="string">&#x27;id&#x27;</span>,</span><br><span class="line">  preCombineField <span class="operator">=</span> <span class="string">&#x27;ts&#x27;</span>,</span><br><span class="line">  type <span class="operator">=</span> <span class="string">&#x27;cow&#x27;</span></span><br><span class="line"> );</span><br></pre></td></tr></table></figure>
 <p><img src="https://img.dongkelun.com/kyuubi/k_auth6.png" alt=""></p>
 <h3 id="kyuubi1-5-2"><a href="#kyuubi1-5-2" class="headerlink" title="kyuubi1.5.2"></a>kyuubi1.5.2</h3><p>目前最新版为1.5.2，但是默认spark版本为spark3.2.1,和我们的spark3.1.2大版本不一样，为了避免潜在问题，我们选择自己打包，打包流程在后面的部分，打包完成后，将其上传到服务器并解压到<code>/opt/hdp/kyuubi-1.5.2/</code></p>
 <h4 id="配置kyuubi"><a href="#配置kyuubi" class="headerlink" title="配置kyuubi"></a>配置kyuubi</h4><p>dos2unix kyuubi-1.5.2/bin/*</p>
-<h5 id="kyuubi-env-sh"><a href="#kyuubi-env-sh" class="headerlink" title="kyuubi-env.sh"></a>kyuubi-env.sh</h5><p>和之前的文章一样的配置<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64</span><br><span class="line"><span class="built_in">export</span> SPARK_HOME=/opt/hdp/spark3</span><br><span class="line"><span class="built_in">export</span> HADOOP_CONF_DIR=/usr/hdp/3.1.0.0-78/hadoop/etc/hadoop</span><br><span class="line"><span class="built_in">export</span> KYUUBI_JAVA_OPTS=<span class="string">"-Xmx10g -XX:+UnlockDiagnosticVMOptions -XX:ParGCCardsPerStrideChunk=4096 -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:+CMSConcurrentMTEnabled -XX:CMSInitiatingOccupancyFraction=70 -XX:+UseCMSInitiatingOccupancyOnly -XX:+CMSClassUnloadingEnabled -XX:+CMSParallelRemarkEnabled -XX:+UseCondCardMark -XX:MaxDirectMemorySize=1024m  -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=./logs -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintTenuringDistribution -Xloggc:./logs/kyuubi-server-gc-%t.log -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=5M -XX:NewRatio=3 -XX:MetaspaceSize=512m"</span></span><br></pre></td></tr></table></figure></p>
+<h5 id="kyuubi-env-sh"><a href="#kyuubi-env-sh" class="headerlink" title="kyuubi-env.sh"></a>kyuubi-env.sh</h5><p>和之前的文章一样的配置<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.el7.x86_64</span><br><span class="line"><span class="built_in">export</span> SPARK_HOME=/opt/hdp/spark3</span><br><span class="line"><span class="built_in">export</span> HADOOP_CONF_DIR=/usr/hdp/3.1.0.0-78/hadoop/etc/hadoop</span><br><span class="line"><span class="built_in">export</span> KYUUBI_JAVA_OPTS=<span class="string">&quot;-Xmx10g -XX:+UnlockDiagnosticVMOptions -XX:ParGCCardsPerStrideChunk=4096 -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:+CMSConcurrentMTEnabled -XX:CMSInitiatingOccupancyFraction=70 -XX:+UseCMSInitiatingOccupancyOnly -XX:+CMSClassUnloadingEnabled -XX:+CMSParallelRemarkEnabled -XX:+UseCondCardMark -XX:MaxDirectMemorySize=1024m  -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=./logs -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintTenuringDistribution -Xloggc:./logs/kyuubi-server-gc-%t.log -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=5M -XX:NewRatio=3 -XX:MetaspaceSize=512m&quot;</span></span><br></pre></td></tr></table></figure></p>
 <h5 id="kyuubi-defaults-conf"><a href="#kyuubi-defaults-conf" class="headerlink" title="kyuubi-defaults.conf"></a>kyuubi-defaults.conf</h5><p>和之前1.4.0版本不同的是加了一个配置<code>kyuubi.ha.zookeeper.publish.configs true</code>,不配置的话beeline连接HA的时候有问题，另外还改了端口号和zookeeper的namespace，因为一个环境上有多个版本的kyuubi，避免冲突</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">kyuubi.frontend.bind.host       indata-10-110-105-164.indata.com</span><br><span class="line">kyuubi.frontend.bind.port       10099</span><br><span class="line"></span><br><span class="line"><span class="comment">#kerberos</span></span><br><span class="line">kyuubi.authentication   KERBEROS</span><br><span class="line">kyuubi.kinit.principal  hive/indata-10-110-105-164.indata.com@INDATA.COM</span><br><span class="line">kyuubi.kinit.keytab     /etc/security/keytabs/hive.service.keytab</span><br><span class="line"></span><br><span class="line">kyuubi.ha.enabled <span class="literal">true</span></span><br><span class="line">kyuubi.ha.zookeeper.quorum indata-10-110-105-162.indata.com:2181,indata-10-110-105-163.indata.com:2181,indata-10-110-105-164.indata.com:2181</span><br><span class="line">kyuubi.ha.zookeeper.client.port 2181</span><br><span class="line">kyuubi.ha.zookeeper.session.timeout 600000</span><br><span class="line">kyuubi.ha.zookeeper.namespace=kyuubi1.5.2</span><br><span class="line">kyuubi.session.engine.initialize.timeout=180000</span><br><span class="line"></span><br><span class="line">kyuubi.ha.zookeeper.publish.configs <span class="literal">true</span></span><br></pre></td></tr></table></figure>
 <h4 id="验证-2"><a href="#验证-2" class="headerlink" title="验证"></a>验证</h4><p>启动kyuubi</p>
@@ -330,38 +328,33 @@
 <p>如果有和默认配置不一样的需求的话，可以在jdbc参数里修改配置覆盖掉默认配置，但是在项目上给用户用的话，这个参数不应该暴露给用户使用，而是应该规定死的</p>
 <h4 id="优化Spark启动时间"><a href="#优化Spark启动时间" class="headerlink" title="优化Spark启动时间"></a>优化Spark启动时间</h4><p>通过连接Kyuubi第一次启动Spark程序时,会比较慢，我们可以通过配置<code>spark.yarn.archive</code>或者<code>spark.yarn.jars</code>(二选一)，来优化启动时间</p>
 <h5 id="创建archive（spark-yarn-archive）"><a href="#创建archive（spark-yarn-archive）" class="headerlink" title="创建archive（spark.yarn.archive）"></a>创建archive（spark.yarn.archive）</h5><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jar cv0f spark-libs.jar -C <span class="variable">$SPARK_HOME</span>/jars/ .</span><br></pre></td></tr></table></figure>
-<h5 id="上传jar包到hdfs"><a href="#上传jar包到hdfs" class="headerlink" title="上传jar包到hdfs"></a>上传jar包到hdfs</h5><p>spark.yarn.archive：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hdfs dfs -put ./spark-libs.jar /hdp/apps/3.1.0.0-78/spark3/</span><br></pre></td></tr></table></figure></p>
-<p>spark.yarn.jars：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hdfs dfs -put <span class="variable">$SPARK_HOME</span>/jars /hdp/apps/3.1.0.0-78/spark3/</span><br></pre></td></tr></table></figure></p>
+<h5 id="上传jar包到hdfs"><a href="#上传jar包到hdfs" class="headerlink" title="上传jar包到hdfs"></a>上传jar包到hdfs</h5><p>spark.yarn.archive：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hdfs dfs -put ./spark-libs.jar /hdp/apps/3.1.0.0-78/spark3/</span><br></pre></td></tr></table></figure><br>spark.yarn.jars：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hdfs dfs -put <span class="variable">$SPARK_HOME</span>/jars /hdp/apps/3.1.0.0-78/spark3/</span><br></pre></td></tr></table></figure></p>
 <h5 id="配置-spark-defaults-conf"><a href="#配置-spark-defaults-conf" class="headerlink" title="配置 spark-defaults.conf"></a>配置 spark-defaults.conf</h5><p>添加参数：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">spark.yarn.archive hdfs://cluster1/hdp/apps/3.1.0.0-78/spark3/spark-libs.jar</span><br><span class="line"><span class="comment">#spark.yarn.jars hdfs://cluster1/hdp/apps/3.1.0.0-78/spark3/jars/*.jar</span></span><br></pre></td></tr></table></figure></p>
 <h4 id="动态资源申请"><a href="#动态资源申请" class="headerlink" title="动态资源申请"></a>动态资源申请</h4><p>spark-defaults.conf<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">spark.dynamicAllocation.enabled <span class="literal">true</span></span><br><span class="line">spark.dynamicAllocation.initialExecutors 0</span><br><span class="line">spark.dynamicAllocation.maxExecutors 10</span><br><span class="line">spark.dynamicAllocation.minExecutors 0</span><br><span class="line">spark.shuffle.service.enabled <span class="literal">true</span></span><br></pre></td></tr></table></figure></p>
 <h4 id="HA"><a href="#HA" class="headerlink" title="HA"></a>HA</h4><p>同样的配置在另外一台机器配置好<code>Spark3.12+Kyuubi1.5.2+kyuubi-spark-authz</code>,其实将这台机器的文件夹拷贝过去，然后改一下ip，然后启动kyuubi即可，最后和之前的文章一样用beeline验证一下HA的效果，是否可以通过一个连接地址随机分到两个kyuubi的地址，也可以在zookeeper上查看是否zooKeeperNamespace kyuubi1.5.2是否有两个ip地址注册成功。</p>
 <h2 id="编译打包Spark3-1-2"><a href="#编译打包Spark3-1-2" class="headerlink" title="编译打包Spark3.1.2"></a>编译打包Spark3.1.2</h2><p>git clone Spark源码，切换到3.1.2 tag</p>
 <p>文档地址：<a href="文档地址： https://spark.apache.org/docs/latest/building-spark.html#specifying-the-hadoop-version-and-enabling-yarn">文档地址： https://spark.apache.org/docs/latest/building-spark.html#specifying-the-hadoop-version-and-enabling-yarn</a></p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">## 编译打包</span></span><br><span class="line">./build/mvn -Pyarn -Phive -Phive-thriftserver -DskipTests clean package</span><br><span class="line"></span><br><span class="line"><span class="comment">## 打分布式tgz安装包</span></span><br><span class="line">./dev/make-distribution.sh  --tgz  -Phive -Phive-thriftserver  -Pyarn -Dhadoop.version=3.1.1 -DskipTests</span><br></pre></td></tr></table></figure>
-<p>打出来的包为<code>spark-3.1.2-bin-3.1.1.tgz</code>，因为我们的环境的hadoop的版本为3.1.1，所以这里指定了hadoop的版本，其他的都是自己常用，比如yarn等，不过spark支持很多比如Python/R等，如果所有的都加上打包，那么会比较麻烦，也比较慢，但是不同的项目会有不同的需求，所以我们直接用官网提供的<code>spark-3.1.2-bin-hadoop3.2.tgz</code>也可以，版本差别不大,下载地址<a href="https://archive.apache.org/dist/spark" target="_blank" rel="noopener">https://archive.apache.org/dist/spark</a></p>
+<p>打出来的包为<code>spark-3.1.2-bin-3.1.1.tgz</code>，因为我们的环境的hadoop的版本为3.1.1，所以这里指定了hadoop的版本，其他的都是自己常用，比如yarn等，不过spark支持很多比如Python/R等，如果所有的都加上打包，那么会比较麻烦，也比较慢，但是不同的项目会有不同的需求，所以我们直接用官网提供的<code>spark-3.1.2-bin-hadoop3.2.tgz</code>也可以，版本差别不大,下载地址<a href="https://archive.apache.org/dist/spark">https://archive.apache.org/dist/spark</a></p>
 <h2 id="编译打包-Kyuubi-1-5-2"><a href="#编译打包-Kyuubi-1-5-2" class="headerlink" title="编译打包 Kyuubi 1.5.2"></a>编译打包 Kyuubi 1.5.2</h2><p>切到 tag:v1.5.2-incubating，pom spark-3.1 spark的版本为spark3.1.3,我们将其改为spark3.1.2</p>
 <p><img src="https://img.dongkelun.com/kyuubi/k_auth7.png" alt=""></p>
 <h3 id="打分布式tgz安装包"><a href="#打分布式tgz安装包" class="headerlink" title="打分布式tgz安装包"></a>打分布式tgz安装包</h3><p>根据官网文档命令：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./build/dist --tgz -Pspark-3.1</span><br></pre></td></tr></table></figure>
 <p>但是在打第二个project<code>Kyuubi Project Common</code>时有异常，异常为：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[ERROR] ## Exception when compiling 78 sources to D:\workspace\learning\incubator-kyuubi\kyuubi-common\target\scala-2.12\classes</span><br><span class="line">java.lang.NoSuchMethodError: org.fusesource.jansi.AnsiConsole.wrapOutputStream(Ljava/io/OutputStream;)Ljava/io/OutputStream;</span><br><span class="line">jline.AnsiWindowsTerminal.detectAnsiSupport(AnsiWindowsTerminal.java:<span class="number">57</span>)</span><br><span class="line">......</span><br><span class="line"></span><br><span class="line">[ERROR] Failed to execute goal net.alchim31.maven:scala-maven-plugin:<span class="number">4.3</span>.0:compile (scala-compile-first) on project kyuubi-common_2.12: Execution scala-compile-first of goal net.alchim31.maven:scala-maven-plugin:<span class="number">4.3</span>.0:compile failed: An API incompatibility was encountered <span class="keyword">while</span> executing net.alchim31.maven:scala-maven-plugin:<span class="number">4.3</span>.0:compile: java.lang.NoSuchMethodError: org.fusesource.jansi.AnsiConsole.wrapOutputStream(Ljava/io/OutputStream;)Ljava/io/OutputStream;</span><br><span class="line">[ERROR] -----------------------------------------------------</span><br><span class="line">[ERROR] realm =    plugin&gt;net.alchim31.maven:scala-maven-plugin:<span class="number">4.3</span>.0</span><br><span class="line">[ERROR] strategy = org.codehaus.plexus.classworlds.strategy.SelfFirstStrategy</span><br><span class="line">[ERROR] urls[<span class="number">0</span>] = file:/D:/workspace/m2/repository/net/alchim31/maven/scala-maven-plugin/<span class="number">4.3</span>.0/scala-maven-plugin-<span class="number">4.3</span>.0.jar</span><br><span class="line">......</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[ERROR] ## Exception <span class="keyword">when</span> compiling <span class="number">78</span> sources to D:\workspace\learning\incubator-kyuubi\kyuubi-common\target\scala-<span class="number">2.12</span>\classes</span><br><span class="line">java.lang.NoSuchMethodError: org.fusesource.jansi.AnsiConsole.wrapOutputStream(Ljava/io/OutputStream;)Ljava/io/OutputStream;</span><br><span class="line">jline.AnsiWindowsTerminal.detectAnsiSupport(AnsiWindowsTerminal.java:<span class="number">57</span>)</span><br><span class="line">......</span><br><span class="line"></span><br><span class="line">[ERROR] Failed to execute goal net.alchim31.maven:scala-maven-plugin:<span class="number">4.3</span><span class="number">.0</span>:compile (scala-compile-first) on project kyuubi-common_2<span class="number">.12</span>: Execution scala-compile-first of goal net.alchim31.maven:scala-maven-plugin:<span class="number">4.3</span><span class="number">.0</span>:compile failed: An API incompatibility was encountered <span class="keyword">while</span> executing net.alchim31.maven:scala-maven-plugin:<span class="number">4.3</span><span class="number">.0</span>:compile: java.lang.NoSuchMethodError: org.fusesource.jansi.AnsiConsole.wrapOutputStream(Ljava/io/OutputStream;)Ljava/io/OutputStream;</span><br><span class="line">[ERROR] -----------------------------------------------------</span><br><span class="line">[ERROR] realm =    plugin&gt;net.alchim31.maven:scala-maven-plugin:<span class="number">4.3</span><span class="number">.0</span></span><br><span class="line">[ERROR] strategy = org.codehaus.plexus.classworlds.strategy.SelfFirstStrategy</span><br><span class="line">[ERROR] urls[<span class="number">0</span>] = file:/D:/workspace/m2/repository/net/alchim31/maven/scala-maven-plugin/<span class="number">4.3</span><span class="number">.0</span>/scala-maven-plugin-<span class="number">4.3</span><span class="number">.0</span>.jar</span><br><span class="line">......</span><br></pre></td></tr></table></figure>
 <p>用mvn命令打包一样的错误：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mvn clean  package -Pspark-3.1 -DskipTests</span><br></pre></td></tr></table></figure></p>
-<h4 id="异常解决过程"><a href="#异常解决过程" class="headerlink" title="异常解决过程"></a>异常解决过程</h4><p>网上查找资料，根据文章：<a href="https://blog.csdn.net/jxlxxxmz/article/details/99624261" target="_blank" rel="noopener">https://blog.csdn.net/jxlxxxmz/article/details/99624261</a>的第三个方法，添加参数<code>scala:compile</code></p>
+<h4 id="异常解决过程"><a href="#异常解决过程" class="headerlink" title="异常解决过程"></a>异常解决过程</h4><p>网上查找资料，根据文章：<a href="https://blog.csdn.net/jxlxxxmz/article/details/99624261">https://blog.csdn.net/jxlxxxmz/article/details/99624261</a>的第三个方法，添加参数<code>scala:compile</code></p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mvn clean scala:compile package -Pspark-3.1 -DskipTests</span><br></pre></td></tr></table></figure>
-<p>mvn 命令打包是可行的，但是在打tgz包的命令中<code>./build/dist</code>添加这个参数是不行的，那么试着先用mvn命令打完包，把依赖下载下来再打tgz包，看看行不行。开头提到1.5.2版本和之前的1.4.0版本打包不太一样，比较慢，原因是因为在打包过程中默认下载spark和flink,会下载到<code>\incubator-kyuubi\externals\kyuubi-download\target</code>目录中，并且默认从Apache官网<a href="https://archive.apache.org/dist" target="_blank" rel="noopener">https://archive.apache.org/dist</a>下载，所以比较漫长，经过漫长的等待，终于下载完成，结果在倒数第二个project报了异常：</p>
+<p>mvn 命令打包是可行的，但是在打tgz包的命令中<code>./build/dist</code>添加这个参数是不行的，那么试着先用mvn命令打完包，把依赖下载下来再打tgz包，看看行不行。开头提到1.5.2版本和之前的1.4.0版本打包不太一样，比较慢，原因是因为在打包过程中默认下载spark和flink,会下载到<code>\incubator-kyuubi\externals\kyuubi-download\target</code>目录中，并且默认从Apache官网<a href="https://archive.apache.org/dist">https://archive.apache.org/dist</a>下载，所以比较漫长，经过漫长的等待，终于下载完成，结果在倒数第二个project报了异常：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[ERROR] [Error] D:\workspace\learning\incubator-kyuubi\dev\kyuubi-extension-spark-common\src\main\scala\org\apache\kyuubi\sql\zorder\ZorderSqlAstBuilderBase.scala:<span class="number">46</span>: not found: type ZorderSqlExtensionsBaseVisitor</span><br><span class="line">[ERROR] [Error] D:\workspace\learning\incubator-kyuubi\dev\kyuubi-extension-spark-common\src\main\scala\org\apache\kyuubi\sql\zorder\ZorderSparkSqlExtensionsParserBase.scala:<span class="number">42</span>: not found: type ZorderSqlExtensionsParser</span><br><span class="line">[ERROR] [Error] D:\workspace\learning\incubator-kyuubi\dev\kyuubi-extension-spark-common\src\main\scala\org\apache\kyuubi\sql\zorder\ZorderSparkSqlExtensionsParserBase.scala:<span class="number">36</span>: value visit is not a member of org.apache.kyuubi.sql.zorder.ZorderSqlAstBuilderBase</span><br><span class="line">[ERROR] [Error] D:\workspace\learning\incubator-kyuubi\dev\kyuubi-extension-spark-common\src\main\scala\org\apache\kyuubi\sql\zorder\ZorderSparkSqlExtensionsParserBase.scala:<span class="number">43</span>: not found: type ZorderSqlExtensionsLexer</span><br><span class="line">[ERROR] [Error] D:\workspace\learning\incubator-kyuubi\dev\kyuubi-extension-spark-common\src\main\scala\org\apache\kyuubi\sql\zorder\ZorderSparkSqlExtensionsParserBase.scala:<span class="number">49</span>: not found: type ZorderSqlExtensionsParser</span><br><span class="line">[ERROR] [Error] D:\workspace\learning\incubator-kyuubi\dev\kyuubi-extension-spark-common\src\main\scala\org\apache\kyuubi\sql\zorder\ZorderSqlAstBuilderBase.scala:<span class="number">44</span>: object ZorderSqlExtensionsParser is not a member of <span class="keyword">package</span> org.apache.kyuubi.sql.zorder</span><br><span class="line">......</span><br></pre></td></tr></table></figure>
-<p>通过搜索源码，确实没有这些类，不过对应的模块的antlr4目录中有一个<code>ZorderSqlExtensions.g4</code>文件，根据经验，应该是这个文件没有成功编译，不了解antlr技术的可以自己网上查询资料了解，那么猜测可能是因为加了<code>scala:compile</code>的原因导致的，于是再去掉这个参数，用最初的命令试一下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mvn clean  package -Pspark-3.1 -DskipTests</span><br></pre></td></tr></table></figure></p>
-<p>果然打包成功，然后再尝试用<code>./build/dist --tgz -Pspark-3.1</code>命令打tgz包，结果还是和开始一样的错误，这就很尴尬了，于是查看 <code>./build/dist</code>脚本源码，发现支持<code>--mvn</code>参数，经过多次尝试，最终用下面这个命令打包成功！<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./build/dist --tgz --mvn /d/program/company/apache-maven-3.6.3/bin/mvn -Pspark-3.1 -DskipTests</span><br></pre></td></tr></table></figure></p>
-<p>也就是指定自己本地的maven的路径加上maven的参数即可，另外我在kyuubi群里提问这个问题，pmc告诉我用<code>wsl</code>可以解决，查了一下是<code>适用于Linux的Windows子系统</code>的意思,因为我没用过<code>wsl</code>，毕竟已经打包成功了也就没有再尝试</p>
-<p>dist命令还支持 参数<code>--flink-provided</code>和 <code>--spark-provided</code>,加上这个参数就不会将spark和flink打到包里了，这样也就不会下载spark和flink导致打包很慢了，但是在最新的1.6.0-SNAPSHOT版本还要下载hive，也比较慢，没有研究怎么解决~<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./build/dist --tgz  --flink-provided --spark-provided --mvn /d/program/company/apache-maven-3.6.3/bin/mvn -Pspark-3.1 -DskipTests</span><br></pre></td></tr></table></figure></p>
-<p>最终打出的包名也不一样为<code>apache-kyuubi-1.5.2-incubating-bin.tgz</code>,而开始打出来的包名为<code>apache-kyuubi-1.5.2-incubating-bin-spark-3.1.tgz</code>大小分别为<code>221M</code>和<code>763M</code>,官方提供的tgz包也不包含spark和flink的安装包</p>
+<p>通过搜索源码，确实没有这些类，不过对应的模块的antlr4目录中有一个<code>ZorderSqlExtensions.g4</code>文件，根据经验，应该是这个文件没有成功编译，不了解antlr技术的可以自己网上查询资料了解，那么猜测可能是因为加了<code>scala:compile</code>的原因导致的，于是再去掉这个参数，用最初的命令试一下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mvn clean  package -Pspark-3.1 -DskipTests</span><br></pre></td></tr></table></figure><br>果然打包成功，然后再尝试用<code>./build/dist --tgz -Pspark-3.1</code>命令打tgz包，结果还是和开始一样的错误，这就很尴尬了，于是查看 <code>./build/dist</code>脚本源码，发现支持<code>--mvn</code>参数，经过多次尝试，最终用下面这个命令打包成功！<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./build/dist --tgz --mvn /d/program/company/apache-maven-3.6.3/bin/mvn -Pspark-3.1 -DskipTests</span><br></pre></td></tr></table></figure><br>也就是指定自己本地的maven的路径加上maven的参数即可，另外我在kyuubi群里提问这个问题，pmc告诉我用<code>wsl</code>可以解决，查了一下是<code>适用于Linux的Windows子系统</code>的意思,因为我没用过<code>wsl</code>，毕竟已经打包成功了也就没有再尝试</p>
+<p>dist命令还支持 参数<code>--flink-provided</code>和 <code>--spark-provided</code>,加上这个参数就不会将spark和flink打到包里了，这样也就不会下载spark和flink导致打包很慢了，但是在最新的1.6.0-SNAPSHOT版本还要下载hive，也比较慢，没有研究怎么解决~<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./build/dist --tgz  --flink-provided --spark-provided --mvn /d/program/company/apache-maven-3.6.3/bin/mvn -Pspark-3.1 -DskipTests</span><br></pre></td></tr></table></figure><br>最终打出的包名也不一样为<code>apache-kyuubi-1.5.2-incubating-bin.tgz</code>,而开始打出来的包名为<code>apache-kyuubi-1.5.2-incubating-bin-spark-3.1.tgz</code>大小分别为<code>221M</code>和<code>763M</code>,官方提供的tgz包也不包含spark和flink的安装包</p>
 <p>默认打包spark和flink的路径为<code>kyuubi-1.5.2/externals/flink-1.14.3</code>和<code>kyuubi-1.5.2/externals/spark-3.1.2-bin-hadoop3.2</code>，如果不在<code>kyuubi-env.sh</code>里配置<code>SPARK_HOME</code>、<code>FLINK_HOME</code>的话，默认就是这个路径，具体的逻辑可以<code>kyuubi-1.5.2/bin/load-kyuubi-env.sh</code>查看，既然提到flink，顺便说一下，kyuubi是支持flink的，在我们连接kyuubi时默认连接Spark SQL 引擎，若要连接Flink SQL,可以在连接串最后加上参数<code>?kyuubi.engine.type=FLINK_SQL;</code>，就会连接Flink SQL了，当然这里用的默认的Flink路径，可以自己配一下<code>FLINK_HOME</code>，另外应该还可以在<code>kyuubi-defaults.conf</code> 添加<code>kyuubi.engine.type FLINK_SQL</code>修改默认的engine type</p>
 <h3 id="打包成功"><a href="#打包成功" class="headerlink" title="打包成功"></a>打包成功</h3><p><img src="https://img.dongkelun.com/kyuubi/k_auth8.png" alt=""><br><img src="https://img.dongkelun.com/kyuubi/k_auth9.png" alt=""></p>
 <h2 id="更新"><a href="#更新" class="headerlink" title="更新"></a>更新</h2><blockquote>
 <p>2022年8月4日更新：Spark3.1.2虽然支持用逗号分隔以同时支持多个sql扩展规则，但是要注意顺序问题</p>
 </blockquote>
-<p>我们开始是这样配置的<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spark.sql.extensions=org.apache.kyuubi.plugin.spark.authz.ranger.RangerSparkExtension,org.apache.spark.sql.hudi.HoodieSparkSessionExtension</span><br></pre></td></tr></table></figure></p>
-<p>这样可以同时支持<code>RangerSparkExtension</code>和<code>HoodieSparkSessionExtension</code>，在控制权限的同时，也可以成功创建Hudi表并可以成功插入Hudi数据，但是在用<code>update</code>和<code>delete</code>时会有问题</p>
+<p>我们开始是这样配置的<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spark.sql.extensions=org.apache.kyuubi.plugin.spark.authz.ranger.RangerSparkExtension,org.apache.spark.sql.hudi.HoodieSparkSessionExtension</span><br></pre></td></tr></table></figure><br>这样可以同时支持<code>RangerSparkExtension</code>和<code>HoodieSparkSessionExtension</code>，在控制权限的同时，也可以成功创建Hudi表并可以成功插入Hudi数据，但是在用<code>update</code>和<code>delete</code>时会有问题</p>
 <p><code>update</code>:</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java.lang.UnsupportedOperationException: UPDATE TABLE is not supported temporarily</span><br></pre></td></tr></table></figure>
 <p><code>delete</code>:</p>
@@ -524,7 +517,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#配置"><span class="toc-number">2.</span> <span class="toc-text">配置</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Spark3-1-2"><span class="toc-number">2.1.</span> <span class="toc-text">Spark3.1.2</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#验证"><span class="toc-number">2.1.1.</span> <span class="toc-text">验证</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#kyuubi-spark-authz"><span class="toc-number">2.2.</span> <span class="toc-text">kyuubi-spark-authz</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#配置ranger策略"><span class="toc-number">2.2.1.</span> <span class="toc-text">配置ranger策略</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#配置spark"><span class="toc-number">2.2.2.</span> <span class="toc-text">配置spark</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#验证-1"><span class="toc-number">2.2.3.</span> <span class="toc-text">验证</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#验证spark用户"><span class="toc-number">2.2.3.1.</span> <span class="toc-text">验证spark用户</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#验证hive用户"><span class="toc-number">2.2.3.2.</span> <span class="toc-text">验证hive用户</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#支持hudi"><span class="toc-number">2.2.4.</span> <span class="toc-text">支持hudi</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#kyuubi1-5-2"><span class="toc-number">2.3.</span> <span class="toc-text">kyuubi1.5.2</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#配置kyuubi"><span class="toc-number">2.3.1.</span> <span class="toc-text">配置kyuubi</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#kyuubi-env-sh"><span class="toc-number">2.3.1.1.</span> <span class="toc-text">kyuubi-env.sh</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#kyuubi-defaults-conf"><span class="toc-number">2.3.1.2.</span> <span class="toc-text">kyuubi-defaults.conf</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#验证-2"><span class="toc-number">2.3.2.</span> <span class="toc-text">验证</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#集成kyuubi-spark-authz"><span class="toc-number">2.3.3.</span> <span class="toc-text">集成kyuubi-spark-authz</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#同时支持hudi"><span class="toc-number">2.3.4.</span> <span class="toc-text">同时支持hudi</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#优化Spark启动时间"><span class="toc-number">2.3.5.</span> <span class="toc-text">优化Spark启动时间</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#创建archive（spark-yarn-archive）"><span class="toc-number">2.3.5.1.</span> <span class="toc-text">创建archive（spark.yarn.archive）</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#上传jar包到hdfs"><span class="toc-number">2.3.5.2.</span> <span class="toc-text">上传jar包到hdfs</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#配置-spark-defaults-conf"><span class="toc-number">2.3.5.3.</span> <span class="toc-text">配置 spark-defaults.conf</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#动态资源申请"><span class="toc-number">2.3.6.</span> <span class="toc-text">动态资源申请</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#HA"><span class="toc-number">2.3.7.</span> <span class="toc-text">HA</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#编译打包Spark3-1-2"><span class="toc-number">3.</span> <span class="toc-text">编译打包Spark3.1.2</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#编译打包-Kyuubi-1-5-2"><span class="toc-number">4.</span> <span class="toc-text">编译打包 Kyuubi 1.5.2</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#打分布式tgz安装包"><span class="toc-number">4.1.</span> <span class="toc-text">打分布式tgz安装包</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#异常解决过程"><span class="toc-number">4.1.1.</span> <span class="toc-text">异常解决过程</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#打包成功"><span class="toc-number">4.2.</span> <span class="toc-text">打包成功</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#更新"><span class="toc-number">5.</span> <span class="toc-text">更新</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE"><span class="toc-number">2.</span> <span class="toc-text">配置</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Spark3-1-2"><span class="toc-number">2.1.</span> <span class="toc-text">Spark3.1.2</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%AA%8C%E8%AF%81"><span class="toc-number">2.1.1.</span> <span class="toc-text">验证</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#kyuubi-spark-authz"><span class="toc-number">2.2.</span> <span class="toc-text">kyuubi-spark-authz</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%85%8D%E7%BD%AEranger%E7%AD%96%E7%95%A5"><span class="toc-number">2.2.1.</span> <span class="toc-text">配置ranger策略</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%85%8D%E7%BD%AEspark"><span class="toc-number">2.2.2.</span> <span class="toc-text">配置spark</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%AA%8C%E8%AF%81-1"><span class="toc-number">2.2.3.</span> <span class="toc-text">验证</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E9%AA%8C%E8%AF%81spark%E7%94%A8%E6%88%B7"><span class="toc-number">2.2.3.1.</span> <span class="toc-text">验证spark用户</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E9%AA%8C%E8%AF%81hive%E7%94%A8%E6%88%B7"><span class="toc-number">2.2.3.2.</span> <span class="toc-text">验证hive用户</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%94%AF%E6%8C%81hudi"><span class="toc-number">2.2.4.</span> <span class="toc-text">支持hudi</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#kyuubi1-5-2"><span class="toc-number">2.3.</span> <span class="toc-text">kyuubi1.5.2</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%85%8D%E7%BD%AEkyuubi"><span class="toc-number">2.3.1.</span> <span class="toc-text">配置kyuubi</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#kyuubi-env-sh"><span class="toc-number">2.3.1.1.</span> <span class="toc-text">kyuubi-env.sh</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#kyuubi-defaults-conf"><span class="toc-number">2.3.1.2.</span> <span class="toc-text">kyuubi-defaults.conf</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%AA%8C%E8%AF%81-2"><span class="toc-number">2.3.2.</span> <span class="toc-text">验证</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%9B%86%E6%88%90kyuubi-spark-authz"><span class="toc-number">2.3.3.</span> <span class="toc-text">集成kyuubi-spark-authz</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%90%8C%E6%97%B6%E6%94%AF%E6%8C%81hudi"><span class="toc-number">2.3.4.</span> <span class="toc-text">同时支持hudi</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BC%98%E5%8C%96Spark%E5%90%AF%E5%8A%A8%E6%97%B6%E9%97%B4"><span class="toc-number">2.3.5.</span> <span class="toc-text">优化Spark启动时间</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%88%9B%E5%BB%BAarchive%EF%BC%88spark-yarn-archive%EF%BC%89"><span class="toc-number">2.3.5.1.</span> <span class="toc-text">创建archive（spark.yarn.archive）</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E4%B8%8A%E4%BC%A0jar%E5%8C%85%E5%88%B0hdfs"><span class="toc-number">2.3.5.2.</span> <span class="toc-text">上传jar包到hdfs</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE-spark-defaults-conf"><span class="toc-number">2.3.5.3.</span> <span class="toc-text">配置 spark-defaults.conf</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%8A%A8%E6%80%81%E8%B5%84%E6%BA%90%E7%94%B3%E8%AF%B7"><span class="toc-number">2.3.6.</span> <span class="toc-text">动态资源申请</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#HA"><span class="toc-number">2.3.7.</span> <span class="toc-text">HA</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BC%96%E8%AF%91%E6%89%93%E5%8C%85Spark3-1-2"><span class="toc-number">3.</span> <span class="toc-text">编译打包Spark3.1.2</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BC%96%E8%AF%91%E6%89%93%E5%8C%85-Kyuubi-1-5-2"><span class="toc-number">4.</span> <span class="toc-text">编译打包 Kyuubi 1.5.2</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%89%93%E5%88%86%E5%B8%83%E5%BC%8Ftgz%E5%AE%89%E8%A3%85%E5%8C%85"><span class="toc-number">4.1.</span> <span class="toc-text">打分布式tgz安装包</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%BC%82%E5%B8%B8%E8%A7%A3%E5%86%B3%E8%BF%87%E7%A8%8B"><span class="toc-number">4.1.1.</span> <span class="toc-text">异常解决过程</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%89%93%E5%8C%85%E6%88%90%E5%8A%9F"><span class="toc-number">4.2.</span> <span class="toc-text">打包成功</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9B%B4%E6%96%B0"><span class="toc-number">5.</span> <span class="toc-text">更新</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -699,14 +692,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -716,6 +701,22 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -731,14 +732,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
@@ -751,23 +744,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -787,7 +764,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -799,15 +788,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -843,11 +828,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -879,15 +864,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -899,7 +876,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -907,7 +884,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -919,7 +896,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -927,11 +908,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -940,6 +921,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -955,15 +944,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -972,6 +957,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -984,10 +973,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1007,10 +992,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
@@ -1019,7 +1000,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1027,11 +1008,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1059,7 +1044,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1075,7 +1076,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
+                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1083,11 +1084,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1107,23 +1104,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ZooKeeper</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1132,6 +1121,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ollama</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
             
             <div class="clearfix"></div>

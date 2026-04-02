@@ -10,22 +10,25 @@
   <title>通过DBeaver本地访问远程Kerberos环境下的Hive | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="前言本文讲解如何通过数据库客户端界面工具DBeaver连接远程Kerberos环境下的Hive。  因为在远程服务器上的命令行里写SQL查询Hive表，如果数据量和表字段比较多，命令行界面不利于分析表数据，所以需要客户端工具如DBeave远程连接Hive查询数据，但是DBeaver默认的不能访问Kerberos下的Hive，需要一些配置才可以访问，这里记录一下。  1、DBeaver连接Hive关">
-<meta name="keywords" content="Spark,Hive,DBeaver,Kerberos">
 <meta property="og:type" content="article">
 <meta property="og:title" content="通过DBeaver本地访问远程Kerberos环境下的Hive">
 <meta property="og:url" content="https://dongkelun.com/2021/06/03/dbeaverConnectKerberosHive/index.html">
 <meta property="og:site_name" content="伦少的博客">
 <meta property="og:description" content="前言本文讲解如何通过数据库客户端界面工具DBeaver连接远程Kerberos环境下的Hive。  因为在远程服务器上的命令行里写SQL查询Hive表，如果数据量和表字段比较多，命令行界面不利于分析表数据，所以需要客户端工具如DBeave远程连接Hive查询数据，但是DBeaver默认的不能访问Kerberos下的Hive，需要一些配置才可以访问，这里记录一下。  1、DBeaver连接Hive关">
-<meta property="og:locale" content="cn">
+<meta property="og:locale">
 <meta property="og:image" content="https://img.dongkelun.com/kerberos/k1.png">
 <meta property="og:image" content="https://img.dongkelun.com/kerberos/k2.png">
 <meta property="og:image" content="https://img.dongkelun.com/kerberos/k3.png">
 <meta property="og:image" content="https://img.dongkelun.com/kerberos/k4.png">
 <meta property="og:image" content="https://img.dongkelun.com/kerberos/k5.png">
-<meta property="og:updated_time" content="2023-06-08T11:35:28.389Z">
+<meta property="article:published_time" content="2021-06-02T16:00:00.000Z">
+<meta property="article:modified_time" content="2023-06-08T11:35:28.389Z">
+<meta property="article:author" content="董可伦">
+<meta property="article:tag" content="DBeaver">
+<meta property="article:tag" content="Hive">
+<meta property="article:tag" content="Kerberos">
+<meta property="article:tag" content="Spark">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="通过DBeaver本地访问远程Kerberos环境下的Hive">
-<meta name="twitter:description" content="前言本文讲解如何通过数据库客户端界面工具DBeaver连接远程Kerberos环境下的Hive。  因为在远程服务器上的命令行里写SQL查询Hive表，如果数据量和表字段比较多，命令行界面不利于分析表数据，所以需要客户端工具如DBeave远程连接Hive查询数据，但是DBeaver默认的不能访问Kerberos下的Hive，需要一些配置才可以访问，这里记录一下。  1、DBeaver连接Hive关">
 <meta name="twitter:image" content="https://img.dongkelun.com/kerberos/k1.png">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
@@ -44,7 +47,7 @@
 
   
 
-</head>
+<meta name="generator" content="Hexo 8.1.1"></head>
 
 <body>
   <div id="container" q-class="show:isCtnShow">
@@ -74,7 +77,7 @@
 			<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 		</a>
 		<hgroup>
-		  <h1 class="header-author"><a href="/">董可伦</a></h1>
+		  <h1 class="header-author"><a href="/"></a></h1>
 		</hgroup>
 		
 
@@ -146,7 +149,7 @@
 				<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 			</div>
 			<hgroup>
-			  <h1 class="header-author js-header-author">董可伦</h1>
+			  <h1 class="header-author js-header-author"></h1>
 			</hgroup>
 			
 			
@@ -274,34 +277,31 @@
 <p>因为在远程服务器上的命令行里写SQL查询Hive表，如果数据量和表字段比较多，命令行界面不利于分析表数据，所以需要客户端工具如DBeave远程连接Hive查询数据，但是DBeaver默认的不能访问Kerberos下的Hive，需要一些配置才可以访问，这里记录一下。</p>
 </blockquote>
 <h2 id="1、DBeaver连接Hive"><a href="#1、DBeaver连接Hive" class="headerlink" title="1、DBeaver连接Hive"></a>1、DBeaver连接Hive</h2><p>关于DBeaver如何连接正常的不带Kerberos认证的Hive,请参考<a href="https://dongkelun.com/2018/07/13/dbeaverConnectHive/">通过数据库客户端界面工具DBeaver连接Hive</a>,本文只讲解如何在Windows上用DBeaver对kerberos认证</p>
-<h2 id="2、安装Kerberos客户端"><a href="#2、安装Kerberos客户端" class="headerlink" title="2、安装Kerberos客户端"></a>2、安装Kerberos客户端</h2><p>官网下载<a href="https://web.mit.edu/kerberos/dist/index.html" target="_blank" rel="noopener">https://web.mit.edu/kerberos/dist/index.html</a>,我下载的是这个：<a href="https://web.mit.edu/kerberos/dist/index.html#kfw-4.1" target="_blank" rel="noopener">Kerberos for Windows Release 4.1 - current release</a></p>
+<h2 id="2、安装Kerberos客户端"><a href="#2、安装Kerberos客户端" class="headerlink" title="2、安装Kerberos客户端"></a>2、安装Kerberos客户端</h2><p>官网下载<a href="https://web.mit.edu/kerberos/dist/index.html">https://web.mit.edu/kerberos/dist/index.html</a>,我下载的是这个：<a href="https://web.mit.edu/kerberos/dist/index.html#kfw-4.1">Kerberos for Windows Release 4.1 - current release</a></p>
 <p>下载下来后，一键安装</p>
-<h2 id="3、krb5-ini"><a href="#3、krb5-ini" class="headerlink" title="3、krb5.ini"></a>3、krb5.ini</h2><p>我的kerberos客户端安装目录为D:\program\company\kerberos，将集群上的/etc/krb5.conf，复制到此目录下，改名为krb5.ini,内容如下：<br><a id="more"></a><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">[libdefaults]</span><br><span class="line">  renew_lifetime = 7d</span><br><span class="line">  forwardable = true</span><br><span class="line">  default_realm = INDATA.COM</span><br><span class="line">  ticket_lifetime = 24h</span><br><span class="line">  dns_lookup_realm = false</span><br><span class="line">  dns_lookup_kdc = false</span><br><span class="line">  default_ccache_name = /tmp/krb5cc_%&#123;uid&#125;</span><br><span class="line">  #default_tgs_enctypes = aes des3-cbc-sha1 rc4 des-cbc-md5</span><br><span class="line">  #default_tkt_enctypes = aes des3-cbc-sha1 rc4 des-cbc-md5</span><br><span class="line"></span><br><span class="line">[domain_realm]</span><br><span class="line">  indata.com = INDATA.COM</span><br><span class="line"></span><br><span class="line">[logging]</span><br><span class="line">  default = FILE:/var/log/krb5kdc.log</span><br><span class="line">  admin_server = FILE:/var/log/kadmind.log</span><br><span class="line">  kdc = FILE:/var/log/krb5kdc.log</span><br><span class="line"></span><br><span class="line">[realms]</span><br><span class="line">  INDATA.COM = &#123;</span><br><span class="line">    admin_server = indata-192.168.44.128.indata.com:17490</span><br><span class="line">    kdc = indata-192.168.44.128.indata.com</span><br><span class="line">    kdc = indata-192.168.44.129.indata.com</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="3、krb5-ini"><a href="#3、krb5-ini" class="headerlink" title="3、krb5.ini"></a>3、krb5.ini</h2><p>我的kerberos客户端安装目录为D:\program\company\kerberos，将集群上的/etc/krb5.conf，复制到此目录下，改名为krb5.ini,内容如下：<br><span id="more"></span><br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">[libdefaults]</span><br><span class="line">  renew_lifetime = 7d</span><br><span class="line">  forwardable = true</span><br><span class="line">  default_realm = INDATA.COM</span><br><span class="line">  ticket_lifetime = 24h</span><br><span class="line">  dns_lookup_realm = false</span><br><span class="line">  dns_lookup_kdc = false</span><br><span class="line">  default_ccache_name = /tmp/krb5cc_%&#123;uid&#125;</span><br><span class="line">  #default_tgs_enctypes = aes des3-cbc-sha1 rc4 des-cbc-md5</span><br><span class="line">  #default_tkt_enctypes = aes des3-cbc-sha1 rc4 des-cbc-md5</span><br><span class="line"></span><br><span class="line">[domain_realm]</span><br><span class="line">  indata.com = INDATA.COM</span><br><span class="line"></span><br><span class="line">[logging]</span><br><span class="line">  default = FILE:/var/log/krb5kdc.log</span><br><span class="line">  admin_server = FILE:/var/log/kadmind.log</span><br><span class="line">  kdc = FILE:/var/log/krb5kdc.log</span><br><span class="line"></span><br><span class="line">[realms]</span><br><span class="line">  INDATA.COM = &#123;</span><br><span class="line">    admin_server = indata-192.168.44.128.indata.com:17490</span><br><span class="line">    kdc = indata-192.168.44.128.indata.com</span><br><span class="line">    kdc = indata-192.168.44.129.indata.com</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure></p>
 <h2 id="4、配置kerberos环境变量"><a href="#4、配置kerberos环境变量" class="headerlink" title="4、配置kerberos环境变量"></a>4、配置kerberos环境变量</h2><p>KRB5_CONFIG：D:\program\company\kerberos\krb5.ini<br>KRB5CCNAME：D:\tmp\krb5cache</p>
 <p>重启生效</p>
-<h2 id="5、验证keberos命令"><a href="#5、验证keberos命令" class="headerlink" title="5、验证keberos命令"></a>5、验证keberos命令</h2><p>将集群服务器上的keytab文件下载到本地，这里为D:\conf\inspur\hive.service.keytab，然后用下面的命令验证<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kinit -kt D:\conf\inspur\hive.service.keytab hive/indata-192.168.44.128.indata.com@INDATA.COM</span><br></pre></td></tr></table></figure></p>
-<p>我的报了下面的异常<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Exception: too many parameters</span><br><span class="line">java.lang.IllegalArgumentException: too many parameters</span><br><span class="line">        at sun.security.krb5.internal.tools.KinitOptions.&lt;init&gt;(KinitOptions.java:<span class="number">153</span>)</span><br><span class="line">        at sun.security.krb5.internal.tools.Kinit.&lt;init&gt;(Kinit.java:<span class="number">147</span>)</span><br><span class="line">        at sun.security.krb5.internal.tools.Kinit.main(Kinit.java:<span class="number">113</span>)</span><br></pre></td></tr></table></figure></p>
-<p>一开始很奇怪，因为kinit命令就是这么用的，为啥会报参数过多呢，网上查资料发现，原来是jdk也自带了一个kinit命令，这里用的是jdk自带的kinit命令，需要再配置一下环境变量，在path里添加D:\program\company\kerberos\bin，需要注意的是要加在java的环境变量（%JAVA_HOME%\jre\bin）的前面。然后重试上面的命令，发现不报错了，用klist验证</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">klist</span><br><span class="line">Ticket cache: FILE:D:\tmp\krb5cache</span><br><span class="line">Default principal: hive/indata-192.168.44.128.indata.com@INDATA.COM</span><br><span class="line"></span><br><span class="line">Valid starting     Expires            Service principal</span><br><span class="line">06/03/21 15:43:03  06/04/21 15:43:02  krbtgt/INDATA.COM@INDATA.COM</span><br><span class="line">        renew until 06/10/21 15:43:02</span><br></pre></td></tr></table></figure>
+<h2 id="5、验证keberos命令"><a href="#5、验证keberos命令" class="headerlink" title="5、验证keberos命令"></a>5、验证keberos命令</h2><p>将集群服务器上的keytab文件下载到本地，这里为D:\conf\inspur\hive.service.keytab，然后用下面的命令验证<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kinit -kt D:\conf\inspur\hive.service.keytab hive/indata-192.168.44.128.indata.com@INDATA.COM</span><br></pre></td></tr></table></figure><br>我的报了下面的异常<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Exception: too many parameters</span><br><span class="line">java.lang.IllegalArgumentException: too many parameters</span><br><span class="line">        at sun.security.krb5.internal.tools.KinitOptions.&lt;init&gt;(KinitOptions.java:<span class="number">153</span>)</span><br><span class="line">        at sun.security.krb5.internal.tools.Kinit.&lt;init&gt;(Kinit.java:<span class="number">147</span>)</span><br><span class="line">        at sun.security.krb5.internal.tools.Kinit.main(Kinit.java:<span class="number">113</span>)</span><br></pre></td></tr></table></figure><br>一开始很奇怪，因为kinit命令就是这么用的，为啥会报参数过多呢，网上查资料发现，原来是jdk也自带了一个kinit命令，这里用的是jdk自带的kinit命令，需要再配置一下环境变量，在path里添加D:\program\company\kerberos\bin，需要注意的是要加在java的环境变量（%JAVA_HOME%\jre\bin）的前面。然后重试上面的命令，发现不报错了，用klist验证</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">klist</span><br><span class="line">Ticket cache: FILE:D:\tmp\krb5cache</span><br><span class="line">Default principal: hive/indata-192.168.44.128.indata.com@INDATA.COM</span><br><span class="line"></span><br><span class="line">Valid starting     Expires            Service principal</span><br><span class="line">06/03/21 15:43:03  06/04/21 15:43:02  krbtgt/INDATA.COM@INDATA.COM</span><br><span class="line">        renew until 06/10/21 15:43:02</span><br></pre></td></tr></table></figure>
 <p>也可以在kerberos界面上查看，如下图：</p>
 <p><img src="https://img.dongkelun.com/kerberos/k1.png" alt=""></p>
 <blockquote>
 <p>注意：后面的用DBeaver连接Hive时，首先用kinit 命令进行缓存票据</p>
 </blockquote>
-<h2 id="6、配置DBeaver"><a href="#6、配置DBeaver" class="headerlink" title="6、配置DBeaver"></a>6、配置DBeaver</h2><p>在配置文件D:\program\company\dbeaver\dbeaver.ini最后添加<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">-Djavax.security.auth.useSubjectCredsOnly=false</span><br><span class="line">-Djava.security.krb5.conf=D:\program\company\kerberos\krb5.ini</span><br><span class="line">-Dsun.security.krb5.debug=true</span><br></pre></td></tr></table></figure></p>
-<p>注意-Djava.security.krb5.conf对应的值不要加引号””,网上很多教程都是加””，这样会导致DBeaver识别不到krb5.ini的配置文件，从而导致对kerberos的认证失败。这里坑了我很长时间，一直搞不清为啥认证失败。。。</p>
+<h2 id="6、配置DBeaver"><a href="#6、配置DBeaver" class="headerlink" title="6、配置DBeaver"></a>6、配置DBeaver</h2><p>在配置文件D:\program\company\dbeaver\dbeaver.ini最后添加<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">-Djavax.security.auth.useSubjectCredsOnly=false</span><br><span class="line">-Djava.security.krb5.conf=D:\program\company\kerberos\krb5.ini</span><br><span class="line">-Dsun.security.krb5.debug=true</span><br></pre></td></tr></table></figure><br>注意-Djava.security.krb5.conf对应的值不要加引号””,网上很多教程都是加””，这样会导致DBeaver识别不到krb5.ini的配置文件，从而导致对kerberos的认证失败。这里坑了我很长时间，一直搞不清为啥认证失败。。。</p>
 <h2 id="7、连接Spark-Thrift-Server"><a href="#7、连接Spark-Thrift-Server" class="headerlink" title="7、连接Spark Thrift Server"></a>7、连接Spark Thrift Server</h2><p>首先启动Spark Thrift Server,关于怎么启动，参考<a href="https://dongkelun.com/2021/02/19/javaSparkThriftServer/">https://dongkelun.com/2021/02/19/javaSparkThriftServer/</a></p>
-<p>然后在Dbeaver里:新建-&gt;数据库连接-&gt;选择Hadoop-Spark Hive-&gt;输入主机IP、端口、数据库-&gt;然后编辑驱动设置，删除原来的驱动，添加这个项目的jar包<a href="https://github.com/dongkelun/java-spark-thrift-server-demo" target="_blank" rel="noopener">https://github.com/dongkelun/java-spark-thrift-server-demo</a></p>
+<p>然后在Dbeaver里:新建-&gt;数据库连接-&gt;选择Hadoop-Spark Hive-&gt;输入主机IP、端口、数据库-&gt;然后编辑驱动设置，删除原来的驱动，添加这个项目的jar包<a href="https://github.com/dongkelun/java-spark-thrift-server-demo">https://github.com/dongkelun/java-spark-thrift-server-demo</a></p>
 <p>其中这里的数据库为default;principal=HTTP/indata-192.168.44.128.indata.com@INDATA.COM?hive.server2.transport.mode=http;hive.server2.thrift.http.path=cliservice<br><img src="https://img.dongkelun.com/kerberos/k2.png" alt=""></p>
 <p>然后测试连接<br><img src="https://img.dongkelun.com/kerberos/k3.png" alt=""><br>如果不成功，检查一下上述的配置</p>
-<h2 id="8、连接Hive-Server"><a href="#8、连接Hive-Server" class="headerlink" title="8、连接Hive Server"></a>8、连接Hive Server</h2><p>测试连接前先启动hive相关的服务,然后在Dbeaver里:新建-&gt;数据库连接-&gt;选择Hadoop-Spark Hive-&gt;输入主机IP、端口、数据库-&gt;然后编辑驱动设置，删除原来的驱动，添加这个项目的jar包<a href="https://github.com/dongkelun/java-spark-thrift-server-demo" target="_blank" rel="noopener">https://github.com/dongkelun/java-spark-thrift-server-demo</a></p>
+<h2 id="8、连接Hive-Server"><a href="#8、连接Hive-Server" class="headerlink" title="8、连接Hive Server"></a>8、连接Hive Server</h2><p>测试连接前先启动hive相关的服务,然后在Dbeaver里:新建-&gt;数据库连接-&gt;选择Hadoop-Spark Hive-&gt;输入主机IP、端口、数据库-&gt;然后编辑驱动设置，删除原来的驱动，添加这个项目的jar包<a href="https://github.com/dongkelun/java-spark-thrift-server-demo">https://github.com/dongkelun/java-spark-thrift-server-demo</a></p>
 <p>其中这里的数据库为default;principal=hive/indata-192.168.44.128.indata.com@INDATA.COM</p>
 <p><img src="https://img.dongkelun.com/kerberos/k4.png" alt=""></p>
 <p>然后测试连接<br><img src="https://img.dongkelun.com/kerberos/k5.png" alt=""></p>
 <h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
-<li><a href="https://zhuanlan.zhihu.com/p/63154589" target="_blank" rel="noopener">使用DBeaver访问Kerberos环境下的Hive</a></li>
-<li><a href="https://www.aboutyun.com/thread-26425-1-1.html" target="_blank" rel="noopener">DBeaver实战之访问Kerberos环境下的Hive</a></li>
-<li><a href="https://blog.csdn.net/Mr_kidBK/article/details/104580112" target="_blank" rel="noopener">新版DBeaver访问Kerberos环境下的Impala，详细配置过程，看完不会你打我！</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/63154589">使用DBeaver访问Kerberos环境下的Hive</a></li>
+<li><a href="https://www.aboutyun.com/thread-26425-1-1.html">DBeaver实战之访问Kerberos环境下的Hive</a></li>
+<li><a href="https://blog.csdn.net/Mr_kidBK/article/details/104580112">新版DBeaver访问Kerberos环境下的Impala，详细配置过程，看完不会你打我！</a></li>
 </ul>
 <h2 id="相关阅读"><a href="#相关阅读" class="headerlink" title="相关阅读"></a>相关阅读</h2><ul>
 <li><a href="https://dongkelun.com/2018/07/13/dbeaverConnectHive/">通过数据库客户端界面工具DBeaver连接Hive</a></li>
@@ -464,7 +464,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1、DBeaver连接Hive"><span class="toc-number">2.</span> <span class="toc-text">1、DBeaver连接Hive</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2、安装Kerberos客户端"><span class="toc-number">3.</span> <span class="toc-text">2、安装Kerberos客户端</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3、krb5-ini"><span class="toc-number">4.</span> <span class="toc-text">3、krb5.ini</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4、配置kerberos环境变量"><span class="toc-number">5.</span> <span class="toc-text">4、配置kerberos环境变量</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5、验证keberos命令"><span class="toc-number">6.</span> <span class="toc-text">5、验证keberos命令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#6、配置DBeaver"><span class="toc-number">7.</span> <span class="toc-text">6、配置DBeaver</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#7、连接Spark-Thrift-Server"><span class="toc-number">8.</span> <span class="toc-text">7、连接Spark Thrift Server</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#8、连接Hive-Server"><span class="toc-number">9.</span> <span class="toc-text">8、连接Hive Server</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考"><span class="toc-number">10.</span> <span class="toc-text">参考</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#相关阅读"><span class="toc-number">11.</span> <span class="toc-text">相关阅读</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1%E3%80%81DBeaver%E8%BF%9E%E6%8E%A5Hive"><span class="toc-number">2.</span> <span class="toc-text">1、DBeaver连接Hive</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2%E3%80%81%E5%AE%89%E8%A3%85Kerberos%E5%AE%A2%E6%88%B7%E7%AB%AF"><span class="toc-number">3.</span> <span class="toc-text">2、安装Kerberos客户端</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3%E3%80%81krb5-ini"><span class="toc-number">4.</span> <span class="toc-text">3、krb5.ini</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4%E3%80%81%E9%85%8D%E7%BD%AEkerberos%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F"><span class="toc-number">5.</span> <span class="toc-text">4、配置kerberos环境变量</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5%E3%80%81%E9%AA%8C%E8%AF%81keberos%E5%91%BD%E4%BB%A4"><span class="toc-number">6.</span> <span class="toc-text">5、验证keberos命令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#6%E3%80%81%E9%85%8D%E7%BD%AEDBeaver"><span class="toc-number">7.</span> <span class="toc-text">6、配置DBeaver</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#7%E3%80%81%E8%BF%9E%E6%8E%A5Spark-Thrift-Server"><span class="toc-number">8.</span> <span class="toc-text">7、连接Spark Thrift Server</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#8%E3%80%81%E8%BF%9E%E6%8E%A5Hive-Server"><span class="toc-number">9.</span> <span class="toc-text">8、连接Hive Server</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">10.</span> <span class="toc-text">参考</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E9%98%85%E8%AF%BB"><span class="toc-number">11.</span> <span class="toc-text">相关阅读</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -639,14 +639,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -656,6 +648,22 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -671,14 +679,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
@@ -691,23 +691,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -727,7 +711,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -739,15 +735,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -783,11 +775,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -819,15 +811,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -839,7 +823,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -847,7 +831,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -859,7 +843,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -867,11 +855,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -880,6 +868,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -895,15 +891,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -912,6 +904,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -924,10 +920,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -947,10 +939,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
@@ -959,7 +947,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -967,11 +955,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -999,7 +991,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1015,7 +1023,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
+                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1023,11 +1031,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1047,23 +1051,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ZooKeeper</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1072,6 +1068,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ollama</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
             
             <div class="clearfix"></div>

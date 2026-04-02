@@ -9,18 +9,19 @@
   <link rel="dns-prefetch" href="https://dongkelun.com">
   <title>Spark SQL增量查询Hudi表 | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="前言由于项目上主要用Hive查询Hudi，所以之前总结过一篇:Hive增量查询Hudi表。最近可能会有Spark SQL增量查询Hudi表的需求，并且我发现目前用纯Spark SQL的形式还不能直接增量查询Hudi表，于是进行学习总结一下。 编程方式（DF+SQL）先看一下官方文档上Spark SQL增量查询的方式，地址：https://hudi.apache.org/cn/docs/quick-">
-<meta name="keywords" content="Spark,Hudi">
+  <meta name="description" content="前言由于项目上主要用Hive查询Hudi，所以之前总结过一篇:Hive增量查询Hudi表。最近可能会有Spark SQL增量查询Hudi表的需求，并且我发现目前用纯Spark SQL的形式还不能直接增量查询Hudi表，于是进行学习总结一下。 编程方式（DF+SQL）先看一下官方文档上Spark SQL增量查询的方式，地址：https:&#x2F;&#x2F;hudi.apache.org&#x2F;cn&#x2F;docs&#x2F;quick-">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Spark SQL增量查询Hudi表">
 <meta property="og:url" content="https://dongkelun.com/2022/11/30/hudiSparkSQLIncrementalQuery/index.html">
 <meta property="og:site_name" content="伦少的博客">
-<meta property="og:description" content="前言由于项目上主要用Hive查询Hudi，所以之前总结过一篇:Hive增量查询Hudi表。最近可能会有Spark SQL增量查询Hudi表的需求，并且我发现目前用纯Spark SQL的形式还不能直接增量查询Hudi表，于是进行学习总结一下。 编程方式（DF+SQL）先看一下官方文档上Spark SQL增量查询的方式，地址：https://hudi.apache.org/cn/docs/quick-">
-<meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2022-12-05T07:48:28.122Z">
+<meta property="og:description" content="前言由于项目上主要用Hive查询Hudi，所以之前总结过一篇:Hive增量查询Hudi表。最近可能会有Spark SQL增量查询Hudi表的需求，并且我发现目前用纯Spark SQL的形式还不能直接增量查询Hudi表，于是进行学习总结一下。 编程方式（DF+SQL）先看一下官方文档上Spark SQL增量查询的方式，地址：https:&#x2F;&#x2F;hudi.apache.org&#x2F;cn&#x2F;docs&#x2F;quick-">
+<meta property="og:locale">
+<meta property="article:published_time" content="2022-11-29T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-12-05T07:48:28.122Z">
+<meta property="article:author" content="董可伦">
+<meta property="article:tag" content="Hudi">
+<meta property="article:tag" content="Spark">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Spark SQL增量查询Hudi表">
-<meta name="twitter:description" content="前言由于项目上主要用Hive查询Hudi，所以之前总结过一篇:Hive增量查询Hudi表。最近可能会有Spark SQL增量查询Hudi表的需求，并且我发现目前用纯Spark SQL的形式还不能直接增量查询Hudi表，于是进行学习总结一下。 编程方式（DF+SQL）先看一下官方文档上Spark SQL增量查询的方式，地址：https://hudi.apache.org/cn/docs/quick-">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -38,7 +39,7 @@
 
   
 
-</head>
+<meta name="generator" content="Hexo 8.1.1"></head>
 
 <body>
   <div id="container" q-class="show:isCtnShow">
@@ -68,7 +69,7 @@
 			<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 		</a>
 		<hgroup>
-		  <h1 class="header-author"><a href="/">董可伦</a></h1>
+		  <h1 class="header-author"><a href="/"></a></h1>
 		</hgroup>
 		
 
@@ -140,7 +141,7 @@
 				<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 			</div>
 			<hgroup>
-			  <h1 class="header-author js-header-author">董可伦</h1>
+			  <h1 class="header-author js-header-author"></h1>
 			</hgroup>
 			
 			
@@ -255,27 +256,25 @@
         
         
       
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>由于项目上主要用Hive查询Hudi，所以之前总结过一篇:<a href="https://mp.weixin.qq.com/s/OGqSzU62baz9jCeycJ12Kw" target="_blank" rel="noopener">Hive增量查询Hudi表</a>。最近可能会有Spark SQL增量查询Hudi表的需求，并且我发现目前用纯Spark SQL的形式还不能直接增量查询Hudi表，于是进行学习总结一下。</p>
-<h2 id="编程方式（DF-SQL）"><a href="#编程方式（DF-SQL）" class="headerlink" title="编程方式（DF+SQL）"></a>编程方式（DF+SQL）</h2><p>先看一下官方文档上Spark SQL增量查询的方式，地址：<a href="https://hudi.apache.org/cn/docs/quick-start-guide#incremental-query" target="_blank" rel="noopener">https://hudi.apache.org/cn/docs/quick-start-guide#incremental-query</a> 和 <a href="https://hudi.apache.org/cn/docs/querying_data#incremental-query" target="_blank" rel="noopener">https://hudi.apache.org/cn/docs/querying_data#incremental-query</a></p>
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>由于项目上主要用Hive查询Hudi，所以之前总结过一篇:<a href="https://mp.weixin.qq.com/s/OGqSzU62baz9jCeycJ12Kw">Hive增量查询Hudi表</a>。最近可能会有Spark SQL增量查询Hudi表的需求，并且我发现目前用纯Spark SQL的形式还不能直接增量查询Hudi表，于是进行学习总结一下。</p>
+<h2 id="编程方式（DF-SQL）"><a href="#编程方式（DF-SQL）" class="headerlink" title="编程方式（DF+SQL）"></a>编程方式（DF+SQL）</h2><p>先看一下官方文档上Spark SQL增量查询的方式，地址：<a href="https://hudi.apache.org/cn/docs/quick-start-guide#incremental-query">https://hudi.apache.org/cn/docs/quick-start-guide#incremental-query</a> 和 <a href="https://hudi.apache.org/cn/docs/querying_data#incremental-query">https://hudi.apache.org/cn/docs/querying_data#incremental-query</a></p>
 <p>它是先通过spark.read中添加增量参数的形式读Hudi表为DF，然后将DF注册成临时表，最后通过Spark SQL查询临时表的形式，实现增量查询的。</p>
-<a id="more"></a>
+<span id="more"></span>
 <h3 id="参数"><a href="#参数" class="headerlink" title="参数"></a>参数</h3><ul>
 <li>hoodie.datasource.query.type=incremental 查询类型，值为incremental时代表增量查询，默认值snapshot，增量查询时，该参数必填</li>
 <li>hoodie.datasource.read.begin.instanttime 增量查询开始时间，必填 例如：20221126170009762</li>
 <li>hoodie.datasource.read.end.instanttime 增量查询结束时间，非必填 例如：20221126170023240</li>
 <li>hoodie.datasource.read.incr.path.glob  增量查询指定分区路径，非必填 例如 /dt=2022-11<em>/</em><br>查询范围 (BEGIN_INSTANTTIME,END_INSTANTTIME]，也就是大于开始时间（不包含），小于等于结束时间（包含），如果没有指定结束时间，那么查询大于BEGIN_INSTANTTIME到现在为止最新的数据，如果指定INCR_PATH_GLOB，那么只在指定分区路径下面查询对应的数据。</li>
 </ul>
-<h3 id="代码示例"><a href="#代码示例" class="headerlink" title="代码示例"></a>代码示例</h3><p>完整代码地址：<a href="https://github.com/dongkelun/hudi-demo/blob/master/hudi0.12_spark3.1/src/main/scala/com/dkl/hudi/spark3_1/IncrementalQuery.scala" target="_blank" rel="noopener">https://github.com/dongkelun/hudi-demo/blob/master/hudi0.12_spark3.1/src/main/scala/com/dkl/hudi/spark3_1/IncrementalQuery.scala</a></p>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.hudi.<span class="type">DataSourceReadOptions</span>.&#123;<span class="type">BEGIN_INSTANTTIME</span>, <span class="type">END_INSTANTTIME</span>, <span class="type">INCR_PATH_GLOB</span>, <span class="type">QUERY_TYPE</span>, <span class="type">QUERY_TYPE_INCREMENTAL_OPT_VAL</span>&#125;</span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SparkSession</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.catalyst.<span class="type">TableIdentifier</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> tableName = <span class="string">"test_hudi_incremental"</span></span><br><span class="line"></span><br><span class="line">spark.sql(</span><br><span class="line">  <span class="string">s""</span><span class="string">"</span></span><br><span class="line"><span class="string">     |create table $tableName (</span></span><br><span class="line"><span class="string">     |  id int,</span></span><br><span class="line"><span class="string">     |  name string,</span></span><br><span class="line"><span class="string">     |  price double,</span></span><br><span class="line"><span class="string">     |  ts long,</span></span><br><span class="line"><span class="string">     |  dt string</span></span><br><span class="line"><span class="string">     |) using hudi</span></span><br><span class="line"><span class="string">     | partitioned by (dt)</span></span><br><span class="line"><span class="string">     | options (</span></span><br><span class="line"><span class="string">     |  primaryKey = 'id',</span></span><br><span class="line"><span class="string">     |  preCombineField = 'ts',</span></span><br><span class="line"><span class="string">     |  type = 'cow'</span></span><br><span class="line"><span class="string">     | )</span></span><br><span class="line"><span class="string">     |"</span><span class="string">""</span>.stripMargin)</span><br><span class="line"></span><br><span class="line">spark.sql(<span class="string">s"insert into <span class="subst">$tableName</span> values (1,'hudi',10,100,'2022-11-25')"</span>)</span><br><span class="line">spark.sql(<span class="string">s"insert into <span class="subst">$tableName</span> values (2,'hudi',10,100,'2022-11-25')"</span>)</span><br><span class="line">spark.sql(<span class="string">s"insert into <span class="subst">$tableName</span> values (3,'hudi',10,100,'2022-11-26')"</span>)</span><br><span class="line">spark.sql(<span class="string">s"insert into <span class="subst">$tableName</span> values (4,'hudi',10,100,'2022-12-26')"</span>)</span><br><span class="line">spark.sql(<span class="string">s"insert into <span class="subst">$tableName</span> values (5,'hudi',10,100,'2022-12-27')"</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> table = spark.sessionState.catalog.getTableMetadata(<span class="type">TableIdentifier</span>(tableName))</span><br><span class="line"><span class="keyword">val</span> basePath = table.storage.properties(<span class="string">"path"</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment">// incrementally query data</span></span><br><span class="line"><span class="keyword">val</span> incrementalDF = spark.read.format(<span class="string">"hudi"</span>).</span><br><span class="line">  option(<span class="type">QUERY_TYPE</span>.key, <span class="type">QUERY_TYPE_INCREMENTAL_OPT_VAL</span>).</span><br><span class="line">  option(<span class="type">BEGIN_INSTANTTIME</span>.key, beginTime).</span><br><span class="line">  option(<span class="type">END_INSTANTTIME</span>.key, endTime).</span><br><span class="line">  option(<span class="type">INCR_PATH_GLOB</span>.key, <span class="string">"/dt=2022-11*/*"</span>).</span><br><span class="line">        load(basePath)</span><br><span class="line"><span class="comment">//  table(tableName)</span></span><br><span class="line"></span><br><span class="line">incrementalDF.createOrReplaceTempView(<span class="string">s"temp_<span class="subst">$tableName</span>"</span>)</span><br><span class="line"></span><br><span class="line">spark.sql(<span class="string">s"select * from  temp_<span class="subst">$tableName</span>"</span>).show()</span><br><span class="line">spark.stop()</span><br></pre></td></tr></table></figure>
-<p>结果：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">-------------------+--------------------+------------------+----------------------+--------------------+---+----+-----+---+----------+</span></span><br><span class="line">|_hoodie_commit_time|_hoodie_commit_seqno|_hoodie_record_key|_hoodie_partition_path|   _hoodie_file_name| id|name|price| ts|        dt|</span><br><span class="line">+<span class="comment">-------------------+--------------------+------------------+----------------------+--------------------+---+----+-----+---+----------+</span></span><br><span class="line">|  20221126165954300|20221126165954300...|              id:1|         dt=2022-11-25|de99b299-b9de-423...|  1|hudi| 10.0|100|2022-11-25|</span><br><span class="line">|  20221126170009762|20221126170009762...|              id:2|         dt=2022-11-25|de99b299-b9de-423...|  2|hudi| 10.0|100|2022-11-25|</span><br><span class="line">|  20221126170030470|20221126170030470...|              id:5|         dt=2022-12-27|75f8a760-9dc3-452...|  5|hudi| 10.0|100|2022-12-27|</span><br><span class="line">|  20221126170023240|20221126170023240...|              id:4|         dt=2022-12-26|4751225d-4848-4dd...|  4|hudi| 10.0|100|2022-12-26|</span><br><span class="line">|  20221126170017119|20221126170017119...|              id:3|         dt=2022-11-26|2272e513-5516-43f...|  3|hudi| 10.0|100|2022-11-26|</span><br><span class="line">+<span class="comment">-------------------+--------------------+------------------+----------------------+--------------------+---+----+-----+---+----------+</span></span><br><span class="line"></span><br><span class="line">+<span class="comment">-----------------+</span></span><br><span class="line">|      commit_time|</span><br><span class="line">+<span class="comment">-----------------+</span></span><br><span class="line">|20221126170030470|</span><br><span class="line">|20221126170023240|</span><br><span class="line">|20221126170017119|</span><br><span class="line">|20221126170009762|</span><br><span class="line">|20221126165954300|</span><br><span class="line">+<span class="comment">-----------------+</span></span><br><span class="line"></span><br><span class="line">20221126170009762</span><br><span class="line">20221126170023240</span><br><span class="line">+<span class="comment">-------------------+--------------------+------------------+----------------------+--------------------+---+----+-----+---+----------+</span></span><br><span class="line">|_hoodie_commit_time|_hoodie_commit_seqno|_hoodie_record_key|_hoodie_partition_path|   _hoodie_file_name| id|name|price| ts|        dt|</span><br><span class="line">+<span class="comment">-------------------+--------------------+------------------+----------------------+--------------------+---+----+-----+---+----------+</span></span><br><span class="line">|  20221126170017119|20221126170017119...|              id:3|         dt=2022-11-26|2272e513-5516-43f...|  3|hudi| 10.0|100|2022-11-26|</span><br><span class="line">+<span class="comment">-------------------+--------------------+------------------+----------------------+--------------------+---+----+-----+---+----------+</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="代码示例"><a href="#代码示例" class="headerlink" title="代码示例"></a>代码示例</h3><p>完整代码地址：<a href="https://github.com/dongkelun/hudi-demo/blob/master/hudi0.12_spark3.1/src/main/scala/com/dkl/hudi/spark3_1/IncrementalQuery.scala">https://github.com/dongkelun/hudi-demo/blob/master/hudi0.12_spark3.1/src/main/scala/com/dkl/hudi/spark3_1/IncrementalQuery.scala</a></p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.hudi.<span class="type">DataSourceReadOptions</span>.&#123;<span class="type">BEGIN_INSTANTTIME</span>, <span class="type">END_INSTANTTIME</span>, <span class="type">INCR_PATH_GLOB</span>, <span class="type">QUERY_TYPE</span>, <span class="type">QUERY_TYPE_INCREMENTAL_OPT_VAL</span>&#125;</span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SparkSession</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.catalyst.<span class="type">TableIdentifier</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> tableName = <span class="string">&quot;test_hudi_incremental&quot;</span></span><br><span class="line"></span><br><span class="line">spark.sql(</span><br><span class="line">  <span class="string">s&quot;&quot;</span><span class="string">&quot;</span></span><br><span class="line"><span class="string">     |create table $tableName (</span></span><br><span class="line"><span class="string">     |  id int,</span></span><br><span class="line"><span class="string">     |  name string,</span></span><br><span class="line"><span class="string">     |  price double,</span></span><br><span class="line"><span class="string">     |  ts long,</span></span><br><span class="line"><span class="string">     |  dt string</span></span><br><span class="line"><span class="string">     |) using hudi</span></span><br><span class="line"><span class="string">     | partitioned by (dt)</span></span><br><span class="line"><span class="string">     | options (</span></span><br><span class="line"><span class="string">     |  primaryKey = &#x27;id&#x27;,</span></span><br><span class="line"><span class="string">     |  preCombineField = &#x27;ts&#x27;,</span></span><br><span class="line"><span class="string">     |  type = &#x27;cow&#x27;</span></span><br><span class="line"><span class="string">     | )</span></span><br><span class="line"><span class="string">     |&quot;</span><span class="string">&quot;&quot;</span>.stripMargin)</span><br><span class="line"></span><br><span class="line">spark.sql(<span class="string">s&quot;insert into <span class="subst">$tableName</span> values (1,&#x27;hudi&#x27;,10,100,&#x27;2022-11-25&#x27;)&quot;</span>)</span><br><span class="line">spark.sql(<span class="string">s&quot;insert into <span class="subst">$tableName</span> values (2,&#x27;hudi&#x27;,10,100,&#x27;2022-11-25&#x27;)&quot;</span>)</span><br><span class="line">spark.sql(<span class="string">s&quot;insert into <span class="subst">$tableName</span> values (3,&#x27;hudi&#x27;,10,100,&#x27;2022-11-26&#x27;)&quot;</span>)</span><br><span class="line">spark.sql(<span class="string">s&quot;insert into <span class="subst">$tableName</span> values (4,&#x27;hudi&#x27;,10,100,&#x27;2022-12-26&#x27;)&quot;</span>)</span><br><span class="line">spark.sql(<span class="string">s&quot;insert into <span class="subst">$tableName</span> values (5,&#x27;hudi&#x27;,10,100,&#x27;2022-12-27&#x27;)&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> table = spark.sessionState.catalog.getTableMetadata(<span class="type">TableIdentifier</span>(tableName))</span><br><span class="line"><span class="keyword">val</span> basePath = table.storage.properties(<span class="string">&quot;path&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment">// incrementally query data</span></span><br><span class="line"><span class="keyword">val</span> incrementalDF = spark.read.format(<span class="string">&quot;hudi&quot;</span>).</span><br><span class="line">  option(<span class="type">QUERY_TYPE</span>.key, <span class="type">QUERY_TYPE_INCREMENTAL_OPT_VAL</span>).</span><br><span class="line">  option(<span class="type">BEGIN_INSTANTTIME</span>.key, beginTime).</span><br><span class="line">  option(<span class="type">END_INSTANTTIME</span>.key, endTime).</span><br><span class="line">  option(<span class="type">INCR_PATH_GLOB</span>.key, <span class="string">&quot;/dt=2022-11*/*&quot;</span>).</span><br><span class="line">        load(basePath)</span><br><span class="line"><span class="comment">//  table(tableName)</span></span><br><span class="line"></span><br><span class="line">incrementalDF.createOrReplaceTempView(<span class="string">s&quot;temp_<span class="subst">$tableName</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">spark.sql(<span class="string">s&quot;select * from  temp_<span class="subst">$tableName</span>&quot;</span>).show()</span><br><span class="line">spark.stop()</span><br></pre></td></tr></table></figure>
+<p>结果：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="operator">+</span><span class="comment">-------------------+--------------------+------------------+----------------------+--------------------+---+----+-----+---+----------+</span></span><br><span class="line"><span class="operator">|</span>_hoodie_commit_time<span class="operator">|</span>_hoodie_commit_seqno<span class="operator">|</span>_hoodie_record_key<span class="operator">|</span>_hoodie_partition_path<span class="operator">|</span>   _hoodie_file_name<span class="operator">|</span> id<span class="operator">|</span>name<span class="operator">|</span>price<span class="operator">|</span> ts<span class="operator">|</span>        dt<span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-------------------+--------------------+------------------+----------------------+--------------------+---+----+-----+---+----------+</span></span><br><span class="line"><span class="operator">|</span>  <span class="number">20221126165954300</span><span class="operator">|</span><span class="number">20221126165954300.</span>..<span class="operator">|</span>              id:<span class="number">1</span><span class="operator">|</span>         dt<span class="operator">=</span><span class="number">2022</span><span class="number">-11</span><span class="number">-25</span><span class="operator">|</span>de99b299<span class="operator">-</span>b9de<span class="number">-423.</span>..<span class="operator">|</span>  <span class="number">1</span><span class="operator">|</span>hudi<span class="operator">|</span> <span class="number">10.0</span><span class="operator">|</span><span class="number">100</span><span class="operator">|</span><span class="number">2022</span><span class="number">-11</span><span class="number">-25</span><span class="operator">|</span></span><br><span class="line"><span class="operator">|</span>  <span class="number">20221126170009762</span><span class="operator">|</span><span class="number">20221126170009762.</span>..<span class="operator">|</span>              id:<span class="number">2</span><span class="operator">|</span>         dt<span class="operator">=</span><span class="number">2022</span><span class="number">-11</span><span class="number">-25</span><span class="operator">|</span>de99b299<span class="operator">-</span>b9de<span class="number">-423.</span>..<span class="operator">|</span>  <span class="number">2</span><span class="operator">|</span>hudi<span class="operator">|</span> <span class="number">10.0</span><span class="operator">|</span><span class="number">100</span><span class="operator">|</span><span class="number">2022</span><span class="number">-11</span><span class="number">-25</span><span class="operator">|</span></span><br><span class="line"><span class="operator">|</span>  <span class="number">20221126170030470</span><span class="operator">|</span><span class="number">20221126170030470.</span>..<span class="operator">|</span>              id:<span class="number">5</span><span class="operator">|</span>         dt<span class="operator">=</span><span class="number">2022</span><span class="number">-12</span><span class="number">-27</span><span class="operator">|</span><span class="number">75</span>f8a760<span class="number">-9</span>dc3<span class="number">-452.</span>..<span class="operator">|</span>  <span class="number">5</span><span class="operator">|</span>hudi<span class="operator">|</span> <span class="number">10.0</span><span class="operator">|</span><span class="number">100</span><span class="operator">|</span><span class="number">2022</span><span class="number">-12</span><span class="number">-27</span><span class="operator">|</span></span><br><span class="line"><span class="operator">|</span>  <span class="number">20221126170023240</span><span class="operator">|</span><span class="number">20221126170023240.</span>..<span class="operator">|</span>              id:<span class="number">4</span><span class="operator">|</span>         dt<span class="operator">=</span><span class="number">2022</span><span class="number">-12</span><span class="number">-26</span><span class="operator">|</span><span class="number">4751225</span>d<span class="number">-4848</span><span class="number">-4</span>dd...<span class="operator">|</span>  <span class="number">4</span><span class="operator">|</span>hudi<span class="operator">|</span> <span class="number">10.0</span><span class="operator">|</span><span class="number">100</span><span class="operator">|</span><span class="number">2022</span><span class="number">-12</span><span class="number">-26</span><span class="operator">|</span></span><br><span class="line"><span class="operator">|</span>  <span class="number">20221126170017119</span><span class="operator">|</span><span class="number">20221126170017119.</span>..<span class="operator">|</span>              id:<span class="number">3</span><span class="operator">|</span>         dt<span class="operator">=</span><span class="number">2022</span><span class="number">-11</span><span class="number">-26</span><span class="operator">|</span><span class="number">2272e513</span><span class="number">-5516</span><span class="number">-43</span>f...<span class="operator">|</span>  <span class="number">3</span><span class="operator">|</span>hudi<span class="operator">|</span> <span class="number">10.0</span><span class="operator">|</span><span class="number">100</span><span class="operator">|</span><span class="number">2022</span><span class="number">-11</span><span class="number">-26</span><span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-------------------+--------------------+------------------+----------------------+--------------------+---+----+-----+---+----------+</span></span><br><span class="line"></span><br><span class="line"><span class="operator">+</span><span class="comment">-----------------+</span></span><br><span class="line"><span class="operator">|</span>      commit_time<span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-----------------+</span></span><br><span class="line"><span class="operator">|</span><span class="number">20221126170030470</span><span class="operator">|</span></span><br><span class="line"><span class="operator">|</span><span class="number">20221126170023240</span><span class="operator">|</span></span><br><span class="line"><span class="operator">|</span><span class="number">20221126170017119</span><span class="operator">|</span></span><br><span class="line"><span class="operator">|</span><span class="number">20221126170009762</span><span class="operator">|</span></span><br><span class="line"><span class="operator">|</span><span class="number">20221126165954300</span><span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-----------------+</span></span><br><span class="line"></span><br><span class="line"><span class="number">20221126170009762</span></span><br><span class="line"><span class="number">20221126170023240</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-------------------+--------------------+------------------+----------------------+--------------------+---+----+-----+---+----------+</span></span><br><span class="line"><span class="operator">|</span>_hoodie_commit_time<span class="operator">|</span>_hoodie_commit_seqno<span class="operator">|</span>_hoodie_record_key<span class="operator">|</span>_hoodie_partition_path<span class="operator">|</span>   _hoodie_file_name<span class="operator">|</span> id<span class="operator">|</span>name<span class="operator">|</span>price<span class="operator">|</span> ts<span class="operator">|</span>        dt<span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-------------------+--------------------+------------------+----------------------+--------------------+---+----+-----+---+----------+</span></span><br><span class="line"><span class="operator">|</span>  <span class="number">20221126170017119</span><span class="operator">|</span><span class="number">20221126170017119.</span>..<span class="operator">|</span>              id:<span class="number">3</span><span class="operator">|</span>         dt<span class="operator">=</span><span class="number">2022</span><span class="number">-11</span><span class="number">-26</span><span class="operator">|</span><span class="number">2272e513</span><span class="number">-5516</span><span class="number">-43</span>f...<span class="operator">|</span>  <span class="number">3</span><span class="operator">|</span>hudi<span class="operator">|</span> <span class="number">10.0</span><span class="operator">|</span><span class="number">100</span><span class="operator">|</span><span class="number">2022</span><span class="number">-11</span><span class="number">-26</span><span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-------------------+--------------------+------------------+----------------------+--------------------+---+----+-----+---+----------+</span></span><br></pre></td></tr></table></figure></p>
 <p>注释掉INCR_PATH_GLOB，结果：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">-------------------+--------------------+------------------+----------------------+--------------------+---+----+-----+---+----------+</span></span><br><span class="line">|_hoodie_commit_time|_hoodie_commit_seqno|_hoodie_record_key|_hoodie_partition_path|   _hoodie_file_name| id|name|price| ts|        dt|</span><br><span class="line">+<span class="comment">-------------------+--------------------+------------------+----------------------+--------------------+---+----+-----+---+----------+</span></span><br><span class="line">|  20221127155346067|20221127155346067...|              id:4|         dt=2022-12-26|33e7a2ed-ea28-428...|  4|hudi| 10.0|100|2022-12-26|</span><br><span class="line">|  20221127155339981|20221127155339981...|              id:3|         dt=2022-11-26|a5652ae0-942a-425...|  3|hudi| 10.0|100|2022-11-26|</span><br><span class="line">+<span class="comment">-------------------+--------------------+------------------+----------------------+--------------------+---+----+-----+---+----------+</span></span><br></pre></td></tr></table></figure>
-<p>继续注释掉END_INSTANTTIME，结果：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">20221127161253433</span><br><span class="line">20221127161311831</span><br><span class="line">+<span class="comment">-------------------+--------------------+------------------+----------------------+--------------------+---+----+-----+---+----------+</span></span><br><span class="line">|_hoodie_commit_time|_hoodie_commit_seqno|_hoodie_record_key|_hoodie_partition_path|   _hoodie_file_name| id|name|price| ts|        dt|</span><br><span class="line">+<span class="comment">-------------------+--------------------+------------------+----------------------+--------------------+---+----+-----+---+----------+</span></span><br><span class="line">|  20221127161320347|20221127161320347...|              id:5|         dt=2022-12-27|7b389e57-ca44-4aa...|  5|hudi| 10.0|100|2022-12-27|</span><br><span class="line">|  20221127161311831|20221127161311831...|              id:4|         dt=2022-12-26|2707ce02-548a-422...|  4|hudi| 10.0|100|2022-12-26|</span><br><span class="line">|  20221127161304742|20221127161304742...|              id:3|         dt=2022-11-26|264bc4a9-930d-4ec...|  3|hudi| 10.0|100|2022-11-26|</span><br><span class="line">+<span class="comment">-------------------+--------------------+------------------+----------------------+--------------------+---+----+-----+---+----------+</span></span><br></pre></td></tr></table></figure></p>
-<p>可以看到不包含起始时间，包含结束时间。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="operator">+</span><span class="comment">-------------------+--------------------+------------------+----------------------+--------------------+---+----+-----+---+----------+</span></span><br><span class="line"><span class="operator">|</span>_hoodie_commit_time<span class="operator">|</span>_hoodie_commit_seqno<span class="operator">|</span>_hoodie_record_key<span class="operator">|</span>_hoodie_partition_path<span class="operator">|</span>   _hoodie_file_name<span class="operator">|</span> id<span class="operator">|</span>name<span class="operator">|</span>price<span class="operator">|</span> ts<span class="operator">|</span>        dt<span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-------------------+--------------------+------------------+----------------------+--------------------+---+----+-----+---+----------+</span></span><br><span class="line"><span class="operator">|</span>  <span class="number">20221127155346067</span><span class="operator">|</span><span class="number">20221127155346067.</span>..<span class="operator">|</span>              id:<span class="number">4</span><span class="operator">|</span>         dt<span class="operator">=</span><span class="number">2022</span><span class="number">-12</span><span class="number">-26</span><span class="operator">|</span><span class="number">33e7</span>a2ed<span class="operator">-</span>ea28<span class="number">-428.</span>..<span class="operator">|</span>  <span class="number">4</span><span class="operator">|</span>hudi<span class="operator">|</span> <span class="number">10.0</span><span class="operator">|</span><span class="number">100</span><span class="operator">|</span><span class="number">2022</span><span class="number">-12</span><span class="number">-26</span><span class="operator">|</span></span><br><span class="line"><span class="operator">|</span>  <span class="number">20221127155339981</span><span class="operator">|</span><span class="number">20221127155339981.</span>..<span class="operator">|</span>              id:<span class="number">3</span><span class="operator">|</span>         dt<span class="operator">=</span><span class="number">2022</span><span class="number">-11</span><span class="number">-26</span><span class="operator">|</span>a5652ae0<span class="number">-942</span>a<span class="number">-425.</span>..<span class="operator">|</span>  <span class="number">3</span><span class="operator">|</span>hudi<span class="operator">|</span> <span class="number">10.0</span><span class="operator">|</span><span class="number">100</span><span class="operator">|</span><span class="number">2022</span><span class="number">-11</span><span class="number">-26</span><span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-------------------+--------------------+------------------+----------------------+--------------------+---+----+-----+---+----------+</span></span><br></pre></td></tr></table></figure>
+<p>继续注释掉END_INSTANTTIME，结果：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">20221127161253433</span></span><br><span class="line"><span class="number">20221127161311831</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-------------------+--------------------+------------------+----------------------+--------------------+---+----+-----+---+----------+</span></span><br><span class="line"><span class="operator">|</span>_hoodie_commit_time<span class="operator">|</span>_hoodie_commit_seqno<span class="operator">|</span>_hoodie_record_key<span class="operator">|</span>_hoodie_partition_path<span class="operator">|</span>   _hoodie_file_name<span class="operator">|</span> id<span class="operator">|</span>name<span class="operator">|</span>price<span class="operator">|</span> ts<span class="operator">|</span>        dt<span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-------------------+--------------------+------------------+----------------------+--------------------+---+----+-----+---+----------+</span></span><br><span class="line"><span class="operator">|</span>  <span class="number">20221127161320347</span><span class="operator">|</span><span class="number">20221127161320347.</span>..<span class="operator">|</span>              id:<span class="number">5</span><span class="operator">|</span>         dt<span class="operator">=</span><span class="number">2022</span><span class="number">-12</span><span class="number">-27</span><span class="operator">|</span><span class="number">7</span>b389e57<span class="operator">-</span>ca44<span class="number">-4</span>aa...<span class="operator">|</span>  <span class="number">5</span><span class="operator">|</span>hudi<span class="operator">|</span> <span class="number">10.0</span><span class="operator">|</span><span class="number">100</span><span class="operator">|</span><span class="number">2022</span><span class="number">-12</span><span class="number">-27</span><span class="operator">|</span></span><br><span class="line"><span class="operator">|</span>  <span class="number">20221127161311831</span><span class="operator">|</span><span class="number">20221127161311831.</span>..<span class="operator">|</span>              id:<span class="number">4</span><span class="operator">|</span>         dt<span class="operator">=</span><span class="number">2022</span><span class="number">-12</span><span class="number">-26</span><span class="operator">|</span><span class="number">2707</span>ce02<span class="number">-548</span>a<span class="number">-422.</span>..<span class="operator">|</span>  <span class="number">4</span><span class="operator">|</span>hudi<span class="operator">|</span> <span class="number">10.0</span><span class="operator">|</span><span class="number">100</span><span class="operator">|</span><span class="number">2022</span><span class="number">-12</span><span class="number">-26</span><span class="operator">|</span></span><br><span class="line"><span class="operator">|</span>  <span class="number">20221127161304742</span><span class="operator">|</span><span class="number">20221127161304742.</span>..<span class="operator">|</span>              id:<span class="number">3</span><span class="operator">|</span>         dt<span class="operator">=</span><span class="number">2022</span><span class="number">-11</span><span class="number">-26</span><span class="operator">|</span><span class="number">264</span>bc4a9<span class="number">-930</span>d<span class="number">-4</span>ec...<span class="operator">|</span>  <span class="number">3</span><span class="operator">|</span>hudi<span class="operator">|</span> <span class="number">10.0</span><span class="operator">|</span><span class="number">100</span><span class="operator">|</span><span class="number">2022</span><span class="number">-11</span><span class="number">-26</span><span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-------------------+--------------------+------------------+----------------------+--------------------+---+----+-----+---+----------+</span></span><br></pre></td></tr></table></figure><br>可以看到不包含起始时间，包含结束时间。</p>
 <h2 id="纯SQL方式"><a href="#纯SQL方式" class="headerlink" title="纯SQL方式"></a>纯SQL方式</h2><p>一般项目上都采用纯SQL方式进行增量查询，这样比较方便，纯SQL的方式参数和上面讲的参数是一样的，接下来看一下怎么用纯SQL方式实现</p>
-<h3 id="建表造数"><a href="#建表造数" class="headerlink" title="建表造数"></a>建表造数</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> hudi.test_hudi_incremental (</span><br><span class="line">  <span class="keyword">id</span> <span class="built_in">int</span>,</span><br><span class="line">  <span class="keyword">name</span> <span class="keyword">string</span>,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="keyword">long</span>,</span><br><span class="line">  dt <span class="keyword">string</span></span><br><span class="line">) <span class="keyword">using</span> hudi</span><br><span class="line"> partitioned <span class="keyword">by</span> (dt)</span><br><span class="line"> options (</span><br><span class="line">  primaryKey = <span class="string">'id'</span>,</span><br><span class="line">  preCombineField = <span class="string">'ts'</span>,</span><br><span class="line">  <span class="keyword">type</span> = <span class="string">'cow'</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> hudi.test_hudi_incremental <span class="keyword">values</span> (<span class="number">1</span>,<span class="string">'a1'</span>, <span class="number">10</span>, <span class="number">1000</span>, <span class="string">'2022-11-25'</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> hudi.test_hudi_incremental <span class="keyword">values</span> (<span class="number">2</span>,<span class="string">'a2'</span>, <span class="number">20</span>, <span class="number">2000</span>, <span class="string">'2022-11-25'</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> hudi.test_hudi_incremental <span class="keyword">values</span> (<span class="number">3</span>,<span class="string">'a3'</span>, <span class="number">30</span>, <span class="number">3000</span>, <span class="string">'2022-11-26'</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> hudi.test_hudi_incremental <span class="keyword">values</span> (<span class="number">4</span>,<span class="string">'a4'</span>, <span class="number">40</span>, <span class="number">4000</span>, <span class="string">'2022-12-26'</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> hudi.test_hudi_incremental <span class="keyword">values</span> (<span class="number">5</span>,<span class="string">'a5'</span>, <span class="number">50</span>, <span class="number">5000</span>, <span class="string">'2022-12-27'</span>);</span><br></pre></td></tr></table></figure>
-<p>看一下有哪些commit_time<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">distinct</span>(_hoodie_commit_time) <span class="keyword">from</span> test_hudi_incremental <span class="keyword">order</span> <span class="keyword">by</span> _hoodie_commit_time</span><br></pre></td></tr></table></figure></p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">----------------------+</span></span><br><span class="line">| _hoodie_commit_time  |</span><br><span class="line">+<span class="comment">----------------------+</span></span><br><span class="line">| 20221130163618650    |</span><br><span class="line">| 20221130163703640    |</span><br><span class="line">| 20221130163720795    |</span><br><span class="line">| 20221130163726780    |</span><br><span class="line">| 20221130163823274    |</span><br><span class="line">+<span class="comment">----------------------+</span></span><br></pre></td></tr></table></figure>
+<h3 id="建表造数"><a href="#建表造数" class="headerlink" title="建表造数"></a>建表造数</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create table</span> hudi.test_hudi_incremental (</span><br><span class="line">  id <span class="type">int</span>,</span><br><span class="line">  name string,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts long,</span><br><span class="line">  dt string</span><br><span class="line">) <span class="keyword">using</span> hudi</span><br><span class="line"> partitioned <span class="keyword">by</span> (dt)</span><br><span class="line"> options (</span><br><span class="line">  primaryKey <span class="operator">=</span> <span class="string">&#x27;id&#x27;</span>,</span><br><span class="line">  preCombineField <span class="operator">=</span> <span class="string">&#x27;ts&#x27;</span>,</span><br><span class="line">  type <span class="operator">=</span> <span class="string">&#x27;cow&#x27;</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert into</span> hudi.test_hudi_incremental <span class="keyword">values</span> (<span class="number">1</span>,<span class="string">&#x27;a1&#x27;</span>, <span class="number">10</span>, <span class="number">1000</span>, <span class="string">&#x27;2022-11-25&#x27;</span>);</span><br><span class="line"><span class="keyword">insert into</span> hudi.test_hudi_incremental <span class="keyword">values</span> (<span class="number">2</span>,<span class="string">&#x27;a2&#x27;</span>, <span class="number">20</span>, <span class="number">2000</span>, <span class="string">&#x27;2022-11-25&#x27;</span>);</span><br><span class="line"><span class="keyword">insert into</span> hudi.test_hudi_incremental <span class="keyword">values</span> (<span class="number">3</span>,<span class="string">&#x27;a3&#x27;</span>, <span class="number">30</span>, <span class="number">3000</span>, <span class="string">&#x27;2022-11-26&#x27;</span>);</span><br><span class="line"><span class="keyword">insert into</span> hudi.test_hudi_incremental <span class="keyword">values</span> (<span class="number">4</span>,<span class="string">&#x27;a4&#x27;</span>, <span class="number">40</span>, <span class="number">4000</span>, <span class="string">&#x27;2022-12-26&#x27;</span>);</span><br><span class="line"><span class="keyword">insert into</span> hudi.test_hudi_incremental <span class="keyword">values</span> (<span class="number">5</span>,<span class="string">&#x27;a5&#x27;</span>, <span class="number">50</span>, <span class="number">5000</span>, <span class="string">&#x27;2022-12-27&#x27;</span>);</span><br></pre></td></tr></table></figure>
+<p>看一下有哪些commit_time<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">distinct</span>(_hoodie_commit_time) <span class="keyword">from</span> test_hudi_incremental <span class="keyword">order</span> <span class="keyword">by</span> _hoodie_commit_time</span><br></pre></td></tr></table></figure><br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="operator">+</span><span class="comment">----------------------+</span></span><br><span class="line"><span class="operator">|</span> _hoodie_commit_time  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">----------------------+</span></span><br><span class="line"><span class="operator">|</span> <span class="number">20221130163618650</span>    <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> <span class="number">20221130163703640</span>    <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> <span class="number">20221130163720795</span>    <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> <span class="number">20221130163726780</span>    <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> <span class="number">20221130163823274</span>    <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">----------------------+</span></span><br></pre></td></tr></table></figure></p>
 <h3 id="纯SQL方式（一）"><a href="#纯SQL方式（一）" class="headerlink" title="纯SQL方式（一）"></a>纯SQL方式（一）</h3><p>使用Call Procedures：<code>copy_to_temp_view</code>、<code>copy_to_table</code>，目前这两个命令已经合到master,由<code>scxwhite 苏乘祥</code>贡献，这俩参数差不多，建议使用<code>copy_to_temp_view</code>，因为<code>copy_to_table</code>会先将数据落盘而<code>copy_to_temp_view</code>是创建的临时表，效率会高一点，且数据落盘无意义，后面还要将落盘的表删掉。</p>
 <p>支持的参数</p>
 <ul>
@@ -289,40 +288,37 @@
 <li>global</li>
 </ul>
 <p>测试SQL：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> copy_to_temp_view(<span class="keyword">table</span> =&gt; <span class="string">'test_hudi_incremental'</span>, query_type =&gt; <span class="string">'incremental'</span>, </span><br><span class="line">view_name =&gt; <span class="string">'temp_incremental'</span>, begin_instance_time=&gt; <span class="string">'20221130163703640'</span>, end_instance_time =&gt; <span class="string">'20221130163726780'</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> _hoodie_commit_time, <span class="keyword">id</span>, <span class="keyword">name</span>, price, ts, dt <span class="keyword">from</span> temp_incremental;</span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">call</span> copy_to_temp_view(<span class="keyword">table</span> <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;test_hudi_incremental&#x27;</span>, query_type <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;incremental&#x27;</span>, </span><br><span class="line">view_name <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;temp_incremental&#x27;</span>, begin_instance_time<span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;20221130163703640&#x27;</span>, end_instance_time <span class="operator">=</span><span class="operator">&gt;</span> <span class="string">&#x27;20221130163726780&#x27;</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> _hoodie_commit_time, id, name, price, ts, dt <span class="keyword">from</span> temp_incremental;</span><br></pre></td></tr></table></figure>
 <p>结果：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">----------------------+-----+-------+--------+-------+-------------+</span></span><br><span class="line">| _hoodie_commit_time  | id  | name  | price  |  ts   |     dt      |</span><br><span class="line">+<span class="comment">----------------------+-----+-------+--------+-------+-------------+</span></span><br><span class="line">| 20221130163726780    | 4   | a4    | 40.0   | 4000  | 2022-12-26  |</span><br><span class="line">| 20221130163720795    | 3   | a3    | 30.0   | 3000  | 2022-11-26  |</span><br><span class="line">+<span class="comment">----------------------+-----+-------+--------+-------+-------------+</span></span><br></pre></td></tr></table></figure>
-<p>可以看到这种方式是可以实现增量查询的，但是需要注意，如果需要修改增量查询的起始时间,那么就需要重复执行<code>copy_to_temp_view</code>,但是因为临时表temp_incremental已经存在，要么新起个表名，要么先删掉，再创建新的，我建议先删掉，通过下面的命令删除<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">drop</span> <span class="keyword">view</span> <span class="keyword">if</span> <span class="keyword">exists</span> temp_incremental;</span><br></pre></td></tr></table></figure></p>
-<h3 id="纯SQL方式（二）"><a href="#纯SQL方式（二）" class="headerlink" title="纯SQL方式（二）"></a>纯SQL方式（二）</h3><p>PR地址：<a href="https://github.com/apache/hudi/pull/7182" target="_blank" rel="noopener">https://github.com/apache/hudi/pull/7182</a>，这个PR同样由<code>scxwhite</code>贡献，目前只支持Spark3.2以上的版本（目前社区未合并）<br>增量查询SQL</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">id</span>, <span class="keyword">name</span>, price, ts, dt <span class="keyword">from</span> tableName</span><br><span class="line">[</span><br><span class="line"><span class="string">'hoodie.datasource.query.type'</span>=&gt;<span class="string">'incremental'</span>,</span><br><span class="line"><span class="string">'hoodie.datasource.read.begin.instanttime'</span>=&gt;<span class="string">'$instant1'</span>,</span><br><span class="line"><span class="string">'hoodie.datasource.read.end.instanttime'</span>=&gt;<span class="string">'$instant2'</span></span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="operator">+</span><span class="comment">----------------------+-----+-------+--------+-------+-------------+</span></span><br><span class="line"><span class="operator">|</span> _hoodie_commit_time  <span class="operator">|</span> id  <span class="operator">|</span> name  <span class="operator">|</span> price  <span class="operator">|</span>  ts   <span class="operator">|</span>     dt      <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">----------------------+-----+-------+--------+-------+-------------+</span></span><br><span class="line"><span class="operator">|</span> <span class="number">20221130163726780</span>    <span class="operator">|</span> <span class="number">4</span>   <span class="operator">|</span> a4    <span class="operator">|</span> <span class="number">40.0</span>   <span class="operator">|</span> <span class="number">4000</span>  <span class="operator">|</span> <span class="number">2022</span><span class="number">-12</span><span class="number">-26</span>  <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> <span class="number">20221130163720795</span>    <span class="operator">|</span> <span class="number">3</span>   <span class="operator">|</span> a3    <span class="operator">|</span> <span class="number">30.0</span>   <span class="operator">|</span> <span class="number">3000</span>  <span class="operator">|</span> <span class="number">2022</span><span class="number">-11</span><span class="number">-26</span>  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">----------------------+-----+-------+--------+-------+-------------+</span></span><br></pre></td></tr></table></figure>
+<p>可以看到这种方式是可以实现增量查询的，但是需要注意，如果需要修改增量查询的起始时间,那么就需要重复执行<code>copy_to_temp_view</code>,但是因为临时表temp_incremental已经存在，要么新起个表名，要么先删掉，再创建新的，我建议先删掉，通过下面的命令删除<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">drop</span> <span class="keyword">view</span> if <span class="keyword">exists</span> temp_incremental;</span><br></pre></td></tr></table></figure></p>
+<h3 id="纯SQL方式（二）"><a href="#纯SQL方式（二）" class="headerlink" title="纯SQL方式（二）"></a>纯SQL方式（二）</h3><p>PR地址：<a href="https://github.com/apache/hudi/pull/7182">https://github.com/apache/hudi/pull/7182</a>，这个PR同样由<code>scxwhite</code>贡献，目前只支持Spark3.2以上的版本（目前社区未合并）<br>增量查询SQL</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> id, name, price, ts, dt <span class="keyword">from</span> tableName</span><br><span class="line">[</span><br><span class="line"><span class="string">&#x27;hoodie.datasource.query.type&#x27;</span><span class="operator">=</span><span class="operator">&gt;</span><span class="string">&#x27;incremental&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;hoodie.datasource.read.begin.instanttime&#x27;</span><span class="operator">=</span><span class="operator">&gt;</span><span class="string">&#x27;$instant1&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;hoodie.datasource.read.end.instanttime&#x27;</span><span class="operator">=</span><span class="operator">&gt;</span><span class="string">&#x27;$instant2&#x27;</span></span><br><span class="line">]</span><br></pre></td></tr></table></figure>
 <p>这种方式，是支持了一种新的语法，在查询SQL后通过在[]添加参数的形式，感兴趣的话可以拉一下代码，自己打包试一下。</p>
-<h3 id="纯SQL方式（三）"><a href="#纯SQL方式（三）" class="headerlink" title="纯SQL方式（三）"></a>纯SQL方式（三）</h3><p>使用 Spark SQL Hint实现，具体实现方式，请查看<code>KnightChess</code>的这篇文章<a href="https://mp.weixin.qq.com/s/UZbsbFLqqUPJqJJNIGjTqg" target="_blank" rel="noopener">如何使用 Spark SQL Hint 对 Hudi 进行增量查询、时间旅行</a><br>最终的效果如下<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span></span><br><span class="line">  <span class="comment">/*+</span></span><br><span class="line"><span class="comment">    hoodie_prop(</span></span><br><span class="line"><span class="comment">      'default.h1',</span></span><br><span class="line"><span class="comment">      map('hoodie.datasource.read.begin.instanttime', '20221127083503537', 'hoodie.datasource.read.end.instanttime', '20221127083506081')</span></span><br><span class="line"><span class="comment">    ),</span></span><br><span class="line"><span class="comment">    hoodie_prop(</span></span><br><span class="line"><span class="comment">      'default.h2',</span></span><br><span class="line"><span class="comment">      map('hoodie.datasource.read.begin.instanttime', '20221127083508715', 'hoodie.datasource.read.end.instanttime', '20221127083511803')</span></span><br><span class="line"><span class="comment">    )</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line">  <span class="keyword">id</span>, <span class="keyword">name</span>, price, ts</span><br><span class="line"><span class="keyword">from</span> (</span><br><span class="line">  <span class="keyword">select</span> <span class="keyword">id</span>, <span class="keyword">name</span>, price, ts</span><br><span class="line">  <span class="keyword">from</span> default.h1</span><br><span class="line">  <span class="keyword">union</span> all</span><br><span class="line">  <span class="keyword">select</span> <span class="keyword">id</span>, <span class="keyword">name</span>, price, ts</span><br><span class="line">  <span class="keyword">from</span> default.h2</span><br><span class="line">)</span><br></pre></td></tr></table></figure></p>
-<p>是在hint中添加增量查询相关的参数，先指定表名再写参数，但是文章好像未给出完整的代码地址，大家有时间可以自己试一下。</p>
-<h3 id="纯SQL方式（四）"><a href="#纯SQL方式（四）" class="headerlink" title="纯SQL方式（四）"></a>纯SQL方式（四）</h3><p>这种方式，是我按照<a href="https://mp.weixin.qq.com/s/OGqSzU62baz9jCeycJ12Kw" target="_blank" rel="noopener">Hive增量查询Hudi</a>的方式修改的源码，通过set的方式实现增量查询。<br>PR地址：<a href="https://github.com/apache/hudi/pull/7339" target="_blank" rel="noopener">https://github.com/apache/hudi/pull/7339</a></p>
+<h3 id="纯SQL方式（三）"><a href="#纯SQL方式（三）" class="headerlink" title="纯SQL方式（三）"></a>纯SQL方式（三）</h3><p>使用 Spark SQL Hint实现，具体实现方式，请查看<code>KnightChess</code>的这篇文章<a href="https://mp.weixin.qq.com/s/UZbsbFLqqUPJqJJNIGjTqg">如何使用 Spark SQL Hint 对 Hudi 进行增量查询、时间旅行</a><br>最终的效果如下<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span></span><br><span class="line">  <span class="comment">/*+</span></span><br><span class="line"><span class="comment">    hoodie_prop(</span></span><br><span class="line"><span class="comment">      &#x27;default.h1&#x27;,</span></span><br><span class="line"><span class="comment">      map(&#x27;hoodie.datasource.read.begin.instanttime&#x27;, &#x27;20221127083503537&#x27;, &#x27;hoodie.datasource.read.end.instanttime&#x27;, &#x27;20221127083506081&#x27;)</span></span><br><span class="line"><span class="comment">    ),</span></span><br><span class="line"><span class="comment">    hoodie_prop(</span></span><br><span class="line"><span class="comment">      &#x27;default.h2&#x27;,</span></span><br><span class="line"><span class="comment">      map(&#x27;hoodie.datasource.read.begin.instanttime&#x27;, &#x27;20221127083508715&#x27;, &#x27;hoodie.datasource.read.end.instanttime&#x27;, &#x27;20221127083511803&#x27;)</span></span><br><span class="line"><span class="comment">    )</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line">  id, name, price, ts</span><br><span class="line"><span class="keyword">from</span> (</span><br><span class="line">  <span class="keyword">select</span> id, name, price, ts</span><br><span class="line">  <span class="keyword">from</span> default.h1</span><br><span class="line">  <span class="keyword">union</span> <span class="keyword">all</span></span><br><span class="line">  <span class="keyword">select</span> id, name, price, ts</span><br><span class="line">  <span class="keyword">from</span> default.h2</span><br><span class="line">)</span><br></pre></td></tr></table></figure><br>是在hint中添加增量查询相关的参数，先指定表名再写参数，但是文章好像未给出完整的代码地址，大家有时间可以自己试一下。</p>
+<h3 id="纯SQL方式（四）"><a href="#纯SQL方式（四）" class="headerlink" title="纯SQL方式（四）"></a>纯SQL方式（四）</h3><p>这种方式，是我按照<a href="https://mp.weixin.qq.com/s/OGqSzU62baz9jCeycJ12Kw">Hive增量查询Hudi</a>的方式修改的源码，通过set的方式实现增量查询。<br>PR地址：<a href="https://github.com/apache/hudi/pull/7339">https://github.com/apache/hudi/pull/7339</a></p>
 <blockquote>
-<p>关于为啥目前不能通过set参数进行增量查询，这里说明一下：根据文章<a href="https://mp.weixin.qq.com/s/slscIdvbCB_BUPdWlFVt1Q" target="_blank" rel="noopener">Hudi Spark SQL源码学习总结-select（查询）</a>，可知Hudi的<code>DefaultSource.createRelation</code>中的<code>optParams</code>参数为<code>readDataSourceTable</code>中的options = table.storage.properties ++ pathOption，也就是表本身属性中的配置参数+path，之后在<code>createRelation</code>并没有接收其他参数，所以不能通过set参数的形式进行查询</p>
+<p>关于为啥目前不能通过set参数进行增量查询，这里说明一下：根据文章<a href="https://mp.weixin.qq.com/s/slscIdvbCB_BUPdWlFVt1Q">Hudi Spark SQL源码学习总结-select（查询）</a>，可知Hudi的<code>DefaultSource.createRelation</code>中的<code>optParams</code>参数为<code>readDataSourceTable</code>中的options = table.storage.properties ++ pathOption，也就是表本身属性中的配置参数+path，之后在<code>createRelation</code>并没有接收其他参数，所以不能通过set参数的形式进行查询</p>
 </blockquote>
-<p>和Hive增量查询一样，指定具体表名的增量查询参数<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> hoodie.test_hudi_incremental.datasource.query.type=incremental</span><br><span class="line"><span class="keyword">set</span> hoodie.test_hudi_incremental.datasource.read.begin.instanttime=<span class="number">20221130163703640</span>;</span><br><span class="line"><span class="keyword">select</span> _hoodie_commit_time, <span class="keyword">id</span>, <span class="keyword">name</span>, price, ts, dt <span class="keyword">from</span> test_hudi_incremental;</span><br></pre></td></tr></table></figure></p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">----------------------+-----+-------+--------+-------+-------------+</span></span><br><span class="line">| _hoodie_commit_time  | id  | name  | price  |  ts   |     dt      |</span><br><span class="line">+<span class="comment">----------------------+-----+-------+--------+-------+-------------+</span></span><br><span class="line">| 20221130163823274    | 5   | a5    | 50.0   | 5000  | 2022-12-27  |</span><br><span class="line">| 20221130163726780    | 4   | a4    | 40.0   | 4000  | 2022-12-26  |</span><br><span class="line">| 20221130163720795    | 3   | a3    | 30.0   | 3000  | 2022-11-26  |</span><br><span class="line">+<span class="comment">----------------------+-----+-------+--------+-------+-------------+</span></span><br></pre></td></tr></table></figure>
-<p>如果不同的库下面有相同的表名，则可以通过库名.表名的形式：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">## 需要先开启使用数据库名称限定表名的配置,开启后上面不加库名的配置就失效了</span><br><span class="line"><span class="keyword">set</span> hoodie.query.use.database = <span class="literal">true</span>;</span><br><span class="line"><span class="keyword">set</span> hoodie.hudi.test_hudi_incremental.datasource.query.type=incremental;</span><br><span class="line"><span class="keyword">set</span> hoodie.hudi.test_hudi_incremental.datasource.read.begin.instanttime=<span class="number">20221130163703640</span>;</span><br><span class="line"><span class="keyword">set</span> hoodie.hudi.test_hudi_incremental.datasource.read.end.instanttime=<span class="number">20221130163726780</span>;</span><br><span class="line"><span class="keyword">set</span> hoodie.hudi.test_hudi_incremental.datasource.read.incr.path.glob=/dt=<span class="number">2022</span><span class="number">-11</span>*<span class="comment">/*;</span></span><br><span class="line"><span class="comment">refresh table test_hudi_incremental;</span></span><br><span class="line"><span class="comment">select _hoodie_commit_time, id, name, price, ts, dt from test_hudi_incremental;</span></span><br></pre></td></tr></table></figure></p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">----------------------+-----+-------+--------+-------+-------------+</span></span><br><span class="line">| _hoodie_commit_time  | id  | name  | price  |  ts   |     dt      |</span><br><span class="line">+<span class="comment">----------------------+-----+-------+--------+-------+-------------+</span></span><br><span class="line">| 20221130163720795    | 3   | a3    | 30.0   | 3000  | 2022-11-26  |</span><br><span class="line">+<span class="comment">----------------------+-----+-------+--------+-------+-------------+</span></span><br></pre></td></tr></table></figure>
-<p>大家可以自己试一下，不同的库表关联的情形</p>
+<p>和Hive增量查询一样，指定具体表名的增量查询参数<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> hoodie.test_hudi_incremental.datasource.query.type<span class="operator">=</span>incremental</span><br><span class="line"><span class="keyword">set</span> hoodie.test_hudi_incremental.datasource.read.begin.instanttime<span class="operator">=</span><span class="number">20221130163703640</span>;</span><br><span class="line"><span class="keyword">select</span> _hoodie_commit_time, id, name, price, ts, dt <span class="keyword">from</span> test_hudi_incremental;</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="operator">+</span><span class="comment">----------------------+-----+-------+--------+-------+-------------+</span></span><br><span class="line"><span class="operator">|</span> _hoodie_commit_time  <span class="operator">|</span> id  <span class="operator">|</span> name  <span class="operator">|</span> price  <span class="operator">|</span>  ts   <span class="operator">|</span>     dt      <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">----------------------+-----+-------+--------+-------+-------------+</span></span><br><span class="line"><span class="operator">|</span> <span class="number">20221130163823274</span>    <span class="operator">|</span> <span class="number">5</span>   <span class="operator">|</span> a5    <span class="operator">|</span> <span class="number">50.0</span>   <span class="operator">|</span> <span class="number">5000</span>  <span class="operator">|</span> <span class="number">2022</span><span class="number">-12</span><span class="number">-27</span>  <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> <span class="number">20221130163726780</span>    <span class="operator">|</span> <span class="number">4</span>   <span class="operator">|</span> a4    <span class="operator">|</span> <span class="number">40.0</span>   <span class="operator">|</span> <span class="number">4000</span>  <span class="operator">|</span> <span class="number">2022</span><span class="number">-12</span><span class="number">-26</span>  <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> <span class="number">20221130163720795</span>    <span class="operator">|</span> <span class="number">3</span>   <span class="operator">|</span> a3    <span class="operator">|</span> <span class="number">30.0</span>   <span class="operator">|</span> <span class="number">3000</span>  <span class="operator">|</span> <span class="number">2022</span><span class="number">-11</span><span class="number">-26</span>  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">----------------------+-----+-------+--------+-------+-------------+</span></span><br></pre></td></tr></table></figure>
+<p>如果不同的库下面有相同的表名，则可以通过库名.表名的形式：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">## 需要先开启使用数据库名称限定表名的配置,开启后上面不加库名的配置就失效了</span><br><span class="line"><span class="keyword">set</span> hoodie.query.use.database <span class="operator">=</span> <span class="literal">true</span>;</span><br><span class="line"><span class="keyword">set</span> hoodie.hudi.test_hudi_incremental.datasource.query.type<span class="operator">=</span>incremental;</span><br><span class="line"><span class="keyword">set</span> hoodie.hudi.test_hudi_incremental.datasource.read.begin.instanttime<span class="operator">=</span><span class="number">20221130163703640</span>;</span><br><span class="line"><span class="keyword">set</span> hoodie.hudi.test_hudi_incremental.datasource.read.end.instanttime<span class="operator">=</span><span class="number">20221130163726780</span>;</span><br><span class="line"><span class="keyword">set</span> hoodie.hudi.test_hudi_incremental.datasource.read.incr.path.glob<span class="operator">=</span><span class="operator">/</span>dt<span class="operator">=</span><span class="number">2022</span><span class="number">-11</span><span class="operator">*</span><span class="comment">/*;</span></span><br><span class="line"><span class="comment">refresh table test_hudi_incremental;</span></span><br><span class="line"><span class="comment">select _hoodie_commit_time, id, name, price, ts, dt from test_hudi_incremental;</span></span><br></pre></td></tr></table></figure><br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="operator">+</span><span class="comment">----------------------+-----+-------+--------+-------+-------------+</span></span><br><span class="line"><span class="operator">|</span> _hoodie_commit_time  <span class="operator">|</span> id  <span class="operator">|</span> name  <span class="operator">|</span> price  <span class="operator">|</span>  ts   <span class="operator">|</span>     dt      <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">----------------------+-----+-------+--------+-------+-------------+</span></span><br><span class="line"><span class="operator">|</span> <span class="number">20221130163720795</span>    <span class="operator">|</span> <span class="number">3</span>   <span class="operator">|</span> a3    <span class="operator">|</span> <span class="number">30.0</span>   <span class="operator">|</span> <span class="number">3000</span>  <span class="operator">|</span> <span class="number">2022</span><span class="number">-11</span><span class="number">-26</span>  <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">----------------------+-----+-------+--------+-------+-------------+</span></span><br></pre></td></tr></table></figure><br>大家可以自己试一下，不同的库表关联的情形</p>
 <p>这里需要注意一点，更新参数后，需要先<code>refresh table</code>，再查询，否则查询时修改的参数不生效，因为会使用缓存中的参数。<br>这种方式只是简单地修改了一下源码，使set的参数对查询生效。</p>
 <blockquote>
-<p>为了避免有些读者嫌打包麻烦，这里给大家提供了hudi-spark3.1-bundle_2.12-0.13.0-SNAPSHOT.jar的下载地址：<a href="https://download.csdn.net/download/dkl12/87221476" target="_blank" rel="noopener">https://download.csdn.net/download/dkl12/87221476</a></p>
+<p>为了避免有些读者嫌打包麻烦，这里给大家提供了hudi-spark3.1-bundle_2.12-0.13.0-SNAPSHOT.jar的下载地址：<a href="https://download.csdn.net/download/dkl12/87221476">https://download.csdn.net/download/dkl12/87221476</a></p>
 </blockquote>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>本文总结了Spark SQL增量查询Hudi表的一些参数设置，并给出了示例，介绍了使用纯Spark SQL实现增量查询Hudi表的几种方式，不确定未来社区会采用哪种方式，大家目前如果有这种需求的话，可以先选择一种自己喜欢的方式，等未来社区版本支持后，再升级版本。本文没有涉及增量查询的原理，暂未验证增量查询的效率，是否可以起到文件过滤的效果，以后如果有时间会单独整理一篇。</p>
 <h2 id="相关阅读"><a href="#相关阅读" class="headerlink" title="相关阅读"></a>相关阅读</h2><ul>
-<li><a href="https://mp.weixin.qq.com/s/9cKherIGgeVxBeqY39nL2Q" target="_blank" rel="noopener">Apache Hudi 入门学习总结</a></li>
-<li><a href="https://mp.weixin.qq.com/s/hII86LSXPankmLarIZu9rg" target="_blank" rel="noopener">Hudi Spark SQL总结</a></li>
-<li><a href="https://mp.weixin.qq.com/s/vctHNIJG05aHmb5l64eNXA" target="_blank" rel="noopener">Hudi Spark SQL Call Procedures学习总结（一）（查询统计表文件信息）</a></li>
-<li><a href="https://mp.weixin.qq.com/s/7V5RpaOpB4_XETkMlbv9pQ" target="_blank" rel="noopener">Spark3.12+Kyuubi1.5.2+kyuubi-spark-authz源码编译打包+部署配置HA</a></li>
-<li><a href="https://mp.weixin.qq.com/s/8LiNiFe_kUS0oyN27PGTwg" target="_blank" rel="noopener">Hudi Spark SQL源码学习总结-Create Table</a></li>
-<li><a href="https://mp.weixin.qq.com/s/djuWfw0_abiifNnE7Usghg" target="_blank" rel="noopener">Hudi Spark SQL源码学习总结-CTAS</a></li>
-<li><a href="https://mp.weixin.qq.com/s/FlKoYL4ZqtYdzoxUOWx31w" target="_blank" rel="noopener">Hudi Spark源码学习总结-df.write.format(“hudi”).save</a></li>
-<li><a href="https://mp.weixin.qq.com/s/FiJIyyondhZoofSWRTzADw" target="_blank" rel="noopener">Hudi Spark源码学习总结-spark.read.format(“hudi”).load</a></li>
-<li><a href="https://mp.weixin.qq.com/s/gijtcvfbGt7Hy7TbAQUwzQ" target="_blank" rel="noopener">Hudi Spark源码学习总结-spark.read.format(“hudi”).load（2）</a></li>
-<li><a href="https://mp.weixin.qq.com/s/slscIdvbCB_BUPdWlFVt1Q" target="_blank" rel="noopener">Hudi Spark SQL源码学习总结-select（查询）</a></li>
+<li><a href="https://mp.weixin.qq.com/s/9cKherIGgeVxBeqY39nL2Q">Apache Hudi 入门学习总结</a></li>
+<li><a href="https://mp.weixin.qq.com/s/hII86LSXPankmLarIZu9rg">Hudi Spark SQL总结</a></li>
+<li><a href="https://mp.weixin.qq.com/s/vctHNIJG05aHmb5l64eNXA">Hudi Spark SQL Call Procedures学习总结（一）（查询统计表文件信息）</a></li>
+<li><a href="https://mp.weixin.qq.com/s/7V5RpaOpB4_XETkMlbv9pQ">Spark3.12+Kyuubi1.5.2+kyuubi-spark-authz源码编译打包+部署配置HA</a></li>
+<li><a href="https://mp.weixin.qq.com/s/8LiNiFe_kUS0oyN27PGTwg">Hudi Spark SQL源码学习总结-Create Table</a></li>
+<li><a href="https://mp.weixin.qq.com/s/djuWfw0_abiifNnE7Usghg">Hudi Spark SQL源码学习总结-CTAS</a></li>
+<li><a href="https://mp.weixin.qq.com/s/FlKoYL4ZqtYdzoxUOWx31w">Hudi Spark源码学习总结-df.write.format(“hudi”).save</a></li>
+<li><a href="https://mp.weixin.qq.com/s/FiJIyyondhZoofSWRTzADw">Hudi Spark源码学习总结-spark.read.format(“hudi”).load</a></li>
+<li><a href="https://mp.weixin.qq.com/s/gijtcvfbGt7Hy7TbAQUwzQ">Hudi Spark源码学习总结-spark.read.format(“hudi”).load（2）</a></li>
+<li><a href="https://mp.weixin.qq.com/s/slscIdvbCB_BUPdWlFVt1Q">Hudi Spark SQL源码学习总结-select（查询）</a></li>
 </ul>
 
       
@@ -480,7 +476,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#编程方式（DF-SQL）"><span class="toc-number">2.</span> <span class="toc-text">编程方式（DF+SQL）</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#参数"><span class="toc-number">2.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#代码示例"><span class="toc-number">2.2.</span> <span class="toc-text">代码示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#纯SQL方式"><span class="toc-number">3.</span> <span class="toc-text">纯SQL方式</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#建表造数"><span class="toc-number">3.1.</span> <span class="toc-text">建表造数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#纯SQL方式（一）"><span class="toc-number">3.2.</span> <span class="toc-text">纯SQL方式（一）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#纯SQL方式（二）"><span class="toc-number">3.3.</span> <span class="toc-text">纯SQL方式（二）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#纯SQL方式（三）"><span class="toc-number">3.4.</span> <span class="toc-text">纯SQL方式（三）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#纯SQL方式（四）"><span class="toc-number">3.5.</span> <span class="toc-text">纯SQL方式（四）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">4.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#相关阅读"><span class="toc-number">5.</span> <span class="toc-text">相关阅读</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BC%96%E7%A8%8B%E6%96%B9%E5%BC%8F%EF%BC%88DF-SQL%EF%BC%89"><span class="toc-number">2.</span> <span class="toc-text">编程方式（DF+SQL）</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E6%95%B0"><span class="toc-number">2.1.</span> <span class="toc-text">参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81%E7%A4%BA%E4%BE%8B"><span class="toc-number">2.2.</span> <span class="toc-text">代码示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BA%AFSQL%E6%96%B9%E5%BC%8F"><span class="toc-number">3.</span> <span class="toc-text">纯SQL方式</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BB%BA%E8%A1%A8%E9%80%A0%E6%95%B0"><span class="toc-number">3.1.</span> <span class="toc-text">建表造数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BA%AFSQL%E6%96%B9%E5%BC%8F%EF%BC%88%E4%B8%80%EF%BC%89"><span class="toc-number">3.2.</span> <span class="toc-text">纯SQL方式（一）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BA%AFSQL%E6%96%B9%E5%BC%8F%EF%BC%88%E4%BA%8C%EF%BC%89"><span class="toc-number">3.3.</span> <span class="toc-text">纯SQL方式（二）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BA%AFSQL%E6%96%B9%E5%BC%8F%EF%BC%88%E4%B8%89%EF%BC%89"><span class="toc-number">3.4.</span> <span class="toc-text">纯SQL方式（三）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BA%AFSQL%E6%96%B9%E5%BC%8F%EF%BC%88%E5%9B%9B%EF%BC%89"><span class="toc-number">3.5.</span> <span class="toc-text">纯SQL方式（四）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">4.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E9%98%85%E8%AF%BB"><span class="toc-number">5.</span> <span class="toc-text">相关阅读</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -655,14 +651,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -672,6 +660,22 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -687,14 +691,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
@@ -707,23 +703,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -743,7 +723,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -755,15 +747,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -799,11 +787,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -835,15 +823,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -855,7 +835,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -863,7 +843,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -875,7 +855,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -883,11 +867,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -896,6 +880,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -911,15 +903,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -928,6 +916,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -940,10 +932,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -963,10 +951,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
@@ -975,7 +959,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -983,11 +967,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1015,7 +1003,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1031,7 +1035,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
+                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1039,11 +1043,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1063,23 +1063,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ZooKeeper</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1088,6 +1080,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ollama</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
             
             <div class="clearfix"></div>

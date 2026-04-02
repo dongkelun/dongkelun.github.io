@@ -9,18 +9,20 @@
   <link rel="dns-prefetch" href="https://dongkelun.com">
   <title>Spark覆盖写入mysql表但不改变已有的表结构 | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="前言本文记录Spark如何在表存在的情况时覆盖写入mysql但不修改已有的表结构，并进行主要的源码跟踪以了解其实现原理。主要场景为先用建表语句建好mysql表，然后用spark导入数据，可能会存在多次全表覆写导入的情况。 代码已上传github 主要的参数为.option(“truncate”, true)，可以参考Spark官网http://spark.apache.org/docs/lates">
-<meta name="keywords" content="Spark,mysql,源码">
+  <meta name="description" content="前言本文记录Spark如何在表存在的情况时覆盖写入mysql但不修改已有的表结构，并进行主要的源码跟踪以了解其实现原理。主要场景为先用建表语句建好mysql表，然后用spark导入数据，可能会存在多次全表覆写导入的情况。 代码已上传github 主要的参数为.option(“truncate”, true)，可以参考Spark官网http:&#x2F;&#x2F;spark.apache.org&#x2F;docs&#x2F;lates">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Spark覆盖写入mysql表但不改变已有的表结构">
 <meta property="og:url" content="https://dongkelun.com/2021/04/29/SparkMysqlOverwriteTruncateTable/index.html">
 <meta property="og:site_name" content="伦少的博客">
-<meta property="og:description" content="前言本文记录Spark如何在表存在的情况时覆盖写入mysql但不修改已有的表结构，并进行主要的源码跟踪以了解其实现原理。主要场景为先用建表语句建好mysql表，然后用spark导入数据，可能会存在多次全表覆写导入的情况。 代码已上传github 主要的参数为.option(“truncate”, true)，可以参考Spark官网http://spark.apache.org/docs/lates">
-<meta property="og:locale" content="cn">
-<meta property="og:updated_time" content="2021-04-29T11:49:08.715Z">
+<meta property="og:description" content="前言本文记录Spark如何在表存在的情况时覆盖写入mysql但不修改已有的表结构，并进行主要的源码跟踪以了解其实现原理。主要场景为先用建表语句建好mysql表，然后用spark导入数据，可能会存在多次全表覆写导入的情况。 代码已上传github 主要的参数为.option(“truncate”, true)，可以参考Spark官网http:&#x2F;&#x2F;spark.apache.org&#x2F;docs&#x2F;lates">
+<meta property="og:locale">
+<meta property="article:published_time" content="2021-04-28T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-04-29T11:49:08.715Z">
+<meta property="article:author" content="董可伦">
+<meta property="article:tag" content="Spark">
+<meta property="article:tag" content="mysql">
+<meta property="article:tag" content="源码">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Spark覆盖写入mysql表但不改变已有的表结构">
-<meta name="twitter:description" content="前言本文记录Spark如何在表存在的情况时覆盖写入mysql但不修改已有的表结构，并进行主要的源码跟踪以了解其实现原理。主要场景为先用建表语句建好mysql表，然后用spark导入数据，可能会存在多次全表覆写导入的情况。 代码已上传github 主要的参数为.option(“truncate”, true)，可以参考Spark官网http://spark.apache.org/docs/lates">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
   
@@ -38,7 +40,7 @@
 
   
 
-</head>
+<meta name="generator" content="Hexo 8.1.1"></head>
 
 <body>
   <div id="container" q-class="show:isCtnShow">
@@ -68,7 +70,7 @@
 			<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 		</a>
 		<hgroup>
-		  <h1 class="header-author"><a href="/">董可伦</a></h1>
+		  <h1 class="header-author"><a href="/"></a></h1>
 		</hgroup>
 		
 
@@ -140,7 +142,7 @@
 				<img src="https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/touxiang.18g5lq8u3lq8.webp" class="js-avatar">
 			</div>
 			<hgroup>
-			  <h1 class="header-author js-header-author">董可伦</h1>
+			  <h1 class="header-author js-header-author"></h1>
 			</hgroup>
 			
 			
@@ -260,11 +262,11 @@
         
       
         <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>本文记录Spark如何在表存在的情况时覆盖写入mysql但不修改已有的表结构，并进行主要的源码跟踪以了解其实现原理。主要场景为先用建表语句建好mysql表，然后用spark导入数据，可能会存在多次全表覆写导入的情况。</p>
-<h2 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h2><p>已上传<a href="https://github.com/dongkelun/spark-scala/blob/master/src/main/scala/com/dkl/blog/spark/mysql/SparkMysqlOverwriteTruncateTable.scala" target="_blank" rel="noopener">github</a></p>
-<p>主要的参数为.option(“truncate”, true)，可以参考Spark官网<a href="http://spark.apache.org/docs/latest/sql-data-sources-jdbc.html" target="_blank" rel="noopener">http://spark.apache.org/docs/latest/sql-data-sources-jdbc.html</a></p>
+<h2 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h2><p>已上传<a href="https://github.com/dongkelun/spark-scala/blob/master/src/main/scala/com/dkl/blog/spark/mysql/SparkMysqlOverwriteTruncateTable.scala">github</a></p>
+<p>主要的参数为.option(“truncate”, true)，可以参考Spark官网<a href="http://spark.apache.org/docs/latest/sql-data-sources-jdbc.html">http://spark.apache.org/docs/latest/sql-data-sources-jdbc.html</a></p>
 <p>主要代码逻辑为，读取csv，进行日期转化，然后覆盖写入到已经建好的mysql表中。</p>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.dkl.blog.spark.mysql</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.<span class="type">Properties</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SparkSession</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.functions.&#123;col, to_date&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Created by dongkelun on 2021/4/29 14:06</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Spark覆盖写入mysql表但不修改已有的表结构</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">SparkMysqlOverwriteTruncateTable</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> spark = <span class="type">SparkSession</span></span><br><span class="line">      .builder()</span><br><span class="line">      .appName(<span class="string">"SparkMysqlOverwriteTruncateTable"</span>)</span><br><span class="line">      .master(<span class="string">"local[*]"</span>)</span><br><span class="line">      .getOrCreate()</span><br><span class="line"></span><br><span class="line">    <span class="comment">//rewriteBatchedStatements参数为批量写入数据，可以增加写入效率</span></span><br><span class="line">    <span class="keyword">val</span> url = <span class="string">"jdbc:mysql://192.168.44.128:3306/test?useUnicode=true&amp;characterEncoding=utf-8&amp;rewriteBatchedStatements=true"</span></span><br><span class="line">    <span class="keyword">val</span> tableName = <span class="string">"trafficbase_cljbxx"</span></span><br><span class="line">    <span class="keyword">val</span> prop = <span class="keyword">new</span> <span class="type">Properties</span>()</span><br><span class="line">    prop.put(<span class="string">"user"</span>, <span class="string">"root"</span>)</span><br><span class="line">    prop.put(<span class="string">"password"</span>, <span class="string">"Root-123456"</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment">//读取本地csv</span></span><br><span class="line">    <span class="keyword">var</span> df = spark.read.option(<span class="string">"header"</span>, <span class="string">"true"</span>).csv(<span class="string">"D:\\文档\\inspur\\csg\\功能测评\\测试数据\\trafficbase_cljbxx.csv"</span>)</span><br><span class="line">    <span class="comment">//字符串转为日期类型</span></span><br><span class="line">    df = df.withColumn(<span class="string">"czsj"</span>, to_date(col(<span class="string">"czsj"</span>), <span class="string">"dd/mm/yyyy"</span>))</span><br><span class="line">    df.show()</span><br><span class="line"></span><br><span class="line">    df.write.mode(<span class="string">"overwrite"</span>)</span><br><span class="line">      .option(<span class="string">"truncate"</span>, <span class="literal">true</span>) <span class="comment">//覆盖写入数据前先truncate table而不是drop table</span></span><br><span class="line">      .jdbc(url = url, table = tableName, prop)</span><br><span class="line">    spark.stop</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<a id="more"></a>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.dkl.blog.spark.mysql</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.<span class="type">Properties</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SparkSession</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.functions.&#123;col, to_date&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Created by dongkelun on 2021/4/29 14:06</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Spark覆盖写入mysql表但不修改已有的表结构</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">SparkMysqlOverwriteTruncateTable</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> spark = <span class="type">SparkSession</span></span><br><span class="line">      .builder()</span><br><span class="line">      .appName(<span class="string">&quot;SparkMysqlOverwriteTruncateTable&quot;</span>)</span><br><span class="line">      .master(<span class="string">&quot;local[*]&quot;</span>)</span><br><span class="line">      .getOrCreate()</span><br><span class="line"></span><br><span class="line">    <span class="comment">//rewriteBatchedStatements参数为批量写入数据，可以增加写入效率</span></span><br><span class="line">    <span class="keyword">val</span> url = <span class="string">&quot;jdbc:mysql://192.168.44.128:3306/test?useUnicode=true&amp;characterEncoding=utf-8&amp;rewriteBatchedStatements=true&quot;</span></span><br><span class="line">    <span class="keyword">val</span> tableName = <span class="string">&quot;trafficbase_cljbxx&quot;</span></span><br><span class="line">    <span class="keyword">val</span> prop = <span class="keyword">new</span> <span class="type">Properties</span>()</span><br><span class="line">    prop.put(<span class="string">&quot;user&quot;</span>, <span class="string">&quot;root&quot;</span>)</span><br><span class="line">    prop.put(<span class="string">&quot;password&quot;</span>, <span class="string">&quot;Root-123456&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment">//读取本地csv</span></span><br><span class="line">    <span class="keyword">var</span> df = spark.read.option(<span class="string">&quot;header&quot;</span>, <span class="string">&quot;true&quot;</span>).csv(<span class="string">&quot;D:\\文档\\inspur\\csg\\功能测评\\测试数据\\trafficbase_cljbxx.csv&quot;</span>)</span><br><span class="line">    <span class="comment">//字符串转为日期类型</span></span><br><span class="line">    df = df.withColumn(<span class="string">&quot;czsj&quot;</span>, to_date(col(<span class="string">&quot;czsj&quot;</span>), <span class="string">&quot;dd/mm/yyyy&quot;</span>))</span><br><span class="line">    df.show()</span><br><span class="line"></span><br><span class="line">    df.write.mode(<span class="string">&quot;overwrite&quot;</span>)</span><br><span class="line">      .option(<span class="string">&quot;truncate&quot;</span>, <span class="literal">true</span>) <span class="comment">//覆盖写入数据前先truncate table而不是drop table</span></span><br><span class="line">      .jdbc(url = url, table = tableName, prop)</span><br><span class="line">    spark.stop</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<span id="more"></span>
 <h2 id="源码跟踪"><a href="#源码跟踪" class="headerlink" title="源码跟踪"></a>源码跟踪</h2><blockquote>
 <p>本文仅进行简单的源码跟踪</p>
 </blockquote>
@@ -272,18 +274,17 @@
 <p>本来想以Spark3.0.1版本进行讲解，后来发现Spark3源码稍微做了些改动，因为本人之前主要用Spark2.2进行学习总结，所以先用Spark2.2.1的源码进行讲解，后面再在此基础上进行讲解Spark3的源码的一些变化，其实主要逻辑是一样的。</p>
 </blockquote>
 <h4 id="jdbc"><a href="#jdbc" class="headerlink" title="jdbc"></a>jdbc</h4><p>先从入口jdbc函数开始</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">def jdbc(url: String, table: String, connectionProperties: Properties): Unit = &#123;</span><br><span class="line">  assertNotPartitioned(&quot;jdbc&quot;)</span><br><span class="line">  assertNotBucketed(&quot;jdbc&quot;)</span><br><span class="line">  // connectionProperties should override settings in extraOptions.</span><br><span class="line">  this.extraOptions ++= connectionProperties.asScala</span><br><span class="line">  // explicit url and dbtable should override all</span><br><span class="line">  this.extraOptions += (&quot;url&quot; -&gt; url, &quot;dbtable&quot; -&gt; table)</span><br><span class="line">  format(&quot;jdbc&quot;).save()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h4 id="format-“jdbc”-save"><a href="#format-“jdbc”-save" class="headerlink" title="format(“jdbc”).save()"></a>format(“jdbc”).save()</h4><p>format方法返回DataFrameWriter<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">format</span></span>(source: <span class="type">String</span>): <span class="type">DataFrameWriter</span>[<span class="type">T</span>] = &#123;</span><br><span class="line">  <span class="keyword">this</span>.source = source <span class="comment">//source="jdbc"</span></span><br><span class="line">  <span class="keyword">this</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">save</span></span>(): <span class="type">Unit</span> = &#123;</span><br><span class="line">  <span class="keyword">if</span> (source.toLowerCase(<span class="type">Locale</span>.<span class="type">ROOT</span>) == <span class="type">DDLUtils</span>.<span class="type">HIVE_PROVIDER</span>) &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">AnalysisException</span>(<span class="string">"Hive data source can only be used with tables, you can not "</span> +</span><br><span class="line">      <span class="string">"write files of Hive data source directly."</span>)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  assertNotBucketed(<span class="string">"save"</span>)</span><br><span class="line"></span><br><span class="line">  runCommand(df.sparkSession, <span class="string">"save"</span>) &#123;</span><br><span class="line">    <span class="type">SaveIntoDataSourceCommand</span>(</span><br><span class="line">      query = df.logicalPlan,</span><br><span class="line">      provider = source,</span><br><span class="line">      partitionColumns = partitioningColumns.getOrElse(<span class="type">Nil</span>),</span><br><span class="line">      options = extraOptions.toMap,</span><br><span class="line">      mode = mode)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">def jdbc(url: String, table: String, connectionProperties: Properties): Unit = &#123;</span><br><span class="line">  assertNotPartitioned(&quot;jdbc&quot;)</span><br><span class="line">  assertNotBucketed(&quot;jdbc&quot;)</span><br><span class="line">  // connectionProperties should override settings in extraOptions.</span><br><span class="line">  this.extraOptions ++= connectionProperties.asScala</span><br><span class="line">  // explicit url and dbtable should override all</span><br><span class="line">  this.extraOptions += (&quot;url&quot; -&gt; url, &quot;dbtable&quot; -&gt; table)</span><br><span class="line">  format(&quot;jdbc&quot;).save()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="format-“jdbc”-save"><a href="#format-“jdbc”-save" class="headerlink" title="format(“jdbc”).save()"></a>format(“jdbc”).save()</h4><p>format方法返回DataFrameWriter<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">format</span></span>(source: <span class="type">String</span>): <span class="type">DataFrameWriter</span>[<span class="type">T</span>] = &#123;</span><br><span class="line">  <span class="keyword">this</span>.source = source <span class="comment">//source=&quot;jdbc&quot;</span></span><br><span class="line">  <span class="keyword">this</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">save</span></span>(): <span class="type">Unit</span> = &#123;</span><br><span class="line">  <span class="keyword">if</span> (source.toLowerCase(<span class="type">Locale</span>.<span class="type">ROOT</span>) == <span class="type">DDLUtils</span>.<span class="type">HIVE_PROVIDER</span>) &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">AnalysisException</span>(<span class="string">&quot;Hive data source can only be used with tables, you can not &quot;</span> +</span><br><span class="line">      <span class="string">&quot;write files of Hive data source directly.&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  assertNotBucketed(<span class="string">&quot;save&quot;</span>)</span><br><span class="line"></span><br><span class="line">  runCommand(df.sparkSession, <span class="string">&quot;save&quot;</span>) &#123;</span><br><span class="line">    <span class="type">SaveIntoDataSourceCommand</span>(</span><br><span class="line">      query = df.logicalPlan,</span><br><span class="line">      provider = source,</span><br><span class="line">      partitionColumns = partitioningColumns.getOrElse(<span class="type">Nil</span>),</span><br><span class="line">      options = extraOptions.toMap,</span><br><span class="line">      mode = mode)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <h4 id="SaveIntoDataSourceCommand"><a href="#SaveIntoDataSourceCommand" class="headerlink" title="SaveIntoDataSourceCommand"></a>SaveIntoDataSourceCommand</h4><p>接着执行SaveIntoDataSourceCommand的run方法</p>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">case</span> <span class="class"><span class="keyword">class</span> <span class="title">SaveIntoDataSourceCommand</span>(<span class="params"></span></span></span><br><span class="line"><span class="class"><span class="params">    query: <span class="type">LogicalPlan</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">    provider: <span class="type">String</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">    partitionColumns: <span class="type">Seq</span>[<span class="type">String</span>],</span></span></span><br><span class="line"><span class="class"><span class="params">    options: <span class="type">Map</span>[<span class="type">String</span>, <span class="type">String</span>],</span></span></span><br><span class="line"><span class="class"><span class="params">    mode: <span class="type">SaveMode</span></span>) <span class="keyword">extends</span> <span class="title">RunnableCommand</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">override</span> <span class="keyword">protected</span> <span class="function"><span class="keyword">def</span> <span class="title">innerChildren</span></span>: <span class="type">Seq</span>[<span class="type">QueryPlan</span>[_]] = <span class="type">Seq</span>(query)</span><br><span class="line"></span><br><span class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">run</span></span>(sparkSession: <span class="type">SparkSession</span>): <span class="type">Seq</span>[<span class="type">Row</span>] = &#123;</span><br><span class="line">    <span class="type">DataSource</span>(</span><br><span class="line">      sparkSession,</span><br><span class="line">      className = provider,</span><br><span class="line">      partitionColumns = partitionColumns,</span><br><span class="line">      options = options).write(mode, <span class="type">Dataset</span>.ofRows(sparkSession, query))</span><br><span class="line"></span><br><span class="line">    <span class="type">Seq</span>.empty[<span class="type">Row</span>]</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">simpleString</span></span>: <span class="type">String</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> redacted = <span class="type">Utils</span>.redact(<span class="type">SparkEnv</span>.get.conf, options.toSeq).toMap</span><br><span class="line">    <span class="string">s"SaveIntoDataSourceCommand <span class="subst">$&#123;provider&#125;</span>, <span class="subst">$&#123;partitionColumns&#125;</span>, <span class="subst">$&#123;redacted&#125;</span>, <span class="subst">$&#123;mode&#125;</span>"</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">case</span> <span class="class"><span class="keyword">class</span> <span class="title">SaveIntoDataSourceCommand</span>(<span class="params"></span></span></span><br><span class="line"><span class="params"><span class="class">    query: <span class="type">LogicalPlan</span>,</span></span></span><br><span class="line"><span class="params"><span class="class">    provider: <span class="type">String</span>,</span></span></span><br><span class="line"><span class="params"><span class="class">    partitionColumns: <span class="type">Seq</span>[<span class="type">String</span>],</span></span></span><br><span class="line"><span class="params"><span class="class">    options: <span class="type">Map</span>[<span class="type">String</span>, <span class="type">String</span>],</span></span></span><br><span class="line"><span class="params"><span class="class">    mode: <span class="type">SaveMode</span></span>) <span class="keyword">extends</span> <span class="title">RunnableCommand</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">override</span> <span class="keyword">protected</span> <span class="function"><span class="keyword">def</span> <span class="title">innerChildren</span></span>: <span class="type">Seq</span>[<span class="type">QueryPlan</span>[_]] = <span class="type">Seq</span>(query)</span><br><span class="line"></span><br><span class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">run</span></span>(sparkSession: <span class="type">SparkSession</span>): <span class="type">Seq</span>[<span class="type">Row</span>] = &#123;</span><br><span class="line">    <span class="type">DataSource</span>(</span><br><span class="line">      sparkSession,</span><br><span class="line">      className = provider,</span><br><span class="line">      partitionColumns = partitionColumns,</span><br><span class="line">      options = options).write(mode, <span class="type">Dataset</span>.ofRows(sparkSession, query))</span><br><span class="line"></span><br><span class="line">    <span class="type">Seq</span>.empty[<span class="type">Row</span>]</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">simpleString</span></span>: <span class="type">String</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> redacted = <span class="type">Utils</span>.redact(<span class="type">SparkEnv</span>.get.conf, options.toSeq).toMap</span><br><span class="line">    <span class="string">s&quot;SaveIntoDataSourceCommand <span class="subst">$&#123;provider&#125;</span>, <span class="subst">$&#123;partitionColumns&#125;</span>, <span class="subst">$&#123;redacted&#125;</span>, <span class="subst">$&#123;mode&#125;</span>&quot;</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 <h4 id="DataSource-write"><a href="#DataSource-write" class="headerlink" title="DataSource.write"></a>DataSource.write</h4><p>run方法里主要执行DataSource.write方法</p>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">write</span></span>(mode: <span class="type">SaveMode</span>, data: <span class="type">DataFrame</span>): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="keyword">if</span> (data.schema.map(_.dataType).exists(_.isInstanceOf[<span class="type">CalendarIntervalType</span>])) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">AnalysisException</span>(<span class="string">"Cannot save interval data type into external storage."</span>)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    providingClass.newInstance() <span class="keyword">match</span> &#123;</span><br><span class="line">      <span class="keyword">case</span> dataSource: <span class="type">CreatableRelationProvider</span> =&gt;</span><br><span class="line">        dataSource.createRelation(sparkSession.sqlContext, mode, caseInsensitiveOptions, data)</span><br><span class="line">      <span class="keyword">case</span> format: <span class="type">FileFormat</span> =&gt;</span><br><span class="line">        writeInFileFormat(format, mode, data)</span><br><span class="line">      <span class="keyword">case</span> _ =&gt;</span><br><span class="line">        sys.error(<span class="string">s"<span class="subst">$&#123;providingClass.getCanonicalName&#125;</span> does not allow create table as select."</span>)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">write</span></span>(mode: <span class="type">SaveMode</span>, data: <span class="type">DataFrame</span>): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="keyword">if</span> (data.schema.map(_.dataType).exists(_.isInstanceOf[<span class="type">CalendarIntervalType</span>])) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">AnalysisException</span>(<span class="string">&quot;Cannot save interval data type into external storage.&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    providingClass.newInstance() <span class="keyword">match</span> &#123;</span><br><span class="line">      <span class="keyword">case</span> dataSource: <span class="type">CreatableRelationProvider</span> =&gt;</span><br><span class="line">        dataSource.createRelation(sparkSession.sqlContext, mode, caseInsensitiveOptions, data)</span><br><span class="line">      <span class="keyword">case</span> format: <span class="type">FileFormat</span> =&gt;</span><br><span class="line">        writeInFileFormat(format, mode, data)</span><br><span class="line">      <span class="keyword">case</span> _ =&gt;</span><br><span class="line">        sys.error(<span class="string">s&quot;<span class="subst">$&#123;providingClass.getCanonicalName&#125;</span> does not allow create table as select.&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>这里会执行到<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">case</span> dataSource: <span class="type">CreatableRelationProvider</span> =&gt;</span><br><span class="line">        dataSource.createRelation(sparkSession.sqlContext, mode, caseInsensitiveOptions, data)</span><br></pre></td></tr></table></figure></p>
 <h4 id="CreatableRelationProvider-createRelation"><a href="#CreatableRelationProvider-createRelation" class="headerlink" title="CreatableRelationProvider.createRelation"></a>CreatableRelationProvider.createRelation</h4><p>然后看一下createRelation方法，这里的CreatableRelationProvider是一个接口，这里实际上执行其子类JdbcRelationProvider的createRelation</p>
 <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">trait</span> <span class="title">CreatableRelationProvider</span> </span>&#123;</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Saves a DataFrame to a destination (using data source-specific parameters)</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * @param sqlContext SQLContext</span></span><br><span class="line"><span class="comment">   * @param mode specifies what happens when the destination already exists</span></span><br><span class="line"><span class="comment">   * @param parameters data source-specific parameters</span></span><br><span class="line"><span class="comment">   * @param data DataFrame to save (i.e. the rows after executing the query)</span></span><br><span class="line"><span class="comment">   * @return Relation with a known schema</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * @since 1.3.0</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">createRelation</span></span>(</span><br><span class="line">      sqlContext: <span class="type">SQLContext</span>,</span><br><span class="line">      mode: <span class="type">SaveMode</span>,</span><br><span class="line">      parameters: <span class="type">Map</span>[<span class="type">String</span>, <span class="type">String</span>],</span><br><span class="line">      data: <span class="type">DataFrame</span>): <span class="type">BaseRelation</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h4 id="JdbcRelationProvider-createRelation"><a href="#JdbcRelationProvider-createRelation" class="headerlink" title="JdbcRelationProvider.createRelation"></a>JdbcRelationProvider.createRelation</h4><p>下面是最后真正要执行的方法，首先判断表是否存在，我们这个场景下表示存在的，然后进行mode的模式匹配，这里为Overwrite，然后进入到第一个if语句，我们这里在上面的程序里设置了<br>truncate为true，所以会满足条件，然后先执行truncateTable方法进行删除表数据但不会删除表结构，再执行saveTable方法将df的数据保存到表中实现覆盖写入。<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">createRelation</span></span>(</span><br><span class="line">      sqlContext: <span class="type">SQLContext</span>,</span><br><span class="line">      mode: <span class="type">SaveMode</span>,</span><br><span class="line">      parameters: <span class="type">Map</span>[<span class="type">String</span>, <span class="type">String</span>],</span><br><span class="line">      df: <span class="type">DataFrame</span>): <span class="type">BaseRelation</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> options = <span class="keyword">new</span> <span class="type">JDBCOptions</span>(parameters)</span><br><span class="line">    <span class="keyword">val</span> isCaseSensitive = sqlContext.conf.caseSensitiveAnalysis</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> conn = <span class="type">JdbcUtils</span>.createConnectionFactory(options)()</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="keyword">val</span> tableExists = <span class="type">JdbcUtils</span>.tableExists(conn, options)</span><br><span class="line">      <span class="keyword">if</span> (tableExists) &#123;<span class="comment">//首先判断表是否存在</span></span><br><span class="line">        mode <span class="keyword">match</span> &#123;</span><br><span class="line">          <span class="keyword">case</span> <span class="type">SaveMode</span>.<span class="type">Overwrite</span> =&gt; <span class="comment">//如果mode为Overwrite</span></span><br><span class="line">            <span class="keyword">if</span> (options.isTruncate &amp;&amp; isCascadingTruncateTable(options.url) == <span class="type">Some</span>(<span class="literal">false</span>)) &#123; <span class="comment">//判断truncate是否为true</span></span><br><span class="line">              <span class="comment">// In this case, we should truncate table and then load.</span></span><br><span class="line">              truncateTable(conn, options.table)        <span class="comment">//先truncateTable</span></span><br><span class="line">              <span class="keyword">val</span> tableSchema = <span class="type">JdbcUtils</span>.getSchemaOption(conn, options)</span><br><span class="line">              saveTable(df, tableSchema, isCaseSensitive, options)  <span class="comment">//再保存数据</span></span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">              <span class="comment">// Otherwise, do not truncate the table, instead drop and recreate it</span></span><br><span class="line">              dropTable(conn, options.table)</span><br><span class="line">              createTable(conn, df, options)</span><br><span class="line">              saveTable(df, <span class="type">Some</span>(df.schema), isCaseSensitive, options)</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">          <span class="keyword">case</span> <span class="type">SaveMode</span>.<span class="type">Append</span> =&gt;</span><br><span class="line">            <span class="keyword">val</span> tableSchema = <span class="type">JdbcUtils</span>.getSchemaOption(conn, options)</span><br><span class="line">            saveTable(df, tableSchema, isCaseSensitive, options)</span><br><span class="line"></span><br><span class="line">          <span class="keyword">case</span> <span class="type">SaveMode</span>.<span class="type">ErrorIfExists</span> =&gt;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">AnalysisException</span>(</span><br><span class="line">              <span class="string">s"Table or view '<span class="subst">$&#123;options.table&#125;</span>' already exists. SaveMode: ErrorIfExists."</span>)</span><br><span class="line"></span><br><span class="line">          <span class="keyword">case</span> <span class="type">SaveMode</span>.<span class="type">Ignore</span> =&gt;</span><br><span class="line">            <span class="comment">// With `SaveMode.Ignore` mode, if table already exists, the save operation is expected</span></span><br><span class="line">            <span class="comment">// to not save the contents of the DataFrame and to not change the existing data.</span></span><br><span class="line">            <span class="comment">// Therefore, it is okay to do nothing here and then just return the relation below.</span></span><br><span class="line">        &#125;</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        createTable(conn, df, options)</span><br><span class="line">        saveTable(df, <span class="type">Some</span>(df.schema), isCaseSensitive, options)</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">      conn.close()</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    createRelation(sqlContext, parameters)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<h4 id="truncateTable"><a href="#truncateTable" class="headerlink" title="truncateTable"></a>truncateTable</h4><p>最后看一下truncateTable实现原理，这里其实是执行的TRUNCATE TABLE命令<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Truncates a table from the JDBC database.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">truncateTable</span></span>(conn: <span class="type">Connection</span>, table: <span class="type">String</span>): <span class="type">Unit</span> = &#123;</span><br><span class="line">  <span class="keyword">val</span> statement = conn.createStatement</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    statement.executeUpdate(<span class="string">s"TRUNCATE TABLE <span class="subst">$table</span>"</span>)</span><br><span class="line">  &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    statement.close()</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h4 id="JdbcRelationProvider-createRelation"><a href="#JdbcRelationProvider-createRelation" class="headerlink" title="JdbcRelationProvider.createRelation"></a>JdbcRelationProvider.createRelation</h4><p>下面是最后真正要执行的方法，首先判断表是否存在，我们这个场景下表示存在的，然后进行mode的模式匹配，这里为Overwrite，然后进入到第一个if语句，我们这里在上面的程序里设置了<br>truncate为true，所以会满足条件，然后先执行truncateTable方法进行删除表数据但不会删除表结构，再执行saveTable方法将df的数据保存到表中实现覆盖写入。<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">createRelation</span></span>(</span><br><span class="line">      sqlContext: <span class="type">SQLContext</span>,</span><br><span class="line">      mode: <span class="type">SaveMode</span>,</span><br><span class="line">      parameters: <span class="type">Map</span>[<span class="type">String</span>, <span class="type">String</span>],</span><br><span class="line">      df: <span class="type">DataFrame</span>): <span class="type">BaseRelation</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> options = <span class="keyword">new</span> <span class="type">JDBCOptions</span>(parameters)</span><br><span class="line">    <span class="keyword">val</span> isCaseSensitive = sqlContext.conf.caseSensitiveAnalysis</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> conn = <span class="type">JdbcUtils</span>.createConnectionFactory(options)()</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="keyword">val</span> tableExists = <span class="type">JdbcUtils</span>.tableExists(conn, options)</span><br><span class="line">      <span class="keyword">if</span> (tableExists) &#123;<span class="comment">//首先判断表是否存在</span></span><br><span class="line">        mode <span class="keyword">match</span> &#123;</span><br><span class="line">          <span class="keyword">case</span> <span class="type">SaveMode</span>.<span class="type">Overwrite</span> =&gt; <span class="comment">//如果mode为Overwrite</span></span><br><span class="line">            <span class="keyword">if</span> (options.isTruncate &amp;&amp; isCascadingTruncateTable(options.url) == <span class="type">Some</span>(<span class="literal">false</span>)) &#123; <span class="comment">//判断truncate是否为true</span></span><br><span class="line">              <span class="comment">// In this case, we should truncate table and then load.</span></span><br><span class="line">              truncateTable(conn, options.table)        <span class="comment">//先truncateTable</span></span><br><span class="line">              <span class="keyword">val</span> tableSchema = <span class="type">JdbcUtils</span>.getSchemaOption(conn, options)</span><br><span class="line">              saveTable(df, tableSchema, isCaseSensitive, options)  <span class="comment">//再保存数据</span></span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">              <span class="comment">// Otherwise, do not truncate the table, instead drop and recreate it</span></span><br><span class="line">              dropTable(conn, options.table)</span><br><span class="line">              createTable(conn, df, options)</span><br><span class="line">              saveTable(df, <span class="type">Some</span>(df.schema), isCaseSensitive, options)</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">          <span class="keyword">case</span> <span class="type">SaveMode</span>.<span class="type">Append</span> =&gt;</span><br><span class="line">            <span class="keyword">val</span> tableSchema = <span class="type">JdbcUtils</span>.getSchemaOption(conn, options)</span><br><span class="line">            saveTable(df, tableSchema, isCaseSensitive, options)</span><br><span class="line"></span><br><span class="line">          <span class="keyword">case</span> <span class="type">SaveMode</span>.<span class="type">ErrorIfExists</span> =&gt;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">AnalysisException</span>(</span><br><span class="line">              <span class="string">s&quot;Table or view &#x27;<span class="subst">$&#123;options.table&#125;</span>&#x27; already exists. SaveMode: ErrorIfExists.&quot;</span>)</span><br><span class="line"></span><br><span class="line">          <span class="keyword">case</span> <span class="type">SaveMode</span>.<span class="type">Ignore</span> =&gt;</span><br><span class="line">            <span class="comment">// With `SaveMode.Ignore` mode, if table already exists, the save operation is expected</span></span><br><span class="line">            <span class="comment">// to not save the contents of the DataFrame and to not change the existing data.</span></span><br><span class="line">            <span class="comment">// Therefore, it is okay to do nothing here and then just return the relation below.</span></span><br><span class="line">        &#125;</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        createTable(conn, df, options)</span><br><span class="line">        saveTable(df, <span class="type">Some</span>(df.schema), isCaseSensitive, options)</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">      conn.close()</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    createRelation(sqlContext, parameters)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h4 id="truncateTable"><a href="#truncateTable" class="headerlink" title="truncateTable"></a>truncateTable</h4><p>最后看一下truncateTable实现原理，这里其实是执行的TRUNCATE TABLE命令<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Truncates a table from the JDBC database.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">truncateTable</span></span>(conn: <span class="type">Connection</span>, table: <span class="type">String</span>): <span class="type">Unit</span> = &#123;</span><br><span class="line">  <span class="keyword">val</span> statement = conn.createStatement</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    statement.executeUpdate(<span class="string">s&quot;TRUNCATE TABLE <span class="subst">$table</span>&quot;</span>)</span><br><span class="line">  &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    statement.close()</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>本来主要讲了如何实现Spark在不删除表结构的情况下进行overwrite覆盖写入mysql表，并跟踪一下源码，了解其实现原理。代码层面主要是加了一个参数.option(“truncate”, true)，源码层面<br>主要逻辑是先判断表是否存在，如果表存在，然后判断truncate是否为true，如果为true，则不drop表，而是执行TRUNCATE TABLE表里，清空表数据然后再写表，这样就实现了我们的需求</p>
 
       
@@ -441,7 +442,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#代码"><span class="toc-number">2.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#源码跟踪"><span class="toc-number">3.</span> <span class="toc-text">源码跟踪</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Spark2-2-1"><span class="toc-number">3.1.</span> <span class="toc-text">Spark2.2.1</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#jdbc"><span class="toc-number">3.1.1.</span> <span class="toc-text">jdbc</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#format-“jdbc”-save"><span class="toc-number">3.1.2.</span> <span class="toc-text">format(“jdbc”).save()</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#SaveIntoDataSourceCommand"><span class="toc-number">3.1.3.</span> <span class="toc-text">SaveIntoDataSourceCommand</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#DataSource-write"><span class="toc-number">3.1.4.</span> <span class="toc-text">DataSource.write</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#CreatableRelationProvider-createRelation"><span class="toc-number">3.1.5.</span> <span class="toc-text">CreatableRelationProvider.createRelation</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#JdbcRelationProvider-createRelation"><span class="toc-number">3.1.6.</span> <span class="toc-text">JdbcRelationProvider.createRelation</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#truncateTable"><span class="toc-number">3.1.7.</span> <span class="toc-text">truncateTable</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">4.</span> <span class="toc-text">总结</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81"><span class="toc-number">2.</span> <span class="toc-text">代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%BA%90%E7%A0%81%E8%B7%9F%E8%B8%AA"><span class="toc-number">3.</span> <span class="toc-text">源码跟踪</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Spark2-2-1"><span class="toc-number">3.1.</span> <span class="toc-text">Spark2.2.1</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#jdbc"><span class="toc-number">3.1.1.</span> <span class="toc-text">jdbc</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#format-%E2%80%9Cjdbc%E2%80%9D-save"><span class="toc-number">3.1.2.</span> <span class="toc-text">format(“jdbc”).save()</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#SaveIntoDataSourceCommand"><span class="toc-number">3.1.3.</span> <span class="toc-text">SaveIntoDataSourceCommand</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#DataSource-write"><span class="toc-number">3.1.4.</span> <span class="toc-text">DataSource.write</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#CreatableRelationProvider-createRelation"><span class="toc-number">3.1.5.</span> <span class="toc-text">CreatableRelationProvider.createRelation</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#JdbcRelationProvider-createRelation"><span class="toc-number">3.1.6.</span> <span class="toc-text">JdbcRelationProvider.createRelation</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#truncateTable"><span class="toc-number">3.1.7.</span> <span class="toc-text">truncateTable</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">4.</span> <span class="toc-text">总结</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -616,14 +617,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -633,6 +626,22 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -648,14 +657,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Logistic Regression</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
@@ -668,23 +669,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">S3</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -704,7 +689,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Ceph</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -716,15 +713,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -760,11 +753,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Java</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
+                <a href="javascript:void(0)" class="js-tag color5">Java</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -796,15 +789,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -816,7 +801,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -824,7 +809,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -836,7 +821,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -844,11 +833,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+                <a href="javascript:void(0)" class="js-tag color2">Presto</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -857,6 +846,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -872,15 +869,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -889,6 +882,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">编码问题</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -901,10 +898,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -924,10 +917,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">spark-submit</a>
               </li>
              
@@ -936,7 +925,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+                <a href="javascript:void(0)" class="js-tag color4">UDF</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -944,11 +933,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -976,7 +969,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -992,7 +1001,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
+                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1000,11 +1009,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">PostgreSQL</a>
+                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1024,23 +1029,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ZooKeeper</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1049,6 +1046,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ollama</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
               </li>
             
             <div class="clearfix"></div>
