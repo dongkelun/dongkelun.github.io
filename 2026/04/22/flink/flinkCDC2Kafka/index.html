@@ -23,7 +23,7 @@
 <meta property="og:image" content="https://dongkelun.com/hexo-images/flink/cdc/kafka/ckd5.jpg">
 <meta property="og:image" content="https://dongkelun.com/hexo-images/flink/cdc/kafka/ckd6.jpg">
 <meta property="article:published_time" content="2026-04-21T16:00:00.000Z">
-<meta property="article:modified_time" content="2026-04-22T09:50:18.983Z">
+<meta property="article:modified_time" content="2026-04-22T14:00:29.720Z">
 <meta property="article:author" content="董可伦">
 <meta property="article:tag" content="CDC">
 <meta property="article:tag" content="Flink">
@@ -286,7 +286,7 @@
 <h5 id="base64-验证"><a href="#base64-验证" class="headerlink" title="base64 验证"></a>base64 验证</h5><p>编码转图片在线网站：<a href="https://www.sojson.com/image/basetoimage.html">https://www.sojson.com/image/basetoimage.html</a></p>
 <p><img src="https://dongkelun.com/hexo-images/flink/cdc/kafka/ckd6.jpg" alt=""></p>
 <p>到此图片功能验证成功。</p>
-<h2 id="完整SQL"><a href="#完整SQL" class="headerlink" title="完整SQL"></a>完整SQL</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> yarn.application.name<span class="operator">=</span>cdc_mysql2kafka;</span><br><span class="line"></span><br><span class="line"><span class="keyword">set</span> parallelism.default<span class="operator">=</span><span class="number">1</span>;</span><br><span class="line"><span class="keyword">set</span> taskmanager.memory.process.size<span class="operator">=</span><span class="number">3</span>g;</span><br><span class="line"></span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.interval<span class="operator">=</span><span class="number">1000</span>;</span><br><span class="line"><span class="keyword">set</span> state.checkpoints.dir<span class="operator">=</span>hdfs:<span class="operator">/</span><span class="operator">/</span><span class="operator">/</span>flink<span class="operator">/</span>checkpoints<span class="operator">/</span>cdc_mysql2kafka;</span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.externalized<span class="operator">-</span>checkpoint<span class="operator">-</span>retention<span class="operator">=</span> RETAIN_ON_CANCELLATION;</span><br><span class="line"><span class="keyword">set</span> pipeline.operator<span class="operator">-</span>chaining<span class="operator">=</span><span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE TABLE</span> mysql_cdc_source (</span><br><span class="line">  id <span class="type">int</span> <span class="keyword">PRIMARY KEY</span> <span class="keyword">NOT</span> ENFORCED, <span class="comment">--主键必填，且要求源表必须有主键，flink主键可以和mysql主键不一致</span></span><br><span class="line">  name string,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="type">bigint</span>,</span><br><span class="line">  dt string,</span><br><span class="line">  img String,</span><br><span class="line">  operation_ts  String METADATA <span class="keyword">FROM</span> <span class="string">&#x27;op_ts&#x27;</span> VIRTUAL</span><br><span class="line">) <span class="keyword">WITH</span> (</span><br><span class="line"> <span class="string">&#x27;connector&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;mysql-cdc&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;hostname&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;10.108.8.54&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;port&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;3306&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;username&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;root&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;password&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;InDaPl01?&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;database-name&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;cdc&#x27;</span>,</span><br><span class="line"> <span class="comment">-- &#x27;server-time-zone&#x27; = &#x27;UTC+8&#x27;, -- MySQL 时区，根据实际情况添加</span></span><br><span class="line"> <span class="string">&#x27;table-name&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;mysql_cdc_source2&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;debezium.binary.handling.mode&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;base64&#x27;</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE TABLE</span> if <span class="keyword">not</span> <span class="keyword">exists</span> test_kafka_sink (</span><br><span class="line">  id <span class="type">int</span> <span class="keyword">PRIMARY KEY</span> <span class="keyword">NOT</span> ENFORCED,</span><br><span class="line">  name string,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="type">bigint</span>,</span><br><span class="line">  dt string,</span><br><span class="line">  img String,</span><br><span class="line">  operation_ts String</span><br><span class="line">) <span class="keyword">WITH</span> (</span><br><span class="line">  <span class="string">&#x27;connector&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;kafka&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;topic&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;test_kafka_sink2&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;properties.bootstrap.servers&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;ip1:6667,ip2:6667,ip3:6667&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;properties.security.protocol&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;SASL_PLAINTEXT&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;properties.sasl.mechanism&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;GSSAPI&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;properties.sasl.kerberos.service.name&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;kafka&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;properties.group.id&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;dkl&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;scan.startup.mode&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;earliest-offset&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;key.format&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;json&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;key.fields&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;id&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;value.format&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;debezium-json&#x27;</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert into</span> test_kafka_sink <span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> mysql_cdc_source;</span><br></pre></td></tr></table></figure>
+<h2 id="完整SQL"><a href="#完整SQL" class="headerlink" title="完整SQL"></a>完整SQL</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> yarn.application.name<span class="operator">=</span>cdc_mysql2kafka;</span><br><span class="line"></span><br><span class="line"><span class="keyword">set</span> parallelism.default<span class="operator">=</span><span class="number">1</span>;</span><br><span class="line"><span class="keyword">set</span> taskmanager.memory.process.size<span class="operator">=</span><span class="number">3</span>g;</span><br><span class="line"></span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.interval<span class="operator">=</span><span class="number">1000</span>;</span><br><span class="line"><span class="keyword">set</span> state.checkpoints.dir<span class="operator">=</span>hdfs:<span class="operator">/</span><span class="operator">/</span><span class="operator">/</span>flink<span class="operator">/</span>checkpoints<span class="operator">/</span>cdc_mysql2kafka;</span><br><span class="line"><span class="keyword">set</span> execution.checkpointing.externalized<span class="operator">-</span>checkpoint<span class="operator">-</span>retention<span class="operator">=</span> RETAIN_ON_CANCELLATION;</span><br><span class="line"><span class="keyword">set</span> pipeline.operator<span class="operator">-</span>chaining<span class="operator">=</span><span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE TABLE</span> mysql_cdc_source (</span><br><span class="line">  id <span class="type">int</span> <span class="keyword">PRIMARY KEY</span> <span class="keyword">NOT</span> ENFORCED, <span class="comment">--主键必填，且要求源表必须有主键，flink主键可以和mysql主键不一致</span></span><br><span class="line">  name string,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="type">bigint</span>,</span><br><span class="line">  dt string,</span><br><span class="line">  img String,</span><br><span class="line">  operation_ts  String METADATA <span class="keyword">FROM</span> <span class="string">&#x27;op_ts&#x27;</span> VIRTUAL</span><br><span class="line">) <span class="keyword">WITH</span> (</span><br><span class="line"> <span class="string">&#x27;connector&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;mysql-cdc&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;hostname&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;ip&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;port&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;3306&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;username&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;username&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;password&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;password&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;database-name&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;cdc&#x27;</span>,</span><br><span class="line"> <span class="comment">-- &#x27;server-time-zone&#x27; = &#x27;UTC+8&#x27;, -- MySQL 时区，根据实际情况添加</span></span><br><span class="line"> <span class="string">&#x27;table-name&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;mysql_cdc_source2&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;debezium.binary.handling.mode&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;base64&#x27;</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE TABLE</span> if <span class="keyword">not</span> <span class="keyword">exists</span> test_kafka_sink (</span><br><span class="line">  id <span class="type">int</span> <span class="keyword">PRIMARY KEY</span> <span class="keyword">NOT</span> ENFORCED,</span><br><span class="line">  name string,</span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="type">bigint</span>,</span><br><span class="line">  dt string,</span><br><span class="line">  img String,</span><br><span class="line">  operation_ts String</span><br><span class="line">) <span class="keyword">WITH</span> (</span><br><span class="line">  <span class="string">&#x27;connector&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;kafka&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;topic&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;test_kafka_sink2&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;properties.bootstrap.servers&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;ip1:6667,ip2:6667,ip3:6667&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;properties.security.protocol&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;SASL_PLAINTEXT&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;properties.sasl.mechanism&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;GSSAPI&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;properties.sasl.kerberos.service.name&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;kafka&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;properties.group.id&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;dkl&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;scan.startup.mode&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;earliest-offset&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;key.format&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;json&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;key.fields&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;id&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;value.format&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;debezium-json&#x27;</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert into</span> test_kafka_sink <span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> mysql_cdc_source;</span><br></pre></td></tr></table></figure>
       
 
       
@@ -608,15 +608,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -628,31 +624,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -664,15 +640,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+                <a href="javascript:void(0)" class="js-tag color1">mysql</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -681,6 +653,14 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">S3</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -696,6 +676,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
@@ -705,6 +689,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">front-end</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -724,7 +712,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -736,15 +732,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+                <a href="javascript:void(0)" class="js-tag color3">开源</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -753,6 +741,22 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">异常</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -776,6 +780,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Linux</a>
               </li>
              
@@ -784,19 +792,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sql</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">MySQL</a>
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -804,7 +800,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -812,23 +808,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -840,11 +836,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
+                <a href="javascript:void(0)" class="js-tag color4">sql</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">MySQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -857,6 +865,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">persist</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -876,6 +888,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
               </li>
              
@@ -885,10 +901,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -916,23 +928,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -948,7 +948,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">开源</a>
+                <a href="javascript:void(0)" class="js-tag color4">Vue</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">vmware</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -972,11 +980,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
+                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
+                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -988,23 +996,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Hudi CLI</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">extraMetadata</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Netty</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Python</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1024,15 +1024,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Netty</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
+                <a href="javascript:void(0)" class="js-tag color5">ZooKeeper</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ZooKeeper</a>
+                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1041,10 +1045,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ollama</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">MYSQL</a>
               </li>
             
             <div class="clearfix"></div>
