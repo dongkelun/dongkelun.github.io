@@ -7,18 +7,20 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="https://dongkelun.com">
-  <title>伦少的博客</title>
+  <title>Spark 源码 | SparkSubmitArguments 参数解析（三） | 伦少的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="前言在上一篇文章 Spark 源码 | 脚本分析总结（一） 中，我们分析了 Spark 的脚本执行流程，最终都通过 spark-class 启动 org.apache.spark.deploy.SparkSubmit，本文我们继续分析 SparkSubmit 的提交流程，看看它是如何根据不同的 clusterManager 和 deployMode 来提交应用的。 版本Spark 3.2.3 Sp">
-<meta property="og:type" content="website">
-<meta property="og:title" content="伦少的博客">
-<meta property="og:url" content="https://dongkelun.com/spark-submit-analysis/sparkSubmit-%E5%85%AC%E4%BC%97%E5%8F%B7.html">
+  <meta name="description" content="前言在第二篇文章 Spark 源码 | SparkSubmit 提交流程分析（二） 中，我们分析了 SparkSubmit 的提交流程，其中 doSubmit 方法会调用 parseArguments 解析命令行参数。本文详细介绍参数解析的过程。 版本Spark 3.2.3 SparkSubmitArguments 概述SparkSubmitArguments 继承自 SparkSubmitArg">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spark 源码 | SparkSubmitArguments 参数解析（三）">
+<meta property="og:url" content="https://dongkelun.com/2026/07/08/spark/sparkSourceCode-sparkSubmitArguments/index.html">
 <meta property="og:site_name" content="伦少的博客">
-<meta property="og:description" content="前言在上一篇文章 Spark 源码 | 脚本分析总结（一） 中，我们分析了 Spark 的脚本执行流程，最终都通过 spark-class 启动 org.apache.spark.deploy.SparkSubmit，本文我们继续分析 SparkSubmit 的提交流程，看看它是如何根据不同的 clusterManager 和 deployMode 来提交应用的。 版本Spark 3.2.3 Sp">
+<meta property="og:description" content="前言在第二篇文章 Spark 源码 | SparkSubmit 提交流程分析（二） 中，我们分析了 SparkSubmit 的提交流程，其中 doSubmit 方法会调用 parseArguments 解析命令行参数。本文详细介绍参数解析的过程。 版本Spark 3.2.3 SparkSubmitArguments 概述SparkSubmitArguments 继承自 SparkSubmitArg">
 <meta property="og:locale">
-<meta property="article:published_time" content="2026-07-06T11:01:19.624Z">
-<meta property="article:modified_time" content="2026-07-06T11:01:19.624Z">
+<meta property="article:published_time" content="2026-07-07T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-07-08T11:27:58.062Z">
 <meta property="article:author" content="董可伦">
+<meta property="article:tag" content="Spark">
+<meta property="article:tag" content="源码">
 <meta name="twitter:card" content="summary">
   
     <link rel="alternative" href="/atom.xml" title="伦少的博客" type="application/atom+xml">
@@ -201,8 +203,46 @@
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            <article id="page-" class="article article-type-page " itemscope itemprop="blogPost">
+            <article id="post-spark/sparkSourceCode-sparkSubmitArguments" class="article article-type-post " itemscope itemprop="blogPost">
   <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Spark 源码 | SparkSubmitArguments 参数解析（三）
+    </h1>
+  
+
+        
+        <a href="/2026/07/08/spark/sparkSourceCode-sparkSubmitArguments/" class="archive-article-date">
+  	<time datetime="2026-07-07T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-07-08</time>
+</a>
+        
+      </header>
+	    
+		  <div class="article-info article-info-post">
+			
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">源码</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+			
+
+			<div class="clearfix"></div>
+		  </div>
+      
     
     <div class="article-entry" itemprop="articleBody">
       
@@ -216,118 +256,129 @@
         
         
       
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在上一篇文章 <a href="https://mp.weixin.qq.com/s/o7aNJzZd5ig7h477ZXvG5w">Spark 源码 | 脚本分析总结（一）</a> 中，我们分析了 Spark 的脚本执行流程，最终都通过 spark-class 启动 org.apache.spark.deploy.SparkSubmit，本文我们继续分析 SparkSubmit 的提交流程，看看它是如何根据不同的 clusterManager 和 deployMode 来提交应用的。</p>
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在第二篇文章 <a href="https://mp.weixin.qq.com/s/9IwP8MObLSiIMTxoBHcsmQ">Spark 源码 | SparkSubmit 提交流程分析（二）</a> 中，我们分析了 SparkSubmit 的提交流程，其中 doSubmit 方法会调用 parseArguments 解析命令行参数。本文详细介绍参数解析的过程。</p>
 <h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>Spark 3.2.3</p>
-<h2 id="SparkSubmit-入口"><a href="#SparkSubmit-入口" class="headerlink" title="SparkSubmit 入口"></a>SparkSubmit 入口</h2><p>根据脚本分析，我们知道 spark-submit 最终通过 spark-class 启动 org.apache.spark.deploy.SparkSubmit，入口方法为 main：</p>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// SparkSubmit.scala</span></span><br><span class="line"><span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">  <span class="keyword">val</span> submit = <span class="keyword">new</span> <span class="type">SparkSubmit</span>() &#123;</span><br><span class="line">    self =&gt;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">  &#125;</span><br><span class="line">  submit.doSubmit(args)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>doSubmit 方法是真正的入口：</p>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">doSubmit</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">  <span class="comment">// 初始化日志</span></span><br><span class="line">  <span class="keyword">val</span> uninitLog = initializeLogIfNecessary(<span class="literal">true</span>, silent = <span class="literal">true</span>)</span><br><span class="line">  <span class="comment">// 解析参数</span></span><br><span class="line">  <span class="keyword">val</span> appArgs = parseArguments(args)</span><br><span class="line">  <span class="comment">// 根据 action 执行对应操作</span></span><br><span class="line">  appArgs.action <span class="keyword">match</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> <span class="type">SparkSubmitAction</span>.<span class="type">SUBMIT</span> =&gt; submit(appArgs, uninitLog)</span><br><span class="line">    <span class="keyword">case</span> <span class="type">SparkSubmitAction</span>.<span class="type">KILL</span> =&gt; kill(appArgs)</span><br><span class="line">    <span class="keyword">case</span> <span class="type">SparkSubmitAction</span>.<span class="type">REQUEST_STATUS</span> =&gt; requestStatus(appArgs)</span><br><span class="line">    <span class="keyword">case</span> <span class="type">SparkSubmitAction</span>.<span class="type">PRINT_VERSION</span> =&gt; printVersion()</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="参数解析"><a href="#参数解析" class="headerlink" title="参数解析"></a>参数解析</h2><p>parseArguments 方法创建 SparkSubmitArguments 对象，解析命令行参数，将在下一篇文章中单独分析</p>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> <span class="function"><span class="keyword">def</span> <span class="title">parseArguments</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">SparkSubmitArguments</span> = &#123;</span><br><span class="line">  <span class="keyword">new</span> <span class="type">SparkSubmitArguments</span>(args)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>SparkSubmitArguments 解析后的参数包括（以 spark-shell 为例）：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">master: yarn</span><br><span class="line">deployMode: null (默认 client)</span><br><span class="line">executorMemory: null</span><br><span class="line">executorCores: null</span><br><span class="line">totalExecutorCores: null</span><br><span class="line">propertiesFile: /usr/hdp/current/spark-client/conf/spark-defaults.conf</span><br><span class="line">driverMemory: null</span><br><span class="line">driverCores: null</span><br><span class="line">driverExtraClassPath: null</span><br><span class="line">driverExtraLibraryPath: /usr/hdp/current/hadoop-client/lib/native:...</span><br><span class="line">driverExtraJavaOptions: -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005</span><br><span class="line">queue: spark</span><br><span class="line">numExecutors: null</span><br><span class="line">files: null</span><br><span class="line">pyFiles: null</span><br><span class="line">archives: null</span><br><span class="line">mainClass: org.apache.spark.repl.Main</span><br><span class="line">primaryResource: spark-shell</span><br><span class="line">name: Spark shell</span><br><span class="line">childArgs: [-verbose]</span><br><span class="line">jars: null</span><br><span class="line">packages: null</span><br><span class="line">repositories: null</span><br><span class="line">packagesExclusions: null</span><br><span class="line">verbose: false</span><br><span class="line">proxyUser: null</span><br><span class="line">principal: null</span><br><span class="line">keytab: null</span><br><span class="line">supervise: false</span><br></pre></td></tr></table></figure>
-<h2 id="提交流程"><a href="#提交流程" class="headerlink" title="提交流程"></a>提交流程</h2><h3 id="1-submit-方法"><a href="#1-submit-方法" class="headerlink" title="1. submit 方法"></a>1. submit 方法</h3><p>submit 方法是提交流程的统一入口，主要处理：</p>
+<h2 id="SparkSubmitArguments-概述"><a href="#SparkSubmitArguments-概述" class="headerlink" title="SparkSubmitArguments 概述"></a>SparkSubmitArguments 概述</h2><p>SparkSubmitArguments 继承自 SparkSubmitArgumentsParser，用于解析 spark-submit 命令行参数。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// SparkSubmitArguments.scala</span></span><br><span class="line"><span class="keyword">private</span>[deploy] <span class="class"><span class="keyword">class</span> <span class="title">SparkSubmitArguments</span>(<span class="params">args: <span class="type">Seq</span>[<span class="type">String</span>], env: <span class="type">Map</span>[<span class="type">String</span>, <span class="type">String</span>] = sys.env</span>)</span></span><br><span class="line">  <span class="keyword">extends</span> <span class="type">SparkSubmitArgumentsParser</span> <span class="keyword">with</span> <span class="type">Logging</span> &#123;</span><br></pre></td></tr></table></figure>
+<span id="more"></span>
+<h3 id="字段定义"><a href="#字段定义" class="headerlink" title="字段定义"></a>字段定义</h3><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// --master MASTER_URL</span></span><br><span class="line"><span class="comment">// Spark Master 地址，如 spark://host:port, mesos://host:port, yarn, k8s://https://host:port, local（默认 local[*]）</span></span><br><span class="line"><span class="keyword">var</span> master: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --deploy-mode DEPLOY_MODE</span></span><br><span class="line"><span class="comment">// 部署模式，client 表示在本地启动 Driver，cluster 表示在集群的 Worker 节点上启动 Driver（默认 client）</span></span><br><span class="line"><span class="keyword">var</span> deployMode: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --executor-memory MEM</span></span><br><span class="line"><span class="comment">// 每个 Executor 的内存（如 1000M, 2G）（默认 1G）</span></span><br><span class="line"><span class="keyword">var</span> executorMemory: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --executor-cores NUM</span></span><br><span class="line"><span class="comment">// 每个 Executor 的 CPU 核心数（YARN 和 K8S 模式默认 1，Standalone 模式默认为 Worker 上的所有核心）</span></span><br><span class="line"><span class="keyword">var</span> executorCores: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --total-executor-cores NUM</span></span><br><span class="line"><span class="comment">// 所有 Executor 的总 CPU 核心数</span></span><br><span class="line"><span class="keyword">var</span> totalExecutorCores: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --properties-file FILE</span></span><br><span class="line"><span class="comment">// 配置文件路径，用于加载额外的 Spark 配置。如果未指定，则默认查找 conf/spark-defaults.conf</span></span><br><span class="line"><span class="keyword">var</span> propertiesFile: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --driver-memory MEM</span></span><br><span class="line"><span class="comment">// Driver 的内存（如 1000M, 2G）</span></span><br><span class="line"><span class="keyword">var</span> driverMemory: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --driver-class-path</span></span><br><span class="line"><span class="comment">// 额外添加到 Driver classpath 的路径。注意：通过 --jars 添加的 jar 包会自动包含在 classpath 中</span></span><br><span class="line"><span class="keyword">var</span> driverExtraClassPath: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --driver-library-path</span></span><br><span class="line"><span class="comment">// 额外添加到 Driver 库路径的环境变量</span></span><br><span class="line"><span class="keyword">var</span> driverExtraLibraryPath: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --driver-java-options</span></span><br><span class="line"><span class="comment">// 传递给 Driver 的额外 Java 选项</span></span><br><span class="line"><span class="keyword">var</span> driverExtraJavaOptions: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --queue QUEUE_NAME</span></span><br><span class="line"><span class="comment">// YARN 队列名称（默认 &quot;default&quot;）</span></span><br><span class="line"><span class="keyword">var</span> queue: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --num-executors NUM</span></span><br><span class="line"><span class="comment">// Executor 的数量（默认 2）。启用动态分配时，实际初始数量取 --num-executors、</span></span><br><span class="line"><span class="comment">// spark.dynamicAllocation.minExecutors 和 spark.dynamicAllocation.initialExecutors 三者中的最大值</span></span><br><span class="line"><span class="keyword">var</span> numExecutors: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --files FILES</span></span><br><span class="line"><span class="comment">// 逗号分隔的文件列表，会被放置在每个 Executor 的工作目录中。在 Executor 中可通过 SparkFiles.get(fileName) 获取文件路径</span></span><br><span class="line"><span class="keyword">var</span> files: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --archives ARCHIVES</span></span><br><span class="line"><span class="comment">// 逗号分隔的归档文件列表，会被提取到每个 Executor 的工作目录中</span></span><br><span class="line"><span class="keyword">var</span> archives: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --class CLASS_NAME</span></span><br><span class="line"><span class="comment">// 应用程序的主类（用于 Java / Scala 应用）</span></span><br><span class="line"><span class="keyword">var</span> mainClass: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// &lt;app jar | python file | R file&gt;</span></span><br><span class="line"><span class="comment">// 第一个未被识别的选项被视为&quot;主资源&quot;（primary resource）</span></span><br><span class="line"><span class="keyword">var</span> primaryResource: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --name NAME</span></span><br><span class="line"><span class="comment">// 应用程序的名称</span></span><br><span class="line"><span class="keyword">var</span> name: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 应用程序参数</span></span><br><span class="line"><span class="keyword">var</span> childArgs: <span class="type">ArrayBuffer</span>[<span class="type">String</span>] = <span class="keyword">new</span> <span class="type">ArrayBuffer</span>[<span class="type">String</span>]()</span><br><span class="line"></span><br><span class="line"><span class="comment">// --jars JARS</span></span><br><span class="line"><span class="comment">// 逗号分隔的 JAR 包列表，会被添加到 Driver 和 Executor 的 classpath 中</span></span><br><span class="line"><span class="keyword">var</span> jars: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --packages</span></span><br><span class="line"><span class="comment">// 逗号分隔的 Maven 坐标列表，用于添加 JAR 包到 Driver 和 Executor 的 classpath。</span></span><br><span class="line"><span class="comment">// 会先搜索本地 Maven 仓库，然后是 Maven 中央仓库，以及 --repositories 指定的远程仓库。</span></span><br><span class="line"><span class="comment">// 坐标格式为 groupId:artifactId:version</span></span><br><span class="line"><span class="keyword">var</span> packages: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --repositories</span></span><br><span class="line"><span class="comment">// 逗号分隔的远程仓库地址，用于搜索 --packages 指定的 Maven 坐标</span></span><br><span class="line"><span class="keyword">var</span> repositories: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> ivyRepoPath: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> ivySettingsPath: <span class="type">Option</span>[<span class="type">String</span>] = <span class="type">None</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --exclude-packages</span></span><br><span class="line"><span class="comment">// 逗号分隔的 groupId:artifactId 列表，在解析 --packages 提供的依赖时排除这些包，以避免依赖冲突</span></span><br><span class="line"><span class="keyword">var</span> packagesExclusions: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --verbose, -v</span></span><br><span class="line"><span class="comment">// 打印额外的调试输出</span></span><br><span class="line"><span class="keyword">var</span> verbose: <span class="type">Boolean</span> = <span class="literal">false</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> isPython: <span class="type">Boolean</span> = <span class="literal">false</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --py-files PY_FILES</span></span><br><span class="line"><span class="comment">// 逗号分隔的 .zip、.egg 或 .py 文件列表，会被添加到 Python 应用的 PYTHONPATH 中</span></span><br><span class="line"><span class="keyword">var</span> pyFiles: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> isR: <span class="type">Boolean</span> = <span class="literal">false</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> action: <span class="type">SparkSubmitAction</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 通过 `--conf` 和配置文件加载的 Spark 配置属性</span></span><br><span class="line"><span class="keyword">val</span> sparkProperties: <span class="type">HashMap</span>[<span class="type">String</span>, <span class="type">String</span>] = <span class="keyword">new</span> <span class="type">HashMap</span>[<span class="type">String</span>, <span class="type">String</span>]()</span><br><span class="line"></span><br><span class="line"><span class="comment">// --proxy-user NAME</span></span><br><span class="line"><span class="comment">// 提交应用程序时模拟的用户名。不能与 --principal / --keytab 同时使用</span></span><br><span class="line"><span class="keyword">var</span> proxyUser: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --principal PRINCIPAL</span></span><br><span class="line"><span class="comment">// 用于登录 KDC 的 Principal（仅 YARN/K8s 模式）</span></span><br><span class="line"><span class="keyword">var</span> principal: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --keytab KEYTAB</span></span><br><span class="line"><span class="comment">// 包含上述 Principal 对应 keytab 的文件路径</span></span><br><span class="line"><span class="keyword">var</span> keytab: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">var</span> dynamicAllocationEnabled: <span class="type">Boolean</span> = <span class="literal">false</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --supervise</span></span><br><span class="line"><span class="comment">// 如果设置，Driver 失败时会自动重启（仅 Spark Standalone 或 Mesos 的 cluster 部署模式）</span></span><br><span class="line"><span class="keyword">var</span> supervise: <span class="type">Boolean</span> = <span class="literal">false</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --driver-cores NUM</span></span><br><span class="line"><span class="comment">// Driver 使用的 CPU 核心数，仅在 cluster 模式可用（默认 1）</span></span><br><span class="line"><span class="keyword">var</span> driverCores: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --kill SUBMISSION_ID</span></span><br><span class="line"><span class="comment">// 如果设置，杀死指定的 Driver（Spark Standalone、Mesos 或 K8s 的 cluster 部署模式）</span></span><br><span class="line"><span class="keyword">var</span> submissionToKill: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// --status SUBMISSION_ID</span></span><br><span class="line"><span class="comment">// 如果设置，查询指定 Driver 的状态</span></span><br><span class="line"><span class="keyword">var</span> submissionToRequestStatusFor: <span class="type">String</span> = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 内部使用，用于 REST API</span></span><br><span class="line"><span class="keyword">var</span> useRest: <span class="type">Boolean</span> = <span class="literal">false</span></span><br></pre></td></tr></table></figure>
+<h2 id="解析流程"><a href="#解析流程" class="headerlink" title="解析流程"></a>解析流程</h2><h3 id="1-构造函数调用顺序"><a href="#1-构造函数调用顺序" class="headerlink" title="1. 构造函数调用顺序"></a>1. 构造函数调用顺序</h3><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Set parameters from command line arguments</span></span><br><span class="line"><span class="comment">// 从命令行参数设置参数</span></span><br><span class="line">parse(args.asJava)</span><br><span class="line"></span><br><span class="line"><span class="comment">// Populate `sparkProperties` map from properties file</span></span><br><span class="line"><span class="comment">// 从属性文件填充 sparkProperties</span></span><br><span class="line">mergeDefaultSparkProperties()</span><br><span class="line"><span class="comment">// Remove keys that don&#x27;t start with &quot;spark.&quot; from `sparkProperties`.</span></span><br><span class="line"><span class="comment">// 从 sparkProperties 中移除不以 &quot;spark.&quot; 开头的键</span></span><br><span class="line">ignoreNonSparkProperties()</span><br><span class="line"><span class="comment">// Use `sparkProperties` map along with env vars to fill in any missing parameters</span></span><br><span class="line"><span class="comment">// 使用 sparkProperties 和环境变量填充缺失的参数</span></span><br><span class="line">loadEnvironmentArguments()</span><br><span class="line"></span><br><span class="line">useRest = sparkProperties.getOrElse(<span class="string">&quot;spark.master.rest.enabled&quot;</span>, <span class="string">&quot;false&quot;</span>).toBoolean</span><br><span class="line"></span><br><span class="line">validateArguments()</span><br></pre></td></tr></table></figure>
+<p>解析顺序：</p>
 <ol>
-<li><strong>Standalone Cluster 模式特殊处理</strong>：支持 REST API 提交，失败时回退到 Legacy 方式</li>
-<li><strong>调用 doRunMain</strong>：内嵌函数，最终执行 runMain</li>
+<li><strong>parse(args.asJava)</strong> - 从命令行参数设置参数</li>
+<li><strong>mergeDefaultSparkProperties()</strong> - 从属性文件填充 sparkProperties</li>
+<li><strong>ignoreNonSparkProperties()</strong> - 从 sparkProperties 中移除不以 “spark.” 开头的键</li>
+<li><strong>loadEnvironmentArguments()</strong> - 使用 sparkProperties 和环境变量填充缺失的参数</li>
+<li><strong>validateArguments()</strong> - 验证参数</li>
 </ol>
-<p>调用链：submit → doRunMain → runMain → prepareSubmitEnvironment（prepareSubmitEnvironment 在 runMain 中调用）</p>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 提交应用的主入口方法。</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * 主要功能：</span></span><br><span class="line"><span class="comment"> * 1. 处理代理用户（--proxy-user）切换</span></span><br><span class="line"><span class="comment"> * 2. Standalone Cluster 模式的 REST API 回退逻辑</span></span><br><span class="line"><span class="comment"> * 3. 调用 runMain 启动应用</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@tailrec</span></span><br><span class="line"><span class="keyword">private</span> <span class="function"><span class="keyword">def</span> <span class="title">submit</span></span>(args: <span class="type">SparkSubmitArguments</span>, uninitLog: <span class="type">Boolean</span>): <span class="type">Unit</span> = &#123;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * 执行 runMain 的内部函数。</span></span><br><span class="line"><span class="comment">   * 如果指定了 --proxy-user，以代理用户身份执行。</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">doRunMain</span></span>(): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="keyword">if</span> (args.proxyUser != <span class="literal">null</span>) &#123;</span><br><span class="line">      <span class="comment">// 代理用户处理：如果指定了 --proxy-user，以代理用户身份执行</span></span><br><span class="line">      <span class="keyword">val</span> proxyUser = <span class="type">UserGroupInformation</span>.createProxyUser(args.proxyUser,</span><br><span class="line">        <span class="type">UserGroupInformation</span>.getCurrentUser())</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        proxyUser.doAs(<span class="keyword">new</span> <span class="type">PrivilegedExceptionAction</span>[<span class="type">Unit</span>]() &#123;</span><br><span class="line">          <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">run</span></span>(): <span class="type">Unit</span> = &#123;</span><br><span class="line">            runMain(args, uninitLog)</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;)</span><br><span class="line">      &#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">        <span class="keyword">case</span> e: <span class="type">Exception</span> =&gt;</span><br><span class="line">          <span class="keyword">if</span> (e.getStackTrace().length == <span class="number">0</span>) &#123;</span><br><span class="line">            error(<span class="string">s&quot;ERROR: <span class="subst">$&#123;e.getClass().getName()&#125;</span>: <span class="subst">$&#123;e.getMessage()&#125;</span>&quot;</span>)</span><br><span class="line">          &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">throw</span> e</span><br><span class="line">          &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      runMain(args, uninitLog)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// In standalone cluster mode, there are two submission gateways:</span></span><br><span class="line">  <span class="comment">//   (1) The traditional RPC gateway using o.a.s.deploy.Client as a wrapper</span></span><br><span class="line">  <span class="comment">//   (2) The new REST-based gateway introduced in Spark 1.3</span></span><br><span class="line">  <span class="comment">// The latter is the default behavior as of Spark 1.3, but Spark submit will fail over</span></span><br><span class="line">  <span class="comment">// to use the legacy gateway if the master endpoint turns out to be not a REST server.</span></span><br><span class="line">  <span class="comment">// Standalone Cluster 模式支持两种提交方式：RPC 和 REST API</span></span><br><span class="line">  <span class="keyword">if</span> (args.isStandaloneCluster &amp;&amp; args.useRest) &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      logInfo(<span class="string">&quot;Running Spark using the REST application submission protocol.&quot;</span>)</span><br><span class="line">      doRunMain()</span><br><span class="line">    &#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">      <span class="comment">// Fail over to use the legacy submission gateway</span></span><br><span class="line">      <span class="comment">// 如果 REST 失败，回退到 legacy 方式</span></span><br><span class="line">      <span class="keyword">case</span> e: <span class="type">SubmitRestConnectionException</span> =&gt;</span><br><span class="line">        logWarning(<span class="string">s&quot;Master endpoint <span class="subst">$&#123;args.master&#125;</span> was not a REST server. &quot;</span> +</span><br><span class="line">          <span class="string">&quot;Falling back to legacy submission gateway instead.&quot;</span>)</span><br><span class="line">        args.useRest = <span class="literal">false</span></span><br><span class="line">        submit(args, <span class="literal">false</span>)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// In all other modes, just run the main class as prepared</span></span><br><span class="line">    <span class="comment">// 其他所有模式（包括 Client 模式、Yarn Cluster 等）直接执行</span></span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    doRunMain()</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="2-prepareSubmitEnvironment-方法"><a href="#2-prepareSubmitEnvironment-方法" class="headerlink" title="2. prepareSubmitEnvironment 方法"></a>2. prepareSubmitEnvironment 方法</h3><p>这是核心方法，根据不同的 clusterManager 和 deployMode 准备提交环境，返回：</p>
-<ul>
-<li>childArgs: 运行主类的参数</li>
-<li>childClasspath: 主类的 jar</li>
-<li>sparkConf: Spark 配置</li>
-<li>childMainClass: 主类的全路径</li>
-</ul>
-<h4 id="2-1-解析-clusterManager-和-deployMode"><a href="#2-1-解析-clusterManager-和-deployMode" class="headerlink" title="2.1 解析 clusterManager 和 deployMode"></a>2.1 解析 clusterManager 和 deployMode</h4><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 设置集群管理器</span></span><br><span class="line"><span class="keyword">val</span> clusterManager: <span class="type">Int</span> = args.master <span class="keyword">match</span> &#123;</span><br><span class="line">  <span class="keyword">case</span> <span class="string">&quot;yarn&quot;</span> =&gt; <span class="type">YARN</span>           <span class="comment">// 1</span></span><br><span class="line">  <span class="keyword">case</span> m <span class="keyword">if</span> m.startsWith(<span class="string">&quot;spark&quot;</span>) =&gt; <span class="type">STANDALONE</span>  <span class="comment">// 2</span></span><br><span class="line">  <span class="keyword">case</span> m <span class="keyword">if</span> m.startsWith(<span class="string">&quot;mesos&quot;</span>) =&gt; <span class="type">MESOS</span>       <span class="comment">// 4</span></span><br><span class="line">  <span class="keyword">case</span> m <span class="keyword">if</span> m.startsWith(<span class="string">&quot;k8s&quot;</span>) =&gt; <span class="type">KUBERNETES</span>    <span class="comment">// 16</span></span><br><span class="line">  <span class="keyword">case</span> m <span class="keyword">if</span> m.startsWith(<span class="string">&quot;local&quot;</span>) =&gt; <span class="type">LOCAL</span>       <span class="comment">// 8</span></span><br><span class="line">  <span class="keyword">case</span> _ =&gt;</span><br><span class="line">    error(<span class="string">&quot;Master must either be yarn or start with spark, mesos, k8s, or local&quot;</span>)</span><br><span class="line">    <span class="number">-1</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 设置部署模式，默认 client</span></span><br><span class="line"><span class="keyword">val</span> deployMode: <span class="type">Int</span> = args.deployMode <span class="keyword">match</span> &#123;</span><br><span class="line">  <span class="keyword">case</span> <span class="string">&quot;client&quot;</span> | <span class="literal">null</span> =&gt; <span class="type">CLIENT</span>  <span class="comment">// 1</span></span><br><span class="line">  <span class="keyword">case</span> <span class="string">&quot;cluster&quot;</span> =&gt; <span class="type">CLUSTER</span>       <span class="comment">// 2</span></span><br><span class="line">  <span class="keyword">case</span> _ =&gt;</span><br><span class="line">    error(<span class="string">&quot;Deploy mode must be either client or cluster&quot;</span>)</span><br><span class="line">    <span class="number">-1</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h4 id="2-2-计算模式标志"><a href="#2-2-计算模式标志" class="headerlink" title="2.2 计算模式标志"></a>2.2 计算模式标志</h4><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> isYarnCluster = clusterManager == <span class="type">YARN</span> &amp;&amp; deployMode == <span class="type">CLUSTER</span></span><br><span class="line"><span class="keyword">val</span> isMesosCluster = clusterManager == <span class="type">MESOS</span> &amp;&amp; deployMode == <span class="type">CLUSTER</span></span><br><span class="line"><span class="keyword">val</span> isStandAloneCluster = clusterManager == <span class="type">STANDALONE</span> &amp;&amp; deployMode == <span class="type">CLUSTER</span></span><br><span class="line"><span class="keyword">val</span> isKubernetesCluster = clusterManager == <span class="type">KUBERNETES</span> &amp;&amp; deployMode == <span class="type">CLUSTER</span></span><br><span class="line"><span class="keyword">val</span> isKubernetesClient = clusterManager == <span class="type">KUBERNETES</span> &amp;&amp; deployMode == <span class="type">CLIENT</span></span><br></pre></td></tr></table></figure>
-<h4 id="2-3-Client-模式"><a href="#2-3-Client-模式" class="headerlink" title="2.3 Client 模式"></a>2.3 Client 模式</h4><p>Client 模式与 Cluster 模式的区别：</p>
-<ul>
-<li><strong>Client 模式</strong>：直接启动用户传入的主类（<code>args.mainClass</code>）</li>
-<li><strong>Cluster 模式</strong>：启动包装类，用户主类作为参数传入</li>
-</ul>
-<p>例如 spark-shell 提交时，<code>args.mainClass</code> 为 <code>org.apache.spark.repl.Main</code>，详情可参考 <a href="https://mp.weixin.qq.com/s/o7aNJzZd5ig7h477ZXvG5w">Spark 源码 | 脚本分析总结（一）</a></p>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// In client mode, childMainClass equals the user-provided main class directly</span></span><br><span class="line"><span class="comment">// 在客户端模式下，childMainClass 直接等于用户传入的主类</span></span><br><span class="line"><span class="keyword">if</span> (deployMode == <span class="type">CLIENT</span>) &#123;</span><br><span class="line">  childMainClass = args.mainClass</span><br><span class="line">  <span class="keyword">if</span> (localPrimaryResource != <span class="literal">null</span> &amp;&amp; isUserJar(localPrimaryResource)) &#123;</span><br><span class="line">    childClasspath += localPrimaryResource</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (localJars != <span class="literal">null</span>) &#123; childClasspath ++= localJars.split(<span class="string">&quot;,&quot;</span>) &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h4 id="2-4-Yarn-Cluster-模式"><a href="#2-4-Yarn-Cluster-模式" class="headerlink" title="2.4 Yarn Cluster 模式"></a>2.4 Yarn Cluster 模式</h4><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// In yarn-cluster mode, use yarn.Client as a wrapper around the user class</span></span><br><span class="line"><span class="comment">// yarn-cluster 通过 YarnClusterApplication 启动 driver</span></span><br><span class="line"><span class="keyword">if</span> (isYarnCluster) &#123;</span><br><span class="line">  childMainClass = <span class="type">YARN_CLUSTER_SUBMIT_CLASS</span>  <span class="comment">// &quot;org.apache.spark.deploy.yarn.YarnClusterApplication&quot;</span></span><br><span class="line">  <span class="keyword">if</span> (args.isPython) &#123;</span><br><span class="line">    childArgs += (<span class="string">&quot;--primary-py-file&quot;</span>, args.primaryResource)</span><br><span class="line">    childArgs += (<span class="string">&quot;--class&quot;</span>, <span class="string">&quot;org.apache.spark.deploy.PythonRunner&quot;</span>)</span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (args.isR) &#123;</span><br><span class="line">    childArgs += (<span class="string">&quot;--primary-r-file&quot;</span>, mainFile)</span><br><span class="line">    childArgs += (<span class="string">&quot;--class&quot;</span>, <span class="string">&quot;org.apache.spark.deploy.RRunner&quot;</span>)</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (args.primaryResource != <span class="type">SparkLauncher</span>.<span class="type">NO_RESOURCE</span>) &#123;</span><br><span class="line">      childArgs += (<span class="string">&quot;--jar&quot;</span>, args.primaryResource)</span><br><span class="line">    &#125;</span><br><span class="line">    childArgs += (<span class="string">&quot;--class&quot;</span>, args.mainClass)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (args.childArgs != <span class="literal">null</span>) &#123;</span><br><span class="line">    args.childArgs.foreach &#123; arg =&gt; childArgs += (<span class="string">&quot;--arg&quot;</span>, arg) &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>Yarn Cluster 模式下，childMainClass 变为 org.apache.spark.deploy.yarn.YarnClusterApplication，用户的主类作为参数传入。</p>
-<h4 id="2-5-Standalone-Cluster-模式"><a href="#2-5-Standalone-Cluster-模式" class="headerlink" title="2.5 Standalone Cluster 模式"></a>2.5 Standalone Cluster 模式</h4><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// In standalone cluster mode, use the REST client to submit the application (Spark 1.3+).</span></span><br><span class="line"><span class="keyword">if</span> (args.isStandaloneCluster) &#123;</span><br><span class="line">  <span class="keyword">if</span> (args.useRest) &#123;</span><br><span class="line">    childMainClass = <span class="type">REST_CLUSTER_SUBMIT_CLASS</span>  <span class="comment">// &quot;org.apache.spark.deploy.rest.RestSubmissionClientApp&quot;</span></span><br><span class="line">    childArgs += (args.primaryResource, args.mainClass)</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// In legacy standalone cluster mode, use Client as a wrapper around the user class</span></span><br><span class="line">    childMainClass = <span class="type">STANDALONE_CLUSTER_SUBMIT_CLASS</span>  <span class="comment">// &quot;org.apache.spark.deploy.ClientApp&quot;</span></span><br><span class="line">    <span class="keyword">if</span> (args.supervise) &#123; childArgs += <span class="string">&quot;--supervise&quot;</span> &#125;</span><br><span class="line">    <span class="type">Option</span>(args.driverMemory).foreach &#123; m =&gt; childArgs += (<span class="string">&quot;--memory&quot;</span>, m) &#125;</span><br><span class="line">    <span class="type">Option</span>(args.driverCores).foreach &#123; c =&gt; childArgs += (<span class="string">&quot;--cores&quot;</span>, c) &#125;</span><br><span class="line">    childArgs += <span class="string">&quot;launch&quot;</span></span><br><span class="line">    childArgs += (args.master, args.primaryResource, args.mainClass)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (args.childArgs != <span class="literal">null</span>) &#123;</span><br><span class="line">    childArgs ++= args.childArgs</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>Standalone Cluster 模式有两种方式：</p>
-<ul>
-<li>REST API：使用 RestSubmissionClientApp</li>
-<li>Legacy：使用 ClientApp</li>
-</ul>
-<h3 id="3-runMain-方法"><a href="#3-runMain-方法" class="headerlink" title="3. runMain 方法"></a>3. runMain 方法</h3><p>runMain 方法真正启动应用：</p>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="function"><span class="keyword">def</span> <span class="title">runMain</span></span>(args: <span class="type">SparkSubmitArguments</span>, uninitLog: <span class="type">Boolean</span>): <span class="type">Unit</span> = &#123;</span><br><span class="line">  <span class="comment">// 获取准备好的环境</span></span><br><span class="line">  <span class="keyword">val</span> (childArgs, childClasspath, sparkConf, childMainClass) = prepareSubmitEnvironment(args)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 初始化类加载器</span></span><br><span class="line">  <span class="keyword">val</span> loader = getSubmitClassLoader(sparkConf)</span><br><span class="line">  <span class="keyword">for</span> (jar &lt;- childClasspath) &#123;</span><br><span class="line">    addJarToClasspath(jar, loader)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 加载主类</span></span><br><span class="line">  <span class="keyword">var</span> mainClass: <span class="type">Class</span>[_] = <span class="literal">null</span></span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    mainClass = <span class="type">Utils</span>.classForName(childMainClass)</span><br><span class="line">  &#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> e: <span class="type">ClassNotFoundException</span> =&gt;</span><br><span class="line">      logError(<span class="string">s&quot;Failed to load class <span class="subst">$childMainClass</span>.&quot;</span>)</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">SparkUserAppException</span>(<span class="type">CLASS_NOT_FOUND_EXIT_STATUS</span>)</span><br><span class="line">    <span class="keyword">case</span> e: <span class="type">NoClassDefFoundError</span> =&gt;</span><br><span class="line">      logError(<span class="string">s&quot;Failed to load <span class="subst">$childMainClass</span>: <span class="subst">$&#123;e.getMessage()&#125;</span>&quot;</span>)</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">SparkUserAppException</span>(<span class="type">CLASS_NOT_FOUND_EXIT_STATUS</span>)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 创建 SparkApplication 或 JavaMainApplication</span></span><br><span class="line">  <span class="keyword">val</span> app: <span class="type">SparkApplication</span> = <span class="keyword">if</span> (classOf[<span class="type">SparkApplication</span>].isAssignableFrom(mainClass)) &#123;</span><br><span class="line">    mainClass.getConstructor().newInstance().asInstanceOf[<span class="type">SparkApplication</span>]</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">new</span> <span class="type">JavaMainApplication</span>(mainClass)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 启动应用</span></span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    app.start(childArgs.toArray, sparkConf)</span><br><span class="line">  &#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> t: <span class="type">Throwable</span> =&gt;</span><br><span class="line">      <span class="keyword">throw</span> findCause(t)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>关键逻辑：</p>
-<ol>
-<li>加载主类（childMainClass）</li>
-<li>如果主类实现了 SparkApplication 接口，直接实例化</li>
-<li>否则包装成 JavaMainApplication</li>
-<li>调用 app.start 启动应用</li>
-</ol>
-<h2 id="不同模式的-childMainClass"><a href="#不同模式的-childMainClass" class="headerlink" title="不同模式的 childMainClass"></a>不同模式的 childMainClass</h2><table>
+<h3 id="2-解析命令行参数"><a href="#2-解析命令行参数" class="headerlink" title="2. 解析命令行参数"></a>2. 解析命令行参数</h3><p>继承自 SparkSubmitArgumentsParser（继承自 <code>SparkSubmitOptionParser</code>），重写 <code>handle</code>、<code>handleUnknown</code>、<code>handleExtraArgs</code> 三个回调方法处理参数。</p>
+<h4 id="SparkSubmitOptionParser-parse-方法解析逻辑"><a href="#SparkSubmitOptionParser-parse-方法解析逻辑" class="headerlink" title="SparkSubmitOptionParser parse 方法解析逻辑"></a>SparkSubmitOptionParser parse 方法解析逻辑</h4><p><code>parse(List&lt;String&gt; args)</code> 方法的遍历逻辑：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 遍历所有参数</span></span><br><span class="line"><span class="keyword">for</span> (idx = <span class="number">0</span>; idx &lt; args.size(); idx++) &#123;</span><br><span class="line">  <span class="comment">// 支持 --master=spark://xxx 格式（等号分隔）</span></span><br><span class="line">  <span class="comment">// 检查是否是 --xxx=value 格式，若是则拆分</span></span><br><span class="line">  <span class="type">Matcher</span> <span class="variable">m</span> <span class="operator">=</span> eqSeparatedOpt.matcher(arg);</span><br><span class="line">  <span class="keyword">if</span> (m.matches()) &#123;</span><br><span class="line">    arg = m.group(<span class="number">1</span>);</span><br><span class="line">    value = m.group(<span class="number">2</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Look for options with a value.</span></span><br><span class="line">  <span class="comment">// 第一步：在 opts 数组中查找（带参数的选项，如 --master, --class 等）</span></span><br><span class="line">  <span class="type">String</span> <span class="variable">name</span> <span class="operator">=</span> findCliOption(arg, opts);</span><br><span class="line">  <span class="keyword">if</span> (name != <span class="literal">null</span>) &#123;</span><br><span class="line">    <span class="comment">// If the option requires a value, fetch it.</span></span><br><span class="line">    <span class="comment">// 命令行格式：--选项 值（分开的两参数），如 --master yarn</span></span><br><span class="line">    <span class="keyword">if</span> (value == <span class="literal">null</span>) &#123;</span><br><span class="line">      <span class="keyword">if</span> (idx == args.size() - <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>(</span><br><span class="line">            String.format(<span class="string">&quot;Missing argument for option &#x27;%s&#x27;.&quot;</span>, arg));</span><br><span class="line">      &#125;</span><br><span class="line">      idx++;</span><br><span class="line">      value = args.get(idx);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (!handle(name, value)) &#123;</span><br><span class="line">      <span class="comment">// handle 返回 false 的情况：--version（--help 会直接退出，不会返回）</span></span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">continue</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Look for a switch.</span></span><br><span class="line">  <span class="comment">// 第二步：在 switches 数组中查找（不带参数的选项，如 --help, --verbose 等）</span></span><br><span class="line">  name = findCliOption(arg, switches);</span><br><span class="line">  <span class="keyword">if</span> (name != <span class="literal">null</span>) &#123;</span><br><span class="line">    <span class="comment">// handle 返回 false 的情况：--version（打印版本后退出）</span></span><br><span class="line">    <span class="keyword">if</span> (!handle(name, <span class="literal">null</span>)) &#123;</span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">continue</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 第三步：既不在 opts 也不在 switches 中，调用 handleUnknown 处理未知选项</span></span><br><span class="line">  <span class="comment">// SparkSubmitArguments 中将第一个未知选项作为 primaryResource，handleUnknown 始终返回 false</span></span><br><span class="line">  <span class="comment">// 返回 false 则 break 退出循环，剩余参数作为应用参数</span></span><br><span class="line">  <span class="keyword">if</span> (!handleUnknown(arg)) &#123;</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 跳过第一个未知选项（primaryResource），只把剩余参数传给 handleExtraArgs</span></span><br><span class="line"><span class="comment">// 如果正常遍历完（无 break），idx == args.size()，不需要 idx++</span></span><br><span class="line"><span class="comment">// 如果因 break 提前退出，idx &lt; args.size()，需要跳过 primaryResource</span></span><br><span class="line"><span class="keyword">if</span> (idx &lt; args.size()) &#123;</span><br><span class="line">  idx++;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 第四步：解析完成后，剩余的参数作为应用参数调用 handleExtraArgs</span></span><br><span class="line"><span class="comment">// 注意：循环可能因 break 提前退出，导致 idx &lt; args.size()</span></span><br><span class="line"><span class="comment">// 如：handleUnknown 返回 false 时（SparkSubmitArguments 将第一个未知选项作为 primaryResource）</span></span><br><span class="line"><span class="comment">// spark-submit 命令格式：spark-submit [options] &lt;app jar | python file&gt; [app arguments]</span></span><br><span class="line"><span class="comment">// 剩余的参数即 [app arguments]，如 arg1 arg2 arg3</span></span><br><span class="line">handleExtraArgs(args.subList(idx, args.size()));</span><br></pre></td></tr></table></figure>
+<h4 id="SparkSubmitArguments-重写的方法"><a href="#SparkSubmitArguments-重写的方法" class="headerlink" title="SparkSubmitArguments 重写的方法"></a>SparkSubmitArguments 重写的方法</h4><h5 id="1-handle-方法"><a href="#1-handle-方法" class="headerlink" title="1. handle 方法"></a>1. handle 方法</h5><p>处理已知的带参数选项，根据 opt（选项名）将 value 赋值给对应的字段。其中 <code>CONF</code> case 会直接将 <code>--conf</code> 的值存入 <code>sparkProperties</code>：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">override</span> <span class="keyword">protected</span> <span class="function"><span class="keyword">def</span> <span class="title">handle</span></span>(opt: <span class="type">String</span>, value: <span class="type">String</span>): <span class="type">Boolean</span> = &#123;</span><br><span class="line">  opt <span class="keyword">match</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> <span class="type">NAME</span> =&gt;</span><br><span class="line">      name = value</span><br><span class="line">    <span class="keyword">case</span> <span class="type">MASTER</span> =&gt;</span><br><span class="line">      master = value</span><br><span class="line">    <span class="keyword">case</span> <span class="type">CLASS</span> =&gt;</span><br><span class="line">      mainClass = value</span><br><span class="line">    <span class="keyword">case</span> <span class="type">DEPLOY_MODE</span> =&gt;</span><br><span class="line">      <span class="keyword">if</span> (value != <span class="string">&quot;client&quot;</span> &amp;&amp; value != <span class="string">&quot;cluster&quot;</span>) &#123;</span><br><span class="line">        error(<span class="string">&quot;--deploy-mode must be either \&quot;client\&quot; or \&quot;cluster\&quot;&quot;</span>)</span><br><span class="line">      &#125;</span><br><span class="line">      deployMode = value</span><br><span class="line">    <span class="keyword">case</span> <span class="type">NUM_EXECUTORS</span> =&gt;</span><br><span class="line">      numExecutors = value</span><br><span class="line">    <span class="comment">// ... 其他参数</span></span><br><span class="line">    <span class="comment">// `--conf` KEY=VALUE 格式的配置项，直接存入 sparkProperties</span></span><br><span class="line">    <span class="comment">// 由于是直接赋值（覆盖写），后续合并配置文件时，`--conf` 的值会被保留</span></span><br><span class="line">    <span class="keyword">case</span> <span class="type">CONF</span> =&gt;</span><br><span class="line">      <span class="keyword">val</span> (confName, confValue) = <span class="type">SparkSubmitUtils</span>.parseSparkConfProperty(value)</span><br><span class="line">      sparkProperties(confName) = confValue</span><br><span class="line">    <span class="comment">// ... 其他参数</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// --version 时返回 false，其他情况返回 true</span></span><br><span class="line">  action != <span class="type">SparkSubmitAction</span>.<span class="type">PRINT_VERSION</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h5 id="2-handleUnknown-方法"><a href="#2-handleUnknown-方法" class="headerlink" title="2. handleUnknown 方法"></a>2. handleUnknown 方法</h5><p>处理未知选项，将第一个未知选项作为 primaryResource（主资源），如 myapp.jar、spark-shell、hdfs:///path/to/app.jar：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">override</span> <span class="keyword">protected</span> <span class="function"><span class="keyword">def</span> <span class="title">handleUnknown</span></span>(opt: <span class="type">String</span>): <span class="type">Boolean</span> = &#123;</span><br><span class="line">  <span class="comment">// 如果选项以 &quot;-&quot; 开头但不在已知选项中，报错</span></span><br><span class="line">  <span class="keyword">if</span> (opt.startsWith(<span class="string">&quot;-&quot;</span>)) &#123;</span><br><span class="line">    error(<span class="string">s&quot;Unrecognized option &#x27;<span class="subst">$opt</span>&#x27;.&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 设置 primaryResource（主资源），如 myapp.jar、spark-shell、hdfs:///path/to/app.jar</span></span><br><span class="line">  <span class="comment">// 如果不是 shell（如 spark-shell、pyspark-shell、sparkr-shell）或内部选项（spark-internal），则通过 Utils.resolveURI 解析为标准 URI 格式</span></span><br><span class="line">  <span class="comment">// 如：./app.jar -&gt; file:/path/to/app.jar，/path/app.jar -&gt; file:/path/app.jar，hdfs://xxx -&gt; hdfs://xxx</span></span><br><span class="line">  <span class="comment">// 否则直接作为字符串（如 spark-shell 用于交互式界面，spark-internal 用于测试场景）</span></span><br><span class="line">  primaryResource =</span><br><span class="line">    <span class="keyword">if</span> (!<span class="type">SparkSubmit</span>.isShell(opt) &amp;&amp; !<span class="type">SparkSubmit</span>.isInternal(opt)) &#123;</span><br><span class="line">      <span class="type">Utils</span>.resolveURI(opt).toString</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      opt</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 判断是否为 Python 或 R 应用</span></span><br><span class="line">  isPython = <span class="type">SparkSubmit</span>.isPython(opt)</span><br><span class="line">  isR = <span class="type">SparkSubmit</span>.isR(opt)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 始终返回 false，退出循环</span></span><br><span class="line">  <span class="literal">false</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h5 id="3-handleExtraArgs-方法"><a href="#3-handleExtraArgs-方法" class="headerlink" title="3. handleExtraArgs 方法"></a>3. handleExtraArgs 方法</h5><p>将解析剩余的应用参数添加到 childArgs：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">override</span> <span class="keyword">protected</span> <span class="function"><span class="keyword">def</span> <span class="title">handleExtraArgs</span></span>(extra: <span class="type">JList</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">  <span class="comment">// 在 SparkSubmitArguments 类中只有这一处赋值，没看到有其它地方赋值，感觉两种写法效果可能是相同的</span></span><br><span class="line">  <span class="comment">// 使用 ++= 追加而非 = 赋值，可能为了和 SparkSubmit.scala 中对 childArgs 的操作风格保持一致</span></span><br><span class="line">  <span class="comment">// childArgs 是 ArrayBuffer[String]，extra.asScala 是 Seq[String]</span></span><br><span class="line">  <span class="comment">// 使用 ++= 避免了显式类型转换（如 childArgs = extra.asScala.to[ArrayBuffer]）</span></span><br><span class="line">  childArgs ++= extra.asScala</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="3-合并默认属性文件"><a href="#3-合并默认属性文件" class="headerlink" title="3. 合并默认属性文件"></a>3. 合并默认属性文件</h3><p>将配置文件（默认 <code>conf/spark-defaults.conf</code>）中的属性合并到 <code>sparkProperties</code> 中。如果用户通过 <code>--conf</code> 指定了相同的配置项，则保留 <code>--conf</code> 的值（优先级更高）。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="function"><span class="keyword">def</span> <span class="title">mergeDefaultSparkProperties</span></span>(): <span class="type">Unit</span> = &#123;</span><br><span class="line">  <span class="comment">// Use common defaults file, if not specified by user</span></span><br><span class="line">  <span class="comment">// 如果用户未指定，则使用默认属性文件</span></span><br><span class="line">  propertiesFile = <span class="type">Option</span>(propertiesFile).getOrElse(<span class="type">Utils</span>.getDefaultPropertiesFile(env))</span><br><span class="line">  <span class="comment">// Honor `--conf` before the defaults file</span></span><br><span class="line">  <span class="comment">// `--conf` 的优先级高于默认属性文件</span></span><br><span class="line">  defaultSparkProperties.foreach &#123; <span class="keyword">case</span> (k, v) =&gt;</span><br><span class="line">    <span class="keyword">if</span> (!sparkProperties.contains(k)) &#123;</span><br><span class="line">      sparkProperties(k) = v</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="4-过滤非-Spark-属性"><a href="#4-过滤非-Spark-属性" class="headerlink" title="4. 过滤非 Spark 属性"></a>4. 过滤非 Spark 属性</h3><p>将 <code>sparkProperties</code> 中不以 <code>spark.</code> 开头的键移除掉。<code>sparkProperties</code> 中的值来自 <code>--conf</code> 和配置文件，不包含环境变量等来源。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="function"><span class="keyword">def</span> <span class="title">ignoreNonSparkProperties</span></span>(): <span class="type">Unit</span> = &#123;</span><br><span class="line">  sparkProperties.keys.foreach &#123; k =&gt;</span><br><span class="line">    <span class="keyword">if</span> (!k.startsWith(<span class="string">&quot;spark.&quot;</span>)) &#123;</span><br><span class="line">      sparkProperties -= k</span><br><span class="line">      logWarning(<span class="string">s&quot;Ignoring non-Spark config property: <span class="subst">$k</span>&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="5-加载环境变量参数"><a href="#5-加载环境变量参数" class="headerlink" title="5. 加载环境变量参数"></a>5. 加载环境变量参数</h3><p>将命令行未指定的参数从环境变量和 <code>sparkProperties</code> 中补充进来。例如：master 未在命令行指定时，会依次从 <code>spark.master</code> 配置、环境变量 <code>MASTER</code> 中获取。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="function"><span class="keyword">def</span> <span class="title">loadEnvironmentArguments</span></span>(): <span class="type">Unit</span> = &#123;</span><br><span class="line">  <span class="comment">// Load arguments from environment variables, Spark properties etc.</span></span><br><span class="line">  <span class="comment">// 从环境变量、Spark 属性等加载参数</span></span><br><span class="line">  master = <span class="type">Option</span>(master)</span><br><span class="line">    .orElse(sparkProperties.get(<span class="string">&quot;spark.master&quot;</span>))</span><br><span class="line">    .orElse(env.get(<span class="string">&quot;MASTER&quot;</span>))</span><br><span class="line">    .orNull</span><br><span class="line">  <span class="comment">// ... 其他参数类似</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>优先级：<strong>命令行参数 &gt; sparkProperties &gt; 环境变量 &gt; 默认值</strong></p>
+<h3 id="6-参数验证"><a href="#6-参数验证" class="headerlink" title="6. 参数验证"></a>6. 参数验证</h3><p>验证必填参数是否存在以及参数值是否合法。例如：必须指定 primaryResource（主资源），内存/核心数必须为正数，YARN 模式必须设置 HADOOP_CONF_DIR 等。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="function"><span class="keyword">def</span> <span class="title">validateSubmitArguments</span></span>(): <span class="type">Unit</span> = &#123;</span><br><span class="line">  <span class="comment">// Ensure that required fields exists. Call this only once all defaults are loaded.</span></span><br><span class="line">  <span class="comment">// 确保必填字段存在。调用此方法时所有默认值已加载完成</span></span><br><span class="line">  <span class="keyword">if</span> (args.length == <span class="number">0</span>) &#123;</span><br><span class="line">    printUsageAndExit(<span class="number">-1</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (primaryResource == <span class="literal">null</span>) &#123;</span><br><span class="line">    error(<span class="string">&quot;Must specify a primary resource (JAR or Python or R file)&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// ... 其他验证</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="参数优先级"><a href="#参数优先级" class="headerlink" title="参数优先级"></a>参数优先级</h2><table>
 <thead>
 <tr>
-<th>模式</th>
-<th>childMainClass</th>
+<th>来源</th>
+<th>优先级</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Client (Yarn/Standalone/Mesos/K8s/Local)</td>
-<td>用户传入的主类（如 org.apache.spark.repl.Main）</td>
+<td>命令行参数</td>
+<td>1（最高）</td>
 </tr>
 <tr>
-<td>Yarn Cluster</td>
-<td>org.apache.spark.deploy.yarn.YarnClusterApplication</td>
+<td><code>--conf</code></td>
+<td>2</td>
 </tr>
 <tr>
-<td>Mesos Cluster</td>
-<td>org.apache.spark.deploy.rest.RestSubmissionClientApp</td>
+<td>配置文件</td>
+<td>3</td>
 </tr>
 <tr>
-<td>Standalone Cluster (REST)</td>
-<td>org.apache.spark.deploy.rest.RestSubmissionClientApp</td>
+<td>环境变量</td>
+<td>4</td>
 </tr>
 <tr>
-<td>Standalone Cluster (Legacy)</td>
-<td>org.apache.spark.deploy.ClientApp</td>
-</tr>
-<tr>
-<td>K8s Cluster</td>
-<td>org.apache.spark.deploy.k8s.submit.KubernetesClientApplication</td>
+<td>默认值</td>
+<td>5（最低）</td>
 </tr>
 </tbody>
 </table>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>通过本文的分析，我们了解了 SparkSubmit 的提交流程：</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>SparkSubmitArguments 的解析流程：</p>
 <ol>
-<li><strong>入口</strong>：spark-submit → spark-class → SparkSubmit.main → doSubmit</li>
-<li><strong>参数解析</strong>：parseArguments 解析命令行参数（将在下一篇文章中单独分析）</li>
-<li><strong>submit 方法</strong>：<ul>
-<li>处理代理用户（proxyUser）切换</li>
-<li>Standalone Cluster 模式支持 REST API，失败时回退到 Legacy</li>
-<li><strong>注意：submit 本身不区分模式，所有模式都会调用 runMain</strong></li>
-</ul>
-</li>
-<li><strong>环境准备</strong>：prepareSubmitEnvironment 根据 clusterManager + deployMode 设置 childMainClass 和 childArgs（这是真正的模式区分点）</li>
-<li><strong>应用启动</strong>：runMain 加载 childMainClass 并启动</li>
+<li><strong>parse</strong> - 解析命令行参数</li>
+<li><strong>mergeDefaultSparkProperties</strong> - 合并配置文件中的属性</li>
+<li><strong>ignoreNonSparkProperties</strong> - 过滤非 spark. 开头的属性</li>
+<li><strong>loadEnvironmentArguments</strong> - 用环境变量和 sparkProperties 填充空缺参数</li>
+<li><strong>validateArguments</strong> - 验证参数合法性</li>
 </ol>
-<p><strong>流程说明</strong>：</p>
-<ul>
-<li>submit 方法是统一的入口，无论 Client 还是 Cluster 模式，最终都会调用 runMain</li>
-<li>runMain 调用 prepareSubmitEnvironment，在其中根据 clusterManager + deployMode 决定：<ul>
-<li><strong>Client 模式</strong>：childMainClass = 用户传入的主类（如 org.apache.spark.repl.Main）</li>
-<li><strong>Cluster 模式</strong>：childMainClass = 包装类（如 YarnClusterApplication），用户主类作为参数传入</li>
-</ul>
-</li>
-<li>最后加载 childMainClass 并启动</li>
-</ul>
-<p>下一次我们将分析参数解析详细过程，然后分别分析 Yarn Client、Yarn Cluster、Standalone Client、Standalone Cluster 模式的详细提交流程。</p>
+<p>优先级：命令行 &gt; <code>--conf</code> &gt; 配置文件 &gt; 环境变量 &gt; 默认值</p>
+<p>下一次我们将分析 Yarn Client、Yarn Cluster、Standalone Client、Standalone Cluster 模式的详细提交流程。</p>
 
       
 
       
+        <div class="page-reward">
+          <a href="javascript:;" class="page-reward-btn tooltip-top">
+            <div class="tooltip tooltip-east">
+            <span class="tooltip-item">
+              赏
+            </span>
+            <span class="tooltip-content">
+              <span class="tooltip-text">
+                <span class="tooltip-inner">
+                  <p class="reward-p"><i class="icon icon-quo-left"></i>感谢您的支持!<i class="icon icon-quo-right"></i></p>
+                  <div class="reward-box">
+                    
+                    <div class="reward-box-item">
+                      <img class="reward-img" src="/img/alipay.png">
+                      <span class="reward-type">支付宝</span>
+                    </div>
+                    
+                    
+                    <div class="reward-box-item">
+                      <img class="reward-img" src="/img/weixin.png">
+                      <span class="reward-type">微信</span>
+                    </div>
+                    
+                  </div>
+                </span>
+              </span>
+            </span>
+          </div>
+          </a>
+        </div>
+      
+	  
+		<div class="article-footer-copyright">
+
+ <p>本文由&nbsp;<b>董可伦</b>&nbsp;发表于&nbsp<a href="http://dongkelun.com">伦少的博客</a>&nbsp,采用<a href="http://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh">署名-非商业性使用-禁止演绎 3.0</a>进行许可。</p>
+
+ <p>非商业转载请注明作者及出处。商业转载请联系作者本人。</p>
+
+
+ <p>本文标题：<a href="https://dongkelun.com/2026/07/08/spark/sparkSourceCode-sparkSubmitArguments/">Spark 源码 | SparkSubmitArguments 参数解析（三）</a> </p>
+
+ <p>本文链接：<a href="https://dongkelun.com/2026/07/08/spark/sparkSourceCode-sparkSubmitArguments/">https://dongkelun.com/2026/07/08/spark/sparkSourceCode-sparkSubmitArguments/</a></p>
+ <p>欢迎关注我的公众号</p>
+ <img src='https://cdn.jsdelivr.net/gh/dongkelun/hexo-images@master/gongzhonghao.753u7albtdk.webp' style='margin:10px'/>
+</div>
+
 	  
     </div>
     <div class="article-info article-info-index">
@@ -382,7 +433,7 @@
     <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="http://qr.liantu.com/api.php?text=https://dongkelun.com/spark-submit-analysis/sparkSubmit-%E5%85%AC%E4%BC%97%E5%8F%B7.html" alt="微信分享二维码">
+      <img src="http://qr.liantu.com/api.php?text=https://dongkelun.com/2026/07/08/spark/sparkSourceCode-sparkSubmitArguments/" alt="微信分享二维码">
     </div>
 </div>
 
@@ -394,6 +445,16 @@
 </article>
 
   
+<nav id="article-nav">
+  
+  
+    <a href="/2026/07/06/spark/sparkSourceCode-sparkSubmit/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Spark 源码 | SparkSubmit 提交流程分析（二）</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
 
 <aside class="wrap-side-operation">
     <div class="mod-side-operation">
@@ -407,6 +468,19 @@
             </div>
         </div>
         
+        
+        <div class="toc-container tooltip-left">
+            <i class="icon-font icon-category"></i>
+            <div class="tooltip tooltip-east">
+                <span class="tooltip-item">
+                </span>
+                <span class="tooltip-content">
+                    <div class="toc-article">
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%89%88%E6%9C%AC"><span class="toc-number">2.</span> <span class="toc-text">版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#SparkSubmitArguments-%E6%A6%82%E8%BF%B0"><span class="toc-number">3.</span> <span class="toc-text">SparkSubmitArguments 概述</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AD%97%E6%AE%B5%E5%AE%9A%E4%B9%89"><span class="toc-number">3.1.</span> <span class="toc-text">字段定义</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%A3%E6%9E%90%E6%B5%81%E7%A8%8B"><span class="toc-number">4.</span> <span class="toc-text">解析流程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8%E9%A1%BA%E5%BA%8F"><span class="toc-number">4.1.</span> <span class="toc-text">1. 构造函数调用顺序</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%E8%A7%A3%E6%9E%90%E5%91%BD%E4%BB%A4%E8%A1%8C%E5%8F%82%E6%95%B0"><span class="toc-number">4.2.</span> <span class="toc-text">2. 解析命令行参数</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#SparkSubmitOptionParser-parse-%E6%96%B9%E6%B3%95%E8%A7%A3%E6%9E%90%E9%80%BB%E8%BE%91"><span class="toc-number">4.2.1.</span> <span class="toc-text">SparkSubmitOptionParser parse 方法解析逻辑</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#SparkSubmitArguments-%E9%87%8D%E5%86%99%E7%9A%84%E6%96%B9%E6%B3%95"><span class="toc-number">4.2.2.</span> <span class="toc-text">SparkSubmitArguments 重写的方法</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#1-handle-%E6%96%B9%E6%B3%95"><span class="toc-number">4.2.2.1.</span> <span class="toc-text">1. handle 方法</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#2-handleUnknown-%E6%96%B9%E6%B3%95"><span class="toc-number">4.2.2.2.</span> <span class="toc-text">2. handleUnknown 方法</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#3-handleExtraArgs-%E6%96%B9%E6%B3%95"><span class="toc-number">4.2.2.3.</span> <span class="toc-text">3. handleExtraArgs 方法</span></a></li></ol></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-%E5%90%88%E5%B9%B6%E9%BB%98%E8%AE%A4%E5%B1%9E%E6%80%A7%E6%96%87%E4%BB%B6"><span class="toc-number">4.3.</span> <span class="toc-text">3. 合并默认属性文件</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-%E8%BF%87%E6%BB%A4%E9%9D%9E-Spark-%E5%B1%9E%E6%80%A7"><span class="toc-number">4.4.</span> <span class="toc-text">4. 过滤非 Spark 属性</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-%E5%8A%A0%E8%BD%BD%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F%E5%8F%82%E6%95%B0"><span class="toc-number">4.5.</span> <span class="toc-text">5. 加载环境变量参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-%E5%8F%82%E6%95%B0%E9%AA%8C%E8%AF%81"><span class="toc-number">4.6.</span> <span class="toc-text">6. 参数验证</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E6%95%B0%E4%BC%98%E5%85%88%E7%BA%A7"><span class="toc-number">5.</span> <span class="toc-text">参数优先级</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">6.</span> <span class="toc-text">总结</span></a></li></ol>
+                    </div>
+                </span>
+            </div>
+        </div>
         
     </div>
 </aside>
@@ -466,7 +540,7 @@
 	var yiliaConfig = {
 		mathjax: true,
 		isHome: false,
-		isPost: false,
+		isPost: true,
 		isArchive: false,
 		isTag: false,
 		isCategory: false,
@@ -573,10 +647,6 @@ var _hmt = _hmt || [];
           <ul class="article-tag-list" q-show="showTags">
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">english</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
@@ -589,11 +659,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+                <a href="javascript:void(0)" class="js-tag color3">english</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -605,7 +671,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -617,15 +687,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">mysql</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">源码</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -637,11 +707,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -653,11 +723,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -669,7 +747,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -678,6 +756,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -721,19 +803,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">IDEA</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Maven</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">java</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">IDEA</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Maven</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -749,10 +831,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
@@ -765,6 +843,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
@@ -773,23 +855,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -801,11 +871,23 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">scala</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">日期</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -817,7 +899,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -845,7 +927,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -857,15 +939,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">ml</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -889,11 +971,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -905,7 +987,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
+                <a href="javascript:void(0)" class="js-tag color3">AI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">amazon</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -925,11 +1011,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">AI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">amazon</a>
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -949,15 +1031,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">CDC</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Yarn</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Hudi CLI</a>
+                <a href="javascript:void(0)" class="js-tag color4">CDC</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -965,11 +1043,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
+                <a href="javascript:void(0)" class="js-tag color4">Hudi CLI</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Conda</a>
+                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -977,7 +1055,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Ray</a>
+                <a href="javascript:void(0)" class="js-tag color1">Conda</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -989,6 +1067,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Ray</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
              
@@ -997,23 +1079,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ZooKeeper</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">LLM</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ollama</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ZooKeeper</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
               </li>
             
             <div class="clearfix"></div>
