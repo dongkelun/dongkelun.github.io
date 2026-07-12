@@ -17,7 +17,7 @@
 <meta property="og:description" content="前言在第二篇文章 Spark 源码 | SparkSubmit 提交流程分析（二） 中，我们分析了 SparkSubmit 的提交流程，其中 doSubmit 方法会调用 parseArguments 解析命令行参数。本文详细介绍参数解析的过程。 版本Spark 3.2.3 SparkSubmitArguments 概述SparkSubmitArguments 继承自 SparkSubmitArg">
 <meta property="og:locale">
 <meta property="article:published_time" content="2026-07-07T16:00:00.000Z">
-<meta property="article:modified_time" content="2026-07-08T11:27:58.062Z">
+<meta property="article:modified_time" content="2026-07-10T00:46:56.771Z">
 <meta property="article:author" content="董可伦">
 <meta property="article:tag" content="Spark">
 <meta property="article:tag" content="源码">
@@ -277,7 +277,7 @@
 <h4 id="SparkSubmitArguments-重写的方法"><a href="#SparkSubmitArguments-重写的方法" class="headerlink" title="SparkSubmitArguments 重写的方法"></a>SparkSubmitArguments 重写的方法</h4><h5 id="1-handle-方法"><a href="#1-handle-方法" class="headerlink" title="1. handle 方法"></a>1. handle 方法</h5><p>处理已知的带参数选项，根据 opt（选项名）将 value 赋值给对应的字段。其中 <code>CONF</code> case 会直接将 <code>--conf</code> 的值存入 <code>sparkProperties</code>：</p>
 <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">override</span> <span class="keyword">protected</span> <span class="function"><span class="keyword">def</span> <span class="title">handle</span></span>(opt: <span class="type">String</span>, value: <span class="type">String</span>): <span class="type">Boolean</span> = &#123;</span><br><span class="line">  opt <span class="keyword">match</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> <span class="type">NAME</span> =&gt;</span><br><span class="line">      name = value</span><br><span class="line">    <span class="keyword">case</span> <span class="type">MASTER</span> =&gt;</span><br><span class="line">      master = value</span><br><span class="line">    <span class="keyword">case</span> <span class="type">CLASS</span> =&gt;</span><br><span class="line">      mainClass = value</span><br><span class="line">    <span class="keyword">case</span> <span class="type">DEPLOY_MODE</span> =&gt;</span><br><span class="line">      <span class="keyword">if</span> (value != <span class="string">&quot;client&quot;</span> &amp;&amp; value != <span class="string">&quot;cluster&quot;</span>) &#123;</span><br><span class="line">        error(<span class="string">&quot;--deploy-mode must be either \&quot;client\&quot; or \&quot;cluster\&quot;&quot;</span>)</span><br><span class="line">      &#125;</span><br><span class="line">      deployMode = value</span><br><span class="line">    <span class="keyword">case</span> <span class="type">NUM_EXECUTORS</span> =&gt;</span><br><span class="line">      numExecutors = value</span><br><span class="line">    <span class="comment">// ... 其他参数</span></span><br><span class="line">    <span class="comment">// `--conf` KEY=VALUE 格式的配置项，直接存入 sparkProperties</span></span><br><span class="line">    <span class="comment">// 由于是直接赋值（覆盖写），后续合并配置文件时，`--conf` 的值会被保留</span></span><br><span class="line">    <span class="keyword">case</span> <span class="type">CONF</span> =&gt;</span><br><span class="line">      <span class="keyword">val</span> (confName, confValue) = <span class="type">SparkSubmitUtils</span>.parseSparkConfProperty(value)</span><br><span class="line">      sparkProperties(confName) = confValue</span><br><span class="line">    <span class="comment">// ... 其他参数</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// --version 时返回 false，其他情况返回 true</span></span><br><span class="line">  action != <span class="type">SparkSubmitAction</span>.<span class="type">PRINT_VERSION</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h5 id="2-handleUnknown-方法"><a href="#2-handleUnknown-方法" class="headerlink" title="2. handleUnknown 方法"></a>2. handleUnknown 方法</h5><p>处理未知选项，将第一个未知选项作为 primaryResource（主资源），如 myapp.jar、spark-shell、hdfs:///path/to/app.jar：</p>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">override</span> <span class="keyword">protected</span> <span class="function"><span class="keyword">def</span> <span class="title">handleUnknown</span></span>(opt: <span class="type">String</span>): <span class="type">Boolean</span> = &#123;</span><br><span class="line">  <span class="comment">// 如果选项以 &quot;-&quot; 开头但不在已知选项中，报错</span></span><br><span class="line">  <span class="keyword">if</span> (opt.startsWith(<span class="string">&quot;-&quot;</span>)) &#123;</span><br><span class="line">    error(<span class="string">s&quot;Unrecognized option &#x27;<span class="subst">$opt</span>&#x27;.&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 设置 primaryResource（主资源），如 myapp.jar、spark-shell、hdfs:///path/to/app.jar</span></span><br><span class="line">  <span class="comment">// 如果不是 shell（如 spark-shell、pyspark-shell、sparkr-shell）或内部选项（spark-internal），则通过 Utils.resolveURI 解析为标准 URI 格式</span></span><br><span class="line">  <span class="comment">// 如：./app.jar -&gt; file:/path/to/app.jar，/path/app.jar -&gt; file:/path/app.jar，hdfs://xxx -&gt; hdfs://xxx</span></span><br><span class="line">  <span class="comment">// 否则直接作为字符串（如 spark-shell 用于交互式界面，spark-internal 用于测试场景）</span></span><br><span class="line">  primaryResource =</span><br><span class="line">    <span class="keyword">if</span> (!<span class="type">SparkSubmit</span>.isShell(opt) &amp;&amp; !<span class="type">SparkSubmit</span>.isInternal(opt)) &#123;</span><br><span class="line">      <span class="type">Utils</span>.resolveURI(opt).toString</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      opt</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 判断是否为 Python 或 R 应用</span></span><br><span class="line">  isPython = <span class="type">SparkSubmit</span>.isPython(opt)</span><br><span class="line">  isR = <span class="type">SparkSubmit</span>.isR(opt)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 始终返回 false，退出循环</span></span><br><span class="line">  <span class="literal">false</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">override</span> <span class="keyword">protected</span> <span class="function"><span class="keyword">def</span> <span class="title">handleUnknown</span></span>(opt: <span class="type">String</span>): <span class="type">Boolean</span> = &#123;</span><br><span class="line">  <span class="comment">// 如果选项以 &quot;-&quot; 开头但不在已知选项中，报错</span></span><br><span class="line">  <span class="keyword">if</span> (opt.startsWith(<span class="string">&quot;-&quot;</span>)) &#123;</span><br><span class="line">    error(<span class="string">s&quot;Unrecognized option &#x27;<span class="subst">$opt</span>&#x27;.&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 设置 primaryResource（主资源），如 myapp.jar、spark-shell、hdfs:///path/to/app.jar</span></span><br><span class="line">  <span class="comment">// 如果不是 shell（spark-shell、pyspark-shell、sparkr-shell）或内部选项（spark-internal），则通过 Utils.resolveURI 解析为标准 URI 格式</span></span><br><span class="line">  <span class="comment">// 如：./app.jar -&gt; file:/path/to/app.jar，/path/app.jar -&gt; file:/path/app.jar，hdfs://xxx -&gt; hdfs://xxx</span></span><br><span class="line">  <span class="comment">// 否则直接作为字符串（如 spark-shell 用于交互式界面，spark-internal 表示没有指定应用程序资源，用于交互式工具如 spark-sql 或测试场景）</span></span><br><span class="line">  primaryResource =</span><br><span class="line">    <span class="keyword">if</span> (!<span class="type">SparkSubmit</span>.isShell(opt) &amp;&amp; !<span class="type">SparkSubmit</span>.isInternal(opt)) &#123;</span><br><span class="line">      <span class="type">Utils</span>.resolveURI(opt).toString</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      opt</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 判断是否为 Python 或 R 应用</span></span><br><span class="line">  isPython = <span class="type">SparkSubmit</span>.isPython(opt)</span><br><span class="line">  isR = <span class="type">SparkSubmit</span>.isR(opt)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 始终返回 false，退出循环</span></span><br><span class="line">  <span class="literal">false</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h5 id="3-handleExtraArgs-方法"><a href="#3-handleExtraArgs-方法" class="headerlink" title="3. handleExtraArgs 方法"></a>3. handleExtraArgs 方法</h5><p>将解析剩余的应用参数添加到 childArgs：</p>
 <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">override</span> <span class="keyword">protected</span> <span class="function"><span class="keyword">def</span> <span class="title">handleExtraArgs</span></span>(extra: <span class="type">JList</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">  <span class="comment">// 在 SparkSubmitArguments 类中只有这一处赋值，没看到有其它地方赋值，感觉两种写法效果可能是相同的</span></span><br><span class="line">  <span class="comment">// 使用 ++= 追加而非 = 赋值，可能为了和 SparkSubmit.scala 中对 childArgs 的操作风格保持一致</span></span><br><span class="line">  <span class="comment">// childArgs 是 ArrayBuffer[String]，extra.asScala 是 Seq[String]</span></span><br><span class="line">  <span class="comment">// 使用 ++= 避免了显式类型转换（如 childArgs = extra.asScala.to[ArrayBuffer]）</span></span><br><span class="line">  childArgs ++= extra.asScala</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h3 id="3-合并默认属性文件"><a href="#3-合并默认属性文件" class="headerlink" title="3. 合并默认属性文件"></a>3. 合并默认属性文件</h3><p>将配置文件（默认 <code>conf/spark-defaults.conf</code>）中的属性合并到 <code>sparkProperties</code> 中。如果用户通过 <code>--conf</code> 指定了相同的配置项，则保留 <code>--conf</code> 的值（优先级更高）。</p>
@@ -676,19 +676,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -700,6 +688,22 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">SQL</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">mysql</a>
               </li>
              
@@ -708,7 +712,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+                <a href="javascript:void(0)" class="js-tag color2">centos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -728,23 +740,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">界面工具</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">hive</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">centos</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -756,19 +764,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">DataFrame</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Flink</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -780,10 +780,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">hbase</a>
               </li>
              
@@ -792,11 +788,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
+                <a href="javascript:void(0)" class="js-tag color2">bucket</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">异常解决</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -812,14 +812,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">IDEA</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Maven</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
@@ -832,6 +824,14 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">IDEA</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Maven</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Kyuubi</a>
               </li>
              
@@ -840,15 +840,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">zsh</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
+                <a href="javascript:void(0)" class="js-tag color3">crontab</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -860,7 +856,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -868,7 +864,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">ogg</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">pycharm</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">excel</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -880,7 +884,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">excel</a>
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -896,10 +908,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">持久化</a>
               </li>
              
@@ -912,11 +920,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -928,10 +944,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
               </li>
              
@@ -940,19 +952,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
+                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">yarn</a>
+                <a href="javascript:void(0)" class="js-tag color4">面试题</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -972,15 +980,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Ranger</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Submarin</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1008,18 +1012,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">AI</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">amazon</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">PolarDB</a>
               </li>
              
@@ -1028,7 +1020,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
+                <a href="javascript:void(0)" class="js-tag color3">AI</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">amazon</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1036,7 +1032,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">HBase</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">CDC</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1056,11 +1060,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
+                <a href="javascript:void(0)" class="js-tag color1">Conda</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Conda</a>
+                <a href="javascript:void(0)" class="js-tag color4">Ray</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Docker</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1072,7 +1080,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Ray</a>
+                <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1084,19 +1092,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">tool</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">LLM</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ollama</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
               </li>
             
             <div class="clearfix"></div>
