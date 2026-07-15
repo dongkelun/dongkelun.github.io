@@ -1,0 +1,212 @@
+1. Oracle to MySQL
+1.1. Flink SQL
+cat sql/oracle2mysql.sql
+
+set yarn.application.name=cdc_oracle2mysql;
+set parallelism.default=1;
+set taskmanager.memory.process.size=3g;
+set taskmanager.numberOfTaskSlots=1;
+set execution.checkpointing.interval=1000;
+set state.checkpoints.dir=hdfs:///flink/checkpoints/cdc_oracle2mysql;
+set execution.target=yarn-per-job;
+set execution.checkpointing.externalized-checkpoint-retention=RETAIN_ON_CANCELLATION;
+
+-- CDC源表 完全移除冲突参数
+CREATE TABLE oracle_cdc_source (
+   ID  int  PRIMARY KEY NOT ENFORCED,
+   NAME string,
+   IMG BYTES
+) WITH (
+   'connector' = 'oracle-cdc',
+   'url' = 'jdbc:oracle:thin:@10.108.8.79:1523:HELOWIN',
+   'hostname' = '10.108.8.79',
+   'port' = '1523',
+   'username' = 'flinkuser',
+   'password' = 'flinkpw',
+   'database-name' = 'HELOWIN',
+   'schema-name' = 'FLINKUSER',
+   'table-name' = 'CDC_SOURCE',
+   'scan.startup.mode' = 'initial',
+   'debezium.snapshot.fetch.size' = '1024',
+   'debezium.connect.keep.alive' = 'true',
+   'debezium.lob.enabled' = 'true',
+   'debezium.log.mining.strategy' = 'online_catalog',
+   'debezium.log.mining.continuous.mine' = 'true'
+);
+
+-- Sink优化批量参数
+create table oracle_cdc_sink (
+  ID INT PRIMARY KEY NOT ENFORCED,
+  NAME string,
+  IMG BYTES
+) with (
+ 'connector' = 'jdbc',
+ 'driver' = 'com.mysql.cj.jdbc.Driver',
+ 'url' = 'jdbc:mysql://10.108.8.79:3306/flink_cdc?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf-8',
+ 'username' = 'root',
+ 'password' = 'Root-123',
+ 'table-name' = 'CDC_SINK'
+);
+
+-- 写入时利用 Flink 自带的 TO_BASE64 纯字符串化
+INSERT INTO oracle_cdc_sink
+SELECT
+  ID,
+  NAME,
+  IMG
+FROM oracle_cdc_source;
+1.2. MySQL 触发器
+通过触发器解决 blob 字段更新后被置为 __debezium_unavailable_value 值问题：
+CREATE TRIGGER trg_block_debezium_placeholder_blob
+BEFORE UPDATE ON flink_cdc.CDC_SINK
+FOR EACH ROW
+BEGIN
+    -- 将传进来的 BLOB 转换为字符串，判断是否包含占位符
+    IF CONVERT(NEW.IMG USING utf8mb4) LIKE '%__debezium_unavailable_value%' THEN
+        -- 强行把新值还原为原本存在数据库里的老图片，忽略这次对 IMG 的更新
+        SET NEW.IMG = OLD.IMG;
+    END IF;
+END
+2. Oracle to DM
+2.1. Flink SQL
+cat sql/oracle2dm.sql
+
+set yarn.application.name=cdc_oracle2dm;
+set parallelism.default=1;
+set taskmanager.memory.process.size=3g;
+set taskmanager.numberOfTaskSlots=1;
+set execution.checkpointing.interval=1000;
+set state.checkpoints.dir=hdfs:///flink/checkpoints/cdc_oracle2dm;
+set execution.target=yarn-per-job;
+set execution.checkpointing.externalized-checkpoint-retention=RETAIN_ON_CANCELLATION;
+
+-- 1. CDC 源表 (保持不变)
+CREATE TABLE oracle_cdc_source (
+   ID  int  PRIMARY KEY NOT ENFORCED,
+   NAME string,
+   IMG BYTES
+) WITH (
+   'connector' = 'oracle-cdc',
+   'url' = 'jdbc:oracle:thin:@10.108.8.79:1523:HELOWIN',
+   'hostname' = '10.108.8.79',
+   'port' = '1523',
+   'username' = 'flinkuser',
+   'password' = 'flinkpw',
+   'database-name' = 'HELOWIN',
+   'schema-name' = 'FLINKUSER',
+   'table-name' = 'CDC_SOURCE',
+   'scan.startup.mode' = 'initial',
+   'debezium.snapshot.fetch.size' = '1024',
+   'debezium.connect.keep.alive' = 'true',
+   'debezium.lob.enabled' = 'true',
+   'debezium.log.mining.strategy' = 'online_catalog',
+   'debezium.log.mining.continuous.mine' = 'true'
+);
+
+-- 2. 达梦数据库 Sink 表 (使用标准 JDBC 驱动和类名)
+create table oracle_cdc_sink (
+  ID INT PRIMARY KEY NOT ENFORCED,
+  NAME string,
+  IMG BYTES
+) WITH (
+   'connector' = 'jdbc',
+   'driver' = 'dm.jdbc.driver.DmDriver',
+   'url' = 'jdbc:dm://10.108.8.75:5236',
+   'username' = 'SYSDBA',
+   'password' = 'Jya3QE7M0e',
+   'table-name' = 'FLINK_CDC_TEST.CDC_SINK'
+);
+
+-- 3. 直接流式写入，触发器会在达梦端自动进行占位符拦截
+INSERT INTO oracle_cdc_sink
+SELECT
+  ID,
+  NAME,
+  IMG
+FROM oracle_cdc_source;
+2.2. DM 触发器
+-- 1. 创建达梦目标表
+CREATE TABLE FLINKUSER.CDC_SINK (
+  ID INT PRIMARY KEY,
+  NAME VARCHAR(255),
+  IMG BLOB
+);
+
+-- 2. 创建达梦高级 PL/SQL 触发器
+CREATE OR REPLACE TRIGGER FLINK_CDC_TEST.TRG_BLOCK_DEBEZIUM_PLACEHOLDER_BLOB
+BEFORE UPDATE ON FLINK_CDC_TEST.CDC_SINK
+FOR EACH ROW
+DECLARE
+    V_PLACEHOLDER RAW(100);
+BEGIN
+    -- 将占位符文本转换为达梦可以对 BLOB 进行检索的 RAW 二进制格式
+    V_PLACEHOLDER := UTL_RAW.CAST_TO_RAW('__debezium_unavailable_value');
+
+    -- 使用 DBMS_LOB.INSTR 函数查找新传入的 :NEW.IMG 中是否包含该占位符
+    -- 如果返回值 > 0，说明上游发送的是未变更的大字段占位符
+    IF DBMS_LOB.INSTR(:NEW.IMG, V_PLACEHOLDER, 1, 1) > 0 THEN
+        -- 【核心魔法】：强行把新值替换回达梦里原有的老图片，拒绝被占位符覆盖
+        :NEW.IMG := :OLD.IMG;
+    END IF;
+END;
+3. 待解决问题
+1.报如下错误，数据依然能同步：
+2026-07-02 12:03:21
+java.lang.RuntimeException: One or more fetchers have encountered exception
+    at org.apache.flink.connector.base.source.reader.fetcher.SplitFetcherManager.checkErrors(SplitFetcherManager.java:225)
+    at org.apache.flink.connector.base.source.reader.SourceReaderBase.getNextFetch(SourceReaderBase.java:169)
+    at org.apache.flink.connector.base.source.reader.SourceReaderBase.pollNext(SourceReaderBase.java:130)
+    at org.apache.flink.streaming.api.operators.SourceOperator.emitNext(SourceOperator.java:385)
+    at org.apache.flink.streaming.runtime.io.StreamTaskSourceInput.emitNext(StreamTaskSourceInput.java:68)
+    at org.apache.flink.streaming.runtime.io.StreamOneInputProcessor.processInput(StreamOneInputProcessor.java:65)
+    at org.apache.flink.streaming.runtime.tasks.StreamTask.processInput(StreamTask.java:519)
+    at org.apache.flink.streaming.runtime.tasks.mailbox.MailboxProcessor.runMailboxLoop(MailboxProcessor.java:203)
+    at org.apache.flink.streaming.runtime.tasks.StreamTask.runMailboxLoop(StreamTask.java:807)
+    at org.apache.flink.streaming.runtime.tasks.StreamTask.invoke(StreamTask.java:756)
+    at org.apache.flink.runtime.taskmanager.Task.runWithSystemExitMonitoring(Task.java:948)
+    at org.apache.flink.runtime.taskmanager.Task.restoreAndInvoke(Task.java:927)
+    at org.apache.flink.runtime.taskmanager.Task.doRun(Task.java:741)
+    at org.apache.flink.runtime.taskmanager.Task.run(Task.java:563)
+    at java.lang.Thread.run(Thread.java:748)
+Caused by: java.lang.RuntimeException: SplitFetcher thread 0 received unexpected exception while polling the records
+    at org.apache.flink.connector.base.source.reader.fetcher.SplitFetcher.runOnce(SplitFetcher.java:150)
+    at org.apache.flink.connector.base.source.reader.fetcher.SplitFetcher.run(SplitFetcher.java:105)
+    at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)
+    at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+    ... 1 more
+Caused by: com.ververica.cdc.connectors.shaded.org.apache.kafka.connect.errors.RetriableException: An exception occurred in the change event producer. This connector will be restarted.
+    at io.debezium.pipeline.ErrorHandler.setProducerThrowable(ErrorHandler.java:46)
+    at io.debezium.connector.oracle.logminer.LogMinerStreamingChangeEventSource.execute(LogMinerStreamingChangeEventSource.java:261)
+    at com.ververica.cdc.connectors.oracle.source.reader.fetch.OracleStreamFetchTask$RedoLogSplitReadTask.execute(OracleStreamFetchTask.java:138)
+    at com.ververica.cdc.connectors.oracle.source.reader.fetch.OracleStreamFetchTask.execute(OracleStreamFetchTask.java:66)
+    at com.ververica.cdc.connectors.base.source.reader.external.IncrementalSourceStreamFetcher.lambda$submitTask$0(IncrementalSourceStreamFetcher.java:89)
+    ... 5 more
+Caused by: java.sql.SQLException: ORA-01291: missing logfile
+ORA-06512: at "SYS.DBMS_LOGMNR", line 58
+ORA-06512: at line 1
+
+    at oracle.jdbc.driver.T4CTTIoer11.processError(T4CTTIoer11.java:509)
+    at oracle.jdbc.driver.T4CTTIoer11.processError(T4CTTIoer11.java:461)
+    at oracle.jdbc.driver.T4C8Oall.processError(T4C8Oall.java:1104)
+    at oracle.jdbc.driver.T4CTTIfun.receive(T4CTTIfun.java:550)
+    at oracle.jdbc.driver.T4CTTIfun.doRPC(T4CTTIfun.java:268)
+    at oracle.jdbc.driver.T4C8Oall.doOALL(T4C8Oall.java:655)
+    at oracle.jdbc.driver.T4CStatement.doOall8(T4CStatement.java:229)
+    at oracle.jdbc.driver.T4CStatement.doOall8(T4CStatement.java:41)
+    at oracle.jdbc.driver.T4CStatement.executeForRows(T4CStatement.java:928)
+    at oracle.jdbc.driver.OracleStatement.doExecuteWithTimeout(OracleStatement.java:1205)
+    at oracle.jdbc.driver.OracleStatement.executeInternal(OracleStatement.java:1823)
+    at oracle.jdbc.driver.OracleStatement.execute(OracleStatement.java:1778)
+    at oracle.jdbc.driver.OracleStatementWrapper.execute(OracleStatementWrapper.java:303)
+    at io.debezium.jdbc.JdbcConnection.executeWithoutCommitting(JdbcConnection.java:1446)
+    at io.debezium.connector.oracle.logminer.LogMinerStreamingChangeEventSource.startMiningSession(LogMinerStreamingChangeEventSource.java:677)
+    at io.debezium.connector.oracle.logminer.LogMinerStreamingChangeEventSource.execute(LogMinerStreamingChangeEventSource.java:244)
+    ... 8 more
+Caused by: Error : 1291, Position : 0, Sql = BEGIN sys.dbms_logmnr.start_logmnr(startScn => '1', endScn => '4883408', OPTIONS => DBMS_LOGMNR.DICT_FROM_ONLINE_CATALOG  + DBMS_LOGMNR.CONTINUOUS_MINE  + DBMS_LOGMNR.NO_ROWID_IN_STMT);END;, OriginalSql = BEGIN sys.dbms_logmnr.start_logmnr(startScn => '1', endScn => '4883408', OPTIONS => DBMS_LOGMNR.DICT_FROM_ONLINE_CATALOG  + DBMS_LOGMNR.CONTINUOUS_MINE  + DBMS_LOGMNR.NO_ROWID_IN_STMT);END;, Error Msg = ORA-01291: missing logfile
+ORA-06512: at "SYS.DBMS_LOGMNR", line 58
+ORA-06512: at line 1
+
+    at oracle.jdbc.driver.T4CTTIoer11.processError(T4CTTIoer11.java:513)
+    ... 23 more
