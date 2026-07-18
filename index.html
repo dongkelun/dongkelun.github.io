@@ -223,8 +223,9 @@
     <div class="article-entry" itemprop="articleBody">
       
       
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在第五篇文章 <a href="https://mp.weixin.qq.com/s/3BgEwpS169WFHK6XH6m0CQ">Yarn Client 模式提交流程（五）</a> 中，我们详细分析了 Yarn Client 模式的提交流程。本文继续分析 Yarn Cluster 模式的提交流程，重点介绍与 Client 模式的关键差异——<strong>Driver 如何在 AM 内启动</strong>。</p>
-<h3 id="Yarn-Cluster-模式概述"><a href="#Yarn-Cluster-模式概述" class="headerlink" title="Yarn Cluster 模式概述"></a>Yarn Cluster 模式概述</h3><p>Yarn Cluster 模式下，<strong>Driver 运行在 YARN 集群的 ApplicationMaster 容器中</strong>，客户端提交后即可断开，作业在集群中独立运行。</p>
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在第五篇文章 <a href="https://mp.weixin.qq.com/s/ZYZBuNpiIPyrfaKtrgH0eQ">Yarn Client 模式提交流程（五）</a> 中，我们详细分析了 Yarn Client 模式的提交流程。本文继续分析 Yarn Cluster 模式的提交流程，重点介绍与 Client 模式的关键差异——<strong>Driver 如何在 AM 内启动</strong>。</p>
+<h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>Spark 3.2.3</p>
+<h2 id="Yarn-Cluster-模式概述"><a href="#Yarn-Cluster-模式概述" class="headerlink" title="Yarn Cluster 模式概述"></a>Yarn Cluster 模式概述</h2><p>Yarn Cluster 模式下，<strong>Driver 运行在 YARN 集群的 ApplicationMaster 容器中</strong>，客户端提交后即可断开，作业在集群中独立运行。</p>
 <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 提交命令示例</span></span><br><span class="line">spark-submit --master yarn --deploy-mode cluster --<span class="class"><span class="keyword">class</span> <span class="title">org</span>.<span class="title">apache</span>.<span class="title">spark</span>.<span class="title">examples</span>.<span class="title">SparkPi</span> <span class="title">$SPARK_HOME/examples/jars/spark-examples_2</span>.12<span class="title">-3</span>.2.3.<span class="title">jar</span></span></span><br></pre></td></tr></table></figure>
 <h3 id="与-Yarn-Client-模式的核心区别"><a href="#与-Yarn-Client-模式的核心区别" class="headerlink" title="与 Yarn Client 模式的核心区别"></a>与 Yarn Client 模式的核心区别</h3><table>
 <thead>
@@ -277,7 +278,6 @@
 </tr>
 </tbody>
 </table>
-<h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>Spark 3.2.3</p>
         
           <a class="article-more-a" href="/2026/07/18/spark/sparkSourceCode-yarn-cluster/#more">more >></a>
         
@@ -312,6 +312,130 @@
       
         <p class="article-more-link">
           <a class="article-more-a" href="/2026/07/18/spark/sparkSourceCode-yarn-cluster/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-spark/sparkSourceCode-standalone-client" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2026/07/18/spark/sparkSourceCode-standalone-client/">Spark 源码 | Standalone Client 模式提交流程（七）</a>
+    </h1>
+  
+
+        
+        <a href="/2026/07/18/spark/sparkSourceCode-standalone-client/" class="archive-article-date">
+  	<time datetime="2026-07-17T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-07-18</time>
+</a>
+        
+      </header>
+	    
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在第五篇文章 <a href="https://mp.weixin.qq.com/s/Owg-cIIXhVu_BpO6KsW7NQ">Yarn Client 模式提交流程（五）</a> 中，我们分析了 Yarn Client 模式的完整提交流程。本文将继续分析 Spark 的另一种常用部署模式——<strong>Standalone Client 模式</strong>的提交流程。</p>
+<p>Standalone 模式是 Spark 自带的集群管理器，不依赖 YARN、Mesos 等外部资源调度系统。其架构包含 <strong>Master</strong>（集群管理器）和 <strong>Worker</strong>（工作节点）两个角色，Master 负责资源调度，Worker 负责执行计算任务。</p>
+<h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>Spark 3.2.3</p>
+<h2 id="Standalone-Client-模式概述"><a href="#Standalone-Client-模式概述" class="headerlink" title="Standalone Client 模式概述"></a>Standalone Client 模式概述</h2><p>Standalone Client 模式下，<strong>Driver 运行在提交应用的客户端机器上</strong>，向 Master 注册 Application，Master 调度 Worker 启动 Executor。</p>
+<blockquote>
+<p><strong>与 Yarn Client 的直观对比</strong>：</p>
+<p>Yarn Client 模式中的 ResourceManager + NodeManager 对应到 Standalone 模式中的 Master + Worker。区别在于 Standalone 模式是 Spark 自带的简易调度系统，功能比 YARN 精简，但启动和调试更加方便。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>模式</th>
+<th>Master 地址</th>
+<th>childMainClass</th>
+<th>Driver 位置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Standalone Client</td>
+<td><code>spark://host:port</code></td>
+<td><code>args.mainClass</code>（用户主类）</td>
+<td>客户端</td>
+</tr>
+<tr>
+<td>Standalone Cluster</td>
+<td><code>spark://host:port</code></td>
+<td><code>SparkApplication</code> 或 <code>Wrapper</code></td>
+<td>集群</td>
+</tr>
+<tr>
+<td>Yarn Client</td>
+<td><code>yarn</code></td>
+<td><code>args.mainClass</code>（用户主类）</td>
+<td>客户端</td>
+</tr>
+</tbody>
+</table>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 提交命令示例</span></span><br><span class="line">spark-submit --master spark:<span class="comment">//host:7077 --deploy-mode client \</span></span><br><span class="line">  --<span class="class"><span class="keyword">class</span> <span class="title">org</span>.<span class="title">apache</span>.<span class="title">spark</span>.<span class="title">examples</span>.<span class="title">SparkPi</span> <span class="title">\</span></span></span><br><span class="line">  $<span class="type">SPARK_HOME</span>/examples/jars/spark-examples_2<span class="number">.12</span><span class="number">-3.2</span><span class="number">.3</span>.jar</span><br></pre></td></tr></table></figure>
+        
+          <a class="article-more-a" href="/2026/07/18/spark/sparkSourceCode-standalone-client/#more">more >></a>
+        
+      
+
+      
+	  
+    </div>
+    <div class="article-info article-info-index">
+      
+	   
+		  
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">源码</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+		  
+
+	  
+	 
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2026/07/18/spark/sparkSourceCode-standalone-client/">展开全文 >></a>
         </p>
       
 
@@ -634,95 +758,6 @@
       
         <p class="article-more-link">
           <a class="article-more-a" href="/2026/07/09/spark/sparkSourceCode-sparkContext/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-spark/sparkSourceCode-sparkSubmitArguments" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2026/07/08/spark/sparkSourceCode-sparkSubmitArguments/">Spark 源码 | SparkSubmitArguments 参数解析（三）</a>
-    </h1>
-  
-
-        
-        <a href="/2026/07/08/spark/sparkSourceCode-sparkSubmitArguments/" class="archive-article-date">
-  	<time datetime="2026-07-07T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-07-08</time>
-</a>
-        
-      </header>
-	    
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-      
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在第二篇文章 <a href="https://mp.weixin.qq.com/s/9IwP8MObLSiIMTxoBHcsmQ">Spark 源码 | SparkSubmit 提交流程分析（二）</a> 中，我们分析了 SparkSubmit 的提交流程，其中 doSubmit 方法会调用 parseArguments 解析命令行参数。本文详细介绍参数解析的过程。</p>
-<h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>Spark 3.2.3</p>
-<h2 id="SparkSubmitArguments-概述"><a href="#SparkSubmitArguments-概述" class="headerlink" title="SparkSubmitArguments 概述"></a>SparkSubmitArguments 概述</h2><p>SparkSubmitArguments 继承自 SparkSubmitArgumentsParser，用于解析 spark-submit 命令行参数。</p>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// SparkSubmitArguments.scala</span></span><br><span class="line"><span class="keyword">private</span>[deploy] <span class="class"><span class="keyword">class</span> <span class="title">SparkSubmitArguments</span>(<span class="params">args: <span class="type">Seq</span>[<span class="type">String</span>], env: <span class="type">Map</span>[<span class="type">String</span>, <span class="type">String</span>] = sys.env</span>)</span></span><br><span class="line">  <span class="keyword">extends</span> <span class="type">SparkSubmitArgumentsParser</span> <span class="keyword">with</span> <span class="type">Logging</span> &#123;</span><br></pre></td></tr></table></figure>
-        
-          <a class="article-more-a" href="/2026/07/08/spark/sparkSourceCode-sparkSubmitArguments/#more">more >></a>
-        
-      
-
-      
-	  
-    </div>
-    <div class="article-info article-info-index">
-      
-	   
-		  
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Spark</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">源码</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-		  
-
-	  
-	 
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2026/07/08/spark/sparkSourceCode-sparkSubmitArguments/">展开全文 >></a>
         </p>
       
 
