@@ -17,7 +17,7 @@
 <meta property="og:description" content="前言在第五篇文章 Yarn Client 模式提交流程（五） 中，我们分析了 Yarn Client 模式的完整提交流程。本文将继续分析 Spark 的另一种常用部署模式——Standalone Client 模式的提交流程。 Standalone 模式是 Spark 自带的集群管理器，不依赖 YARN、Mesos 等外部资源调度系统。其架构包含 Master（集群管理器）和 Worker（工作节">
 <meta property="og:locale">
 <meta property="article:published_time" content="2026-07-22T16:00:00.000Z">
-<meta property="article:modified_time" content="2026-07-23T14:10:41.831Z">
+<meta property="article:modified_time" content="2026-07-24T06:13:24.976Z">
 <meta property="article:author" content="董可伦">
 <meta property="article:tag" content="Spark">
 <meta property="article:tag" content="源码">
@@ -299,7 +299,7 @@
 </table>
 <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 提交命令示例</span></span><br><span class="line">spark-submit --master spark:<span class="comment">//host:7077 --deploy-mode client \</span></span><br><span class="line">  --<span class="class"><span class="keyword">class</span> <span class="title">org</span>.<span class="title">apache</span>.<span class="title">spark</span>.<span class="title">examples</span>.<span class="title">SparkPi</span> <span class="title">\</span></span></span><br><span class="line">  $<span class="type">SPARK_HOME</span>/examples/jars/spark-examples_2<span class="number">.12</span><span class="number">-3.2</span><span class="number">.3</span>.jar</span><br></pre></td></tr></table></figure>
 <span id="more"></span>
-<h3 id="0-RPC-通信方式汇总"><a href="#0-RPC-通信方式汇总" class="headerlink" title="0. RPC 通信方式汇总"></a>0. RPC 通信方式汇总</h3><p>本文多处涉及 Spark RPC 通信，这里做一个统一说明。完整的 Spark RPC 框架总结见 <a href="https://mp.weixin.qq.com/s/kALOjkQPAjhpbAI9ffmEbg">Spark RPC 学习总结</a>：</p>
+<h2 id="0-RPC-通信方式汇总"><a href="#0-RPC-通信方式汇总" class="headerlink" title="0. RPC 通信方式汇总"></a>0. RPC 通信方式汇总</h2><p>本文多处涉及 Spark RPC 通信，这里做一个统一说明。完整的 Spark RPC 框架总结见 <a href="https://mp.weixin.qq.com/s/kALOjkQPAjhpbAI9ffmEbg">Spark RPC 学习总结</a>：</p>
 <ul>
 <li><strong><code>rpcEnv.setupEndpoint(name, endpoint)</code></strong>：注册本地 <code>RpcEndpoint</code>，注册完成后自动触发 <code>endpoint.onStart()</code>。之后可通过返回的 <code>RpcEndpointRef</code> 收发消息。</li>
 <li><strong><code>rpcEnv.setupEndpointRef(address, name)</code></strong>：获取远程 <code>RpcEndpoint</code> 的引用，用于向远程端点发送消息。</li>
@@ -348,6 +348,53 @@
 </tr>
 </tbody>
 </table>
+<p>本文涉及的 RPC Endpoint 名称及注册位置：</p>
+<table>
+<thead>
+<tr>
+<th>角色</th>
+<th>RPC Endpoint 名称</th>
+<th>注册代码</th>
+<th>对应类</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Master</td>
+<td><code>&quot;Master&quot;</code></td>
+<td><code>Master.scala</code> <code>setupEndpoint(&quot;Master&quot;, ...)</code></td>
+<td><code>Master</code></td>
+</tr>
+<tr>
+<td>Worker</td>
+<td><code>&quot;Worker&quot;</code></td>
+<td><code>Worker.scala</code> <code>setupEndpoint(&quot;Worker&quot;, ...)</code></td>
+<td><code>Worker</code></td>
+</tr>
+<tr>
+<td>Driver 端</td>
+<td><code>&quot;CoarseGrainedScheduler&quot;</code>（即 <code>CoarseGrainedSchedulerBackend.ENDPOINT_NAME</code>）</td>
+<td><code>CoarseGrainedSchedulerBackend.scala</code> <code>setupEndpoint(ENDPOINT_NAME, ...)</code></td>
+<td><code>DriverEndpoint</code></td>
+</tr>
+<tr>
+<td>Executor 端</td>
+<td><code>&quot;Executor&quot;</code></td>
+<td><code>CoarseGrainedExecutorBackend.scala</code> <code>setupEndpoint(&quot;Executor&quot;, backend)</code></td>
+<td><code>CoarseGrainedExecutorBackend</code></td>
+</tr>
+<tr>
+<td>AppClient</td>
+<td><code>&quot;AppClient&quot;</code></td>
+<td><code>StandaloneAppClient.scala</code> <code>setupEndpoint(&quot;AppClient&quot;, ...)</code></td>
+<td><code>ClientEndpoint</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><code>--driver-url spark://CoarseGrainedScheduler@driverHost:driverPort</code> 中的 <code>CoarseGrainedScheduler</code> 就是这个 RPC Endpoint 名称，不是类名</li>
+<li>Executor 启动后以 <code>&quot;Executor&quot;</code> 名称注册 RPC Endpoint，与 <code>&quot;CoarseGrainedScheduler&quot;</code> 对称</li>
+</ul>
 <h2 id="完整提交流程"><a href="#完整提交流程" class="headerlink" title="完整提交流程"></a>完整提交流程</h2><h3 id="1-SparkSubmit-准备阶段"><a href="#1-SparkSubmit-准备阶段" class="headerlink" title="1. SparkSubmit 准备阶段"></a>1. SparkSubmit 准备阶段</h3><p>在第二篇文章 <a href="https://mp.weixin.qq.com/s/9IwP8MObLSiIMTxoBHcsmQ">SparkSubmit 提交流程分析（二）</a> 中，我们分析了 <code>prepareSubmitEnvironment</code> 方法。该方法根据 <code>--master</code> 和 <code>--deploy-mode</code> 设置 <code>childMainClass</code>，决定 main 方法在哪里执行。</p>
 <p>对于 Standalone Client 模式，关键代码在 <code>SparkSubmit.scala</code> 的 <code>prepareSubmitEnvironment</code> 方法中。当 <code>deployMode == CLIENT</code> 时，设置 <code>childMainClass</code>：</p>
 <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// SparkSubmit.scala — prepareSubmitEnvironment 方法</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// In client mode, launch the application main class directly</span></span><br><span class="line"><span class="comment">// 在客户端模式下，childMainClass 直接等于用户传入的主类</span></span><br><span class="line"><span class="comment">// In addition, add the main application jar and any added jars (if any) to the classpath</span></span><br><span class="line"><span class="comment">// 此外，将主应用程序jar和任何添加的jar（如果有的话）添加到类路径中</span></span><br><span class="line"><span class="keyword">if</span> (deployMode == <span class="type">CLIENT</span>) &#123;</span><br><span class="line">  childMainClass = args.mainClass           <span class="comment">// ← 核心：直接使用用户主类</span></span><br><span class="line">  <span class="keyword">if</span> (localPrimaryResource != <span class="literal">null</span> &amp;&amp; isUserJar(localPrimaryResource)) &#123;</span><br><span class="line">    childClasspath += localPrimaryResource</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (localJars != <span class="literal">null</span>) &#123; childClasspath ++= localJars.split(<span class="string">&quot;,&quot;</span>) &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -549,8 +596,10 @@
 <blockquote>
 <p>这些参数的含义和构建过程见 4.1 节”阶段二（Worker 端）”。</p>
 </blockquote>
-<h3 id="8-Executor-注册到-Driver"><a href="#8-Executor-注册到-Driver" class="headerlink" title="8. Executor 注册到 Driver"></a>8. Executor 注册到 Driver</h3><h4 id="8-1-CoarseGrainedExecutorBackend-启动"><a href="#8-1-CoarseGrainedExecutorBackend-启动" class="headerlink" title="8.1 CoarseGrainedExecutorBackend 启动"></a>8.1 CoarseGrainedExecutorBackend 启动</h4><p><code>CoarseGrainedExecutorBackend</code> 进程启动后，执行 <code>main()</code> 方法：</p>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// CoarseGrainedExecutorBackend.scala</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">CoarseGrainedExecutorBackend</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="comment">// 解析命令行参数</span></span><br><span class="line">    <span class="keyword">val</span> createFn: (<span class="type">RpcEnv</span>, <span class="type">SparkConf</span>, <span class="type">String</span>, <span class="type">String</span>, <span class="type">Map</span>[<span class="type">String</span>, <span class="type">String</span>], <span class="type">Int</span>, <span class="type">Int</span>, <span class="type">Int</span>, <span class="type">String</span>) =&gt;</span><br><span class="line">      <span class="type">CoarseGrainedExecutorBackend</span> = &#123; ... &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 核心方法</span></span><br><span class="line">    run(driverUrl, executorId, hostname, cores, appId, workerUrl, conf, createFn)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">private</span> <span class="function"><span class="keyword">def</span> <span class="title">run</span></span>(</span><br><span class="line">      driverUrl: <span class="type">String</span>,</span><br><span class="line">      executorId: <span class="type">String</span>,</span><br><span class="line">      hostname: <span class="type">String</span>,</span><br><span class="line">      cores: <span class="type">Int</span>,</span><br><span class="line">      appId: <span class="type">String</span>,</span><br><span class="line">      workerUrl: <span class="type">String</span>,</span><br><span class="line">      conf: <span class="type">SparkConf</span>,</span><br><span class="line">      createFn: (<span class="type">RpcEnv</span>, <span class="type">SparkConf</span>, <span class="type">String</span>, <span class="type">String</span>, <span class="type">Map</span>[<span class="type">String</span>, <span class="type">String</span>], <span class="type">Int</span>, <span class="type">Int</span>, <span class="type">Int</span>, <span class="type">String</span>)</span><br><span class="line">        =&gt; <span class="type">CoarseGrainedExecutorBackend</span>): <span class="type">Unit</span> = &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ① 创建 RpcEnv</span></span><br><span class="line">    <span class="keyword">val</span> env = <span class="type">RpcEnv</span>.create(<span class="string">&quot;Executor&quot;</span>, hostname, <span class="number">-1</span>, conf, securityMgr)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ② 连接到 Driver，获取 SparkConf 配置</span></span><br><span class="line">    <span class="keyword">val</span> driverRef = env.setupEndpointRefByURI(driverUrl)</span><br><span class="line">    <span class="keyword">val</span> cfg = driverRef.askSync[<span class="type">SparkAppConfig</span>](<span class="type">RetrieveSparkAppConfig</span>(</span><br><span class="line">      resourceProfileId))</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ③ 创建 SparkEnv</span></span><br><span class="line">    <span class="keyword">val</span> envInstance = <span class="type">SparkEnv</span>.createExecutorEnv(conf, executorId, hostname, cores,</span><br><span class="line">      cfg.ioEncryptionKey, isLocal = <span class="literal">false</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ④ 创建 CoarseGrainedExecutorBackend 实例</span></span><br><span class="line">    <span class="keyword">val</span> backend = createFn(envInstance, cfg, driverUrl, executorId, hostname,</span><br><span class="line">      cores, cfg.resourceProfileId)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ⑤ 注册 RPC Endpoint → 触发 onStart()</span></span><br><span class="line">    envInstance.rpcEnv.setupEndpoint(<span class="string">&quot;Executor&quot;</span>, backend)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 阻塞等待退出</span></span><br><span class="line">    backend.awaitTermination()</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="8-Executor-注册到-Driver"><a href="#8-Executor-注册到-Driver" class="headerlink" title="8. Executor 注册到 Driver"></a>8. Executor 注册到 Driver</h3><h4 id="8-1-CoarseGrainedExecutorBackend-启动"><a href="#8-1-CoarseGrainedExecutorBackend-启动" class="headerlink" title="8.1 CoarseGrainedExecutorBackend 启动"></a>8.1 CoarseGrainedExecutorBackend 启动</h4><p><code>CoarseGrainedExecutorBackend</code> 进程启动后，执行 <code>main()</code> 方法，解析命令行参数并调用 <code>run()</code>：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// CoarseGrainedExecutorBackend.scala</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">  <span class="comment">// 解析命令行参数</span></span><br><span class="line">  <span class="keyword">val</span> createFn: (<span class="type">RpcEnv</span>, <span class="type">Arguments</span>, <span class="type">SparkEnv</span>, <span class="type">ResourceProfile</span>) =&gt;</span><br><span class="line">    <span class="type">CoarseGrainedExecutorBackend</span> = &#123; <span class="keyword">case</span> (rpcEnv, arguments, env, resourceProfile) =&gt;</span><br><span class="line">    <span class="keyword">new</span> <span class="type">CoarseGrainedExecutorBackend</span>(rpcEnv, arguments.driverUrl, arguments.executorId,</span><br><span class="line">      arguments.bindAddress, arguments.hostname, arguments.cores, arguments.userClassPath.toSeq,</span><br><span class="line">      env, arguments.resourcesFileOpt, resourceProfile)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 核心方法</span></span><br><span class="line">  run(parseArguments(args, <span class="keyword">this</span>.getClass.getCanonicalName.stripSuffix(<span class="string">&quot;$&quot;</span>)), createFn)</span><br><span class="line">  <span class="type">System</span>.exit(<span class="number">0</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>run()</code> 方法执行 Executor 启动的完整流程：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// CoarseGrainedExecutorBackend.scala</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">run</span></span>(</span><br><span class="line">    arguments: <span class="type">Arguments</span>,</span><br><span class="line">    backendCreateFn: (<span class="type">RpcEnv</span>, <span class="type">Arguments</span>, <span class="type">SparkEnv</span>, <span class="type">ResourceProfile</span>) =&gt;</span><br><span class="line">      <span class="type">CoarseGrainedExecutorBackend</span>): <span class="type">Unit</span> = &#123;</span><br><span class="line"></span><br><span class="line">  <span class="type">Utils</span>.initDaemon(log)</span><br><span class="line"></span><br><span class="line">  <span class="type">SparkHadoopUtil</span>.get.runAsSparkUser &#123; () =&gt;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> executorConf = <span class="keyword">new</span> <span class="type">SparkConf</span></span><br><span class="line">    <span class="comment">// ① 创建临时 RpcEnv（&quot;driverPropsFetcher&quot;），连接到 Driver 获取 SparkConf 配置</span></span><br><span class="line">    <span class="comment">//    先连接 Driver 获取配置再创建正式 RpcEnv，原因是 Executor 进程启动时还不知道</span></span><br><span class="line">    <span class="comment">//    Spark 配置（这些配置在 Driver 端），需要先拉取过来才能创建正确的 SparkEnv</span></span><br><span class="line">    <span class="keyword">val</span> fetcher = <span class="type">RpcEnv</span>.create(<span class="string">&quot;driverPropsFetcher&quot;</span>, arguments.bindAddress,</span><br><span class="line">      arguments.hostname, <span class="number">-1</span>, executorConf, <span class="keyword">new</span> <span class="type">SecurityManager</span>(executorConf),</span><br><span class="line">      numUsableCores = <span class="number">0</span>, clientMode = <span class="literal">true</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 连接 Driver（重试 3 次）</span></span><br><span class="line">    <span class="keyword">var</span> driver: <span class="type">RpcEndpointRef</span> = <span class="literal">null</span></span><br><span class="line">    <span class="keyword">val</span> nTries = <span class="number">3</span></span><br><span class="line">    <span class="keyword">for</span> (i &lt;- <span class="number">0</span> until nTries <span class="keyword">if</span> driver == <span class="literal">null</span>) &#123;</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        driver = fetcher.setupEndpointRefByURI(arguments.driverUrl)</span><br><span class="line">      &#125; <span class="keyword">catch</span> &#123; <span class="keyword">case</span> e: <span class="type">Throwable</span> =&gt; <span class="keyword">if</span> (i == nTries - <span class="number">1</span>) <span class="keyword">throw</span> e &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ② 向 Driver 请求 SparkAppConfig（包含 SparkConf、appId、加密密钥等）</span></span><br><span class="line">    <span class="keyword">val</span> cfg = driver.askSync[<span class="type">SparkAppConfig</span>](<span class="type">RetrieveSparkAppConfig</span>(arguments.resourceProfileId))</span><br><span class="line">    <span class="keyword">val</span> props = cfg.sparkProperties ++ <span class="type">Seq</span>[(<span class="type">String</span>, <span class="type">String</span>)]((<span class="string">&quot;spark.app.id&quot;</span>, arguments.appId))</span><br><span class="line">    <span class="comment">// 临时 RpcEnv 用完即关</span></span><br><span class="line">    fetcher.shutdown()</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ③ 根据从 Driver 获取的配置，创建正式的 SparkEnv</span></span><br><span class="line">    <span class="keyword">val</span> driverConf = <span class="keyword">new</span> <span class="type">SparkConf</span>()</span><br><span class="line">    <span class="keyword">for</span> ((key, value) &lt;- props) &#123; driverConf.set(key, value) &#125;</span><br><span class="line">    driverConf.set(<span class="type">EXECUTOR_ID</span>, arguments.executorId)</span><br><span class="line">    <span class="keyword">val</span> env = <span class="type">SparkEnv</span>.createExecutorEnv(driverConf, arguments.executorId, arguments.bindAddress,</span><br><span class="line">      arguments.hostname, arguments.cores, cfg.ioEncryptionKey, isLocal = <span class="literal">false</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ④ 创建 CoarseGrainedExecutorBackend 实例</span></span><br><span class="line">    <span class="keyword">val</span> backend = backendCreateFn(env.rpcEnv, arguments, env, cfg.resourceProfile)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ⑤ 注册 RPC Endpoint → 触发 onStart()（开始反向注册）</span></span><br><span class="line">    env.rpcEnv.setupEndpoint(<span class="string">&quot;Executor&quot;</span>, backend)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ⑥ 启动 WorkerWatcher，监控与 Worker 的连接状态</span></span><br><span class="line">    arguments.workerUrl.foreach &#123; url =&gt;</span><br><span class="line">      env.rpcEnv.setupEndpoint(<span class="string">&quot;WorkerWatcher&quot;</span>,</span><br><span class="line">        <span class="keyword">new</span> <span class="type">WorkerWatcher</span>(env.rpcEnv, url, isChildProcessStopping = backend.stopping))</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 阻塞等待退出</span></span><br><span class="line">    env.rpcEnv.awaitTermination()</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h4 id="8-2-onStart-—-反向注册"><a href="#8-2-onStart-—-反向注册" class="headerlink" title="8.2 onStart() — 反向注册"></a>8.2 onStart() — 反向注册</h4><p><code>setupEndpoint</code> 注册 <code>CoarseGrainedExecutorBackend</code> 到 RpcEnv 后，自动触发 <code>onStart()</code> 方法，开始向 Driver 反向注册：</p>
 <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// CoarseGrainedExecutorBackend.scala</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">onStart</span></span>(): <span class="type">Unit</span> = &#123;</span><br><span class="line">  logInfo(<span class="string">&quot;Connecting to driver: &quot;</span> + driverUrl)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 异步连接 Driver 的 DriverEndpoint</span></span><br><span class="line">  rpcEnv.asyncSetupEndpointRefByURI(driverUrl).flatMap &#123; ref =&gt;</span><br><span class="line">    driver = <span class="type">Some</span>(ref)</span><br><span class="line">    <span class="comment">// 向 Driver 发送 RegisterExecutor 请求</span></span><br><span class="line">    ref.ask[<span class="type">Boolean</span>](<span class="type">RegisterExecutor</span>(</span><br><span class="line">      executorId, self, hostname, cores,</span><br><span class="line">      extractLogUrls, extractAttributes,</span><br><span class="line">      _resources, resourceProfile.id))</span><br><span class="line">  &#125;(<span class="type">ThreadUtils</span>.sameThread).onComplete &#123;</span><br><span class="line">    <span class="keyword">case</span> <span class="type">Success</span>(_) =&gt;</span><br><span class="line">      <span class="comment">// ask 返回 true，说明注册成功</span></span><br><span class="line">      <span class="comment">// 通过 self.send(RegisteredExecutor) 给自己发消息</span></span><br><span class="line">      <span class="comment">// 目的：把创建 Executor 的逻辑从异步回调线程切回 RPC 主线程，保证线程安全</span></span><br><span class="line">      self.send(<span class="type">RegisteredExecutor</span>)</span><br><span class="line">    <span class="keyword">case</span> <span class="type">Failure</span>(e) =&gt;</span><br><span class="line">      exitExecutor(<span class="number">1</span>, <span class="string">s&quot;Cannot register with driver: <span class="subst">$driverUrl</span>&quot;</span>, e, notifyDriver = <span class="literal">false</span>)</span><br><span class="line">  &#125;(<span class="type">ThreadUtils</span>.sameThread)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h4 id="8-3-DriverEndpoint-处理-RegisterExecutor"><a href="#8-3-DriverEndpoint-处理-RegisterExecutor" class="headerlink" title="8.3 DriverEndpoint 处理 RegisterExecutor"></a>8.3 DriverEndpoint 处理 RegisterExecutor</h4><p>Driver 端的 <code>DriverEndpoint</code> 收到 <code>RegisterExecutor</code> 消息后：</p>
@@ -623,7 +672,7 @@
 <li><strong>Master</strong> 处理注册 → 创建 <code>ApplicationInfo</code> → 回复 <code>RegisteredApplication</code> → 调用 <code>schedule()</code> 调度资源</li>
 <li><strong>Master.schedule()</strong> → <code>startExecutorsOnWorkers()</code> → FIFO 遍历 <code>waitingApps</code> → 过滤可用 Worker → <code>allocateWorkerResourceToExecutors()</code> → <code>launchExecutor()</code> 发送 <code>LaunchExecutor</code> 到 Worker</li>
 <li><strong>Worker</strong> 收到 <code>LaunchExecutor</code> → 创建 <code>ExecutorRunner</code> → <code>fetchAndRunExecutor()</code> → 启动子进程 <code>CoarseGrainedExecutorBackend</code>（即 <strong>Executor 进程</strong>）</li>
-<li><strong>CoarseGrainedExecutorBackend 进程</strong> 启动 → 连接 <code>DriverEndpoint</code> → 发送 <code>RegisterExecutor</code> → 注册成功后进程内部创建 <strong>Executor 实例</strong>（<code>new Executor(...)</code>）</li>
+<li><strong>CoarseGrainedExecutorBackend 进程</strong> 启动 → <code>run()</code> 先通过临时 RpcEnv 连接 Driver 获取 SparkConf 配置 → 创建正式 SparkEnv → 注册 RPC Endpoint 触发 <code>onStart()</code> → 发送 <code>RegisterExecutor</code> → Driver 确认注册 → 进程内部创建 <strong>Executor 实例</strong>（<code>new Executor(...)</code>）</li>
 <li><strong>Driver</strong> 继续执行用户业务代码 → 创建 RDD/DataFrame → Action 算子触发 Job → DAGScheduler/TaskScheduler 调度 Task 到已注册的 Executor 上执行</li>
 </ol>
 <h4 id="Standalone-Client-vs-Yarn-Client-对比"><a href="#Standalone-Client-vs-Yarn-Client-对比" class="headerlink" title="Standalone Client vs Yarn Client 对比"></a>Standalone Client vs Yarn Client 对比</h4><table>
@@ -687,7 +736,7 @@
 </tr>
 </tbody>
 </table>
-<h4 id="核心调用链"><a href="#核心调用链" class="headerlink" title="核心调用链"></a>核心调用链</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line">SparkSubmit.main</span><br><span class="line">  → submit → runMain</span><br><span class="line">    → 反射调用用户主类.main（Driver 在客户端启动）</span><br><span class="line">      → SparkContext 初始化 → _taskScheduler.start()</span><br><span class="line">        → StandaloneSchedulerBackend.start()                          [4]</span><br><span class="line">          → super.start()</span><br><span class="line">          → 构建 Executor 启动命令 (CoarseGrainedExecutorBackend)    [4.1]</span><br><span class="line">          → 创建 ApplicationDescription                              [4.2]</span><br><span class="line">          → new StandaloneAppClient(rpcEnv, masters, appDesc, ...)</span><br><span class="line">          → client.start()                                           [5]</span><br><span class="line">            → setupEndpoint(&quot;AppClient&quot;, ClientEndpoint)</span><br><span class="line">              → ClientEndpoint.onStart()</span><br><span class="line">                → registerWithMaster(1)                              [5.2]</span><br><span class="line">                  → tryRegisterAllMasters()</span><br><span class="line">                    → 向所有 Master 发送 RegisterApplication</span><br><span class="line"></span><br><span class="line">        [Master 集群侧]</span><br><span class="line">        Master.receive: RegisterApplication                          [6.1]</span><br><span class="line">          → createApplication() + registerApplication()</span><br><span class="line">          → persistenceEngine.addApplication(app)</span><br><span class="line">          → driver.send(RegisteredApplication)</span><br><span class="line">          → schedule()                                               [6.2]</span><br><span class="line">            → startExecutorsOnWorkers()                              [6.3]</span><br><span class="line">              → filter workers, sort by free cores</span><br><span class="line">              → scheduleExecutorsOnWorkers()                         [6.4]</span><br><span class="line">              → allocateWorkerResourceToExecutors()                  [6.5]</span><br><span class="line">                → launchExecutor()</span><br><span class="line">                  → worker.endpoint.send(LaunchExecutor)</span><br><span class="line"></span><br><span class="line">        [Worker 集群侧]</span><br><span class="line">        Worker.receive: LaunchExecutor                               [7.1]</span><br><span class="line">          → new ExecutorRunner().start()                             [7.2]</span><br><span class="line">            → fetchAndRunExecutor()</span><br><span class="line">              → 替换占位符 &#123;&#123;EXECUTOR_ID&#125;&#125;, &#123;&#123;HOSTNAME&#125;&#125; 等</span><br><span class="line">              → builder.start()</span><br><span class="line">                → CoarseGrainedExecutorBackend.main()</span><br><span class="line"></span><br><span class="line">        [Executor 进程启动]</span><br><span class="line">        CoarseGrainedExecutorBackend.main                            [8.1]</span><br><span class="line">          → create RpcEnv + SparkEnv</span><br><span class="line">          → setupEndpoint(&quot;Executor&quot;, backend)</span><br><span class="line">            → onStart()                                              [8.2]</span><br><span class="line">              → 向 DriverEndpoint 发送 RegisterExecutor</span><br><span class="line">                → Driver 回复成功                                    [8.3]</span><br><span class="line">                  → self.send(RegisteredExecutor)</span><br><span class="line">                    → new Executor(...)                              [8.4]</span><br><span class="line"></span><br><span class="line">        [Driver 执行业务代码]</span><br><span class="line">        DAGScheduler.runJob</span><br><span class="line">          → handleJobSubmitted → createResultStage</span><br><span class="line">            → submitStage → submitMissingTasks</span><br><span class="line">              → taskScheduler.submitTasks</span><br></pre></td></tr></table></figure>
+<h4 id="核心调用链"><a href="#核心调用链" class="headerlink" title="核心调用链"></a>核心调用链</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line">SparkSubmit.main</span><br><span class="line">  → submit → runMain</span><br><span class="line">    → 反射调用用户主类.main（Driver 在客户端启动）</span><br><span class="line">      → SparkContext 初始化 → _taskScheduler.start()</span><br><span class="line">        → StandaloneSchedulerBackend.start()                          [4]</span><br><span class="line">          → super.start()</span><br><span class="line">          → 构建 Executor 启动命令 (CoarseGrainedExecutorBackend)    [4.1]</span><br><span class="line">          → 创建 ApplicationDescription                              [4.2]</span><br><span class="line">          → new StandaloneAppClient(rpcEnv, masters, appDesc, ...)</span><br><span class="line">          → client.start()                                           [5]</span><br><span class="line">            → setupEndpoint(&quot;AppClient&quot;, ClientEndpoint)</span><br><span class="line">              → ClientEndpoint.onStart()</span><br><span class="line">                → registerWithMaster(1)                              [5.2]</span><br><span class="line">                  → tryRegisterAllMasters()</span><br><span class="line">                    → 向所有 Master 发送 RegisterApplication</span><br><span class="line"></span><br><span class="line">        [Master 集群侧]</span><br><span class="line">        Master.receive: RegisterApplication                          [6.1]</span><br><span class="line">          → createApplication() + registerApplication()</span><br><span class="line">          → persistenceEngine.addApplication(app)</span><br><span class="line">          → driver.send(RegisteredApplication)</span><br><span class="line">          → schedule()                                               [6.2]</span><br><span class="line">            → startExecutorsOnWorkers()                              [6.3]</span><br><span class="line">              → filter workers, sort by free cores</span><br><span class="line">              → scheduleExecutorsOnWorkers()                         [6.4]</span><br><span class="line">              → allocateWorkerResourceToExecutors()                  [6.5]</span><br><span class="line">                → launchExecutor()</span><br><span class="line">                  → worker.endpoint.send(LaunchExecutor)</span><br><span class="line"></span><br><span class="line">        [Worker 集群侧]</span><br><span class="line">        Worker.receive: LaunchExecutor                               [7.1]</span><br><span class="line">          → new ExecutorRunner().start()                             [7.2]</span><br><span class="line">            → fetchAndRunExecutor()</span><br><span class="line">              → 替换占位符 &#123;&#123;EXECUTOR_ID&#125;&#125;, &#123;&#123;HOSTNAME&#125;&#125; 等</span><br><span class="line">              → builder.start()</span><br><span class="line">                → CoarseGrainedExecutorBackend.main()</span><br><span class="line"></span><br><span class="line">        [Executor 进程启动]</span><br><span class="line">        CoarseGrainedExecutorBackend.main                            [8.1]</span><br><span class="line">          → parseArguments → run()</span><br><span class="line">            → 临时 RpcEnv 连接 Driver 获取 SparkConf</span><br><span class="line">            → 创建正式 SparkEnv</span><br><span class="line">            → setupEndpoint(&quot;Executor&quot;, backend)</span><br><span class="line">              → onStart()                                              [8.2]</span><br><span class="line">                → 向 DriverEndpoint 发送 RegisterExecutor</span><br><span class="line">                  → Driver 回复成功                                    [8.3]</span><br><span class="line">                    → self.send(RegisteredExecutor)</span><br><span class="line">                      → new Executor(...)                              [8.4]</span><br><span class="line"></span><br><span class="line">        [Driver 执行业务代码]</span><br><span class="line">        DAGScheduler.runJob</span><br><span class="line">          → handleJobSubmitted → createResultStage</span><br><span class="line">            → submitStage → submitMissingTasks</span><br><span class="line">              → taskScheduler.submitTasks</span><br></pre></td></tr></table></figure>
 <h4 id="完整的流程图"><a href="#完整的流程图" class="headerlink" title="完整的流程图"></a>完整的流程图</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────────────────┐</span><br><span class="line">│ 提交客户端 (Client)                                                     │</span><br><span class="line">│                                                                         │</span><br><span class="line">│  SparkSubmit.main                                                       │</span><br><span class="line">│    │                                                                    │</span><br><span class="line">│    ├─ runMain 反射调用用户主类.main                                     │</span><br><span class="line">│    │    │                                                               │</span><br><span class="line">│    │    ├─ SparkContext 初始化                                           │</span><br><span class="line">│    │    │    │                                                          │</span><br><span class="line">│    │    │    ├─ TaskSchedulerImpl + StandaloneSchedulerBackend          │</span><br><span class="line">│    │    │    │    │                                                     │</span><br><span class="line">│    │    │    │    ├─ super.start()                                     │</span><br><span class="line">│    │    │    │    ├─ 构建 Executor 命令                                 │</span><br><span class="line">│    │    │    │    ├─ ApplicationDescription                             │</span><br><span class="line">│    │    │    │    ├─ StandaloneAppClient                                │</span><br><span class="line">│    │    │    │    │    │                                               │</span><br><span class="line">│    │    │    │    │    ├─ onStart()                                    │</span><br><span class="line">│    │    │    │    │    │    └─ registerWithMaster(1)                   │</span><br><span class="line">│    │    │    │    │    │         └─ RegisterApplication ────────────────┼──→ Master</span><br><span class="line">│    │    │    │    │    │                                               │    │</span><br><span class="line">│    │    │    │    │    ├─ receive(RegisteredApplication)               │    ├─ createApplication()</span><br><span class="line">│    │    │    │    │    │    └─ listener.connected(appId)              │    ├─ registerApplication()</span><br><span class="line">│    │    │    │    │    │         └─ registrationBarrier.release()     │    ├─ schedule()</span><br><span class="line">│    │    │    │    │    │                                              │    │    │</span><br><span class="line">│    │    │    │    │    ├─ waitForRegistration() 返回                  │    │    ├─ startExecutorsOnWorkers()</span><br><span class="line">│    │    │    │    │    │                                              │    │    │    │</span><br><span class="line">│    │    │    │    │    ├─ [Executor 注册完成后]                       │    │    │    └─ allocateWorkerResourceToExecutors()</span><br><span class="line">│    │    │    │    │    │    └─ receive(ExecutorAdded)                 │    │    │         │</span><br><span class="line">│    │    │    │    │    │                                              │    │    │         └─ launchExecutor()</span><br><span class="line">│    │    │    │    │    │                                              │    │    │              │</span><br><span class="line">│    │    │    │    │    │                                              │    │    │              ├─ Worker: LaunchExecutor</span><br><span class="line">│    │    │    │    │    │                                              │    │    │              └─ Client: ExecutorAdded</span><br><span class="line">│    │    │    │    │    │                                              │    │    │</span><br><span class="line">│    │    │    │    │    └─ [继续执行业务代码]                          │    │    │</span><br><span class="line">│    │    │    │    │         ├─ 创建 RDD/DataFrame                    │    │    │</span><br><span class="line">│    │    │    │    │         └─ Action 算子触发 Job                    │    │    │</span><br><span class="line">│    │    │    │    │              ├─ DAGScheduler 划分 Stage           │    │    │</span><br><span class="line">│    │    │    │    │              └─ TaskScheduler 调度 Task 到        │    │    │</span><br><span class="line">│    │    │    │    │                  已注册 Executor                  │    │    │</span><br><span class="line">│    │    │    │    │                                                  │    │    │</span><br><span class="line">│    │    │    │    └─ DriverEndpoint ←──────────────────────────────────────┼────┼── Executor</span><br><span class="line">│    │    │    │         ↑  RegisterExecutor                           │    │    │    ↑</span><br><span class="line">│    │    │    │         ↓  RegisteredExecutor                         │    │    │    │</span><br><span class="line">│    │    │    │                                                       │    │    │    │</span><br><span class="line">│    │    │    │                                                       │    │    │    ├─ CoarseGrainedExecutorBackend</span><br><span class="line">│    │    │    │                                                       │    │    │    │    │</span><br><span class="line">│    │    │    │                                                       │    │    │    │    ├─ onStart()</span><br><span class="line">│    │    │    │                                                       │    │    │    │    │  └─ RegisterExecutor</span><br><span class="line">│    │    │    │                                                       │    │    │    │    │       → DriverEndpoint</span><br><span class="line">│    │    │    │                                                       │    │    │    │    │</span><br><span class="line">│    │    │    │                                                       │    │    │    │    ├─ receive(RegisteredExecutor)</span><br><span class="line">│    │    │    │                                                       │    │    │    │    │  └─ new Executor(...)</span><br><span class="line">│    │    │    │                                                       │    │    │    │    │</span><br><span class="line">│    │    │    │                                                       │    │    │    │    └─ [接收并执行 Task]</span><br><span class="line">│    │    │    │                                                       │    │    │    │</span><br><span class="line">│    │    │    │                                                       │    │    │    └─ Worker (Node)</span><br><span class="line">│    │    │    │                                                       │    │    │         │</span><br><span class="line">│    │    │    │                                                       │    │    │         ├─ receive(LaunchExecutor)</span><br><span class="line">│    │    │    │                                                       │    │    │         ├─ ExecutorRunner.start()</span><br><span class="line">│    │    │    │                                                       │    │    │         └─ fetchAndRunExecutor()</span><br><span class="line">│    │    │    │                                                       │    │    │              └─ builder.start()</span><br><span class="line">│    │    │    │                                                       │    │    │                   → CoarseGrainedExecutorBackend</span><br><span class="line">└─────────────────────────────────────────────────────────────────────────┘    │    │</span><br><span class="line">                                                                               │    │</span><br><span class="line">                                                        Master (集群) ◄────────┘    │</span><br><span class="line">                                                         │                        │</span><br><span class="line">                                                         ├─ 管理 Workers            │</span><br><span class="line">                                                         ├─ 接收应用注册           │</span><br><span class="line">                                                         ├─ 调度 Executor          │</span><br><span class="line">                                                         └─ 状态管理               │</span><br><span class="line">                                                                                  │</span><br><span class="line">                                                              Worker (集群) ◄──────┘</span><br><span class="line">                                                               │</span><br><span class="line">                                                               ├─ 注册到 Master</span><br><span class="line">                                                               ├─ 接收 LaunchExecutor</span><br><span class="line">                                                               ├─ 启动 Executor 进程</span><br><span class="line">                                                               └─ 监控 Executor 状态</span><br></pre></td></tr></table></figure>
 <blockquote>
 <p>括号中的 [x.x] 对应本文各章节编号，便于快速回溯源码分析。</p>
@@ -840,7 +889,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%89%88%E6%9C%AC"><span class="toc-number">2.</span> <span class="toc-text">版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Standalone-Client-%E6%A8%A1%E5%BC%8F%E6%A6%82%E8%BF%B0"><span class="toc-number">3.</span> <span class="toc-text">Standalone Client 模式概述</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#0-RPC-%E9%80%9A%E4%BF%A1%E6%96%B9%E5%BC%8F%E6%B1%87%E6%80%BB"><span class="toc-number">3.1.</span> <span class="toc-text">0. RPC 通信方式汇总</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%8C%E6%95%B4%E6%8F%90%E4%BA%A4%E6%B5%81%E7%A8%8B"><span class="toc-number">4.</span> <span class="toc-text">完整提交流程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-SparkSubmit-%E5%87%86%E5%A4%87%E9%98%B6%E6%AE%B5"><span class="toc-number">4.1.</span> <span class="toc-text">1. SparkSubmit 准备阶段</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-runMain-%E6%89%A7%E8%A1%8C%E7%94%A8%E6%88%B7%E4%B8%BB%E7%B1%BB"><span class="toc-number">4.2.</span> <span class="toc-text">2. runMain 执行用户主类</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-SparkContext-%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B8%8E-TaskScheduler-%E5%88%9B%E5%BB%BA"><span class="toc-number">4.3.</span> <span class="toc-text">3. SparkContext 初始化与 TaskScheduler 创建</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#createTaskScheduler-%E6%96%B9%E6%B3%95"><span class="toc-number">4.3.1.</span> <span class="toc-text">createTaskScheduler 方法</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-StandaloneSchedulerBackend-start-%E2%80%94-%E6%A0%B8%E5%BF%83%E5%85%A5%E5%8F%A3"><span class="toc-number">4.4.</span> <span class="toc-text">4. StandaloneSchedulerBackend.start() — 核心入口</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#4-1-%E5%90%AF%E5%8A%A8%E5%91%BD%E4%BB%A4%E6%A8%A1%E6%9D%BF%E4%B8%8E-CoarseGrainedExecutorBackend"><span class="toc-number">4.4.1.</span> <span class="toc-text">4.1 启动命令模板与 CoarseGrainedExecutorBackend</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#4-2-ApplicationDescription"><span class="toc-number">4.4.2.</span> <span class="toc-text">4.2 ApplicationDescription</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-StandaloneAppClient-%E6%B3%A8%E5%86%8C%E6%B5%81%E7%A8%8B"><span class="toc-number">4.5.</span> <span class="toc-text">5. StandaloneAppClient 注册流程</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#5-1-ClientEndpoint-onStart"><span class="toc-number">4.5.1.</span> <span class="toc-text">5.1 ClientEndpoint.onStart()</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#5-2-registerWithMaster-%E4%B8%8E-tryRegisterAllMasters"><span class="toc-number">4.5.2.</span> <span class="toc-text">5.2 registerWithMaster() 与 tryRegisterAllMasters()</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%90%91%E5%A4%9A%E4%B8%AA-Master-%E6%B3%A8%E5%86%8C%EF%BC%9F"><span class="toc-number">4.5.2.1.</span> <span class="toc-text">为什么要向多个 Master 注册？</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#5-3-%E6%B3%A8%E5%86%8C%E6%88%90%E5%8A%9F%E5%9B%9E%E8%B0%83"><span class="toc-number">4.5.3.</span> <span class="toc-text">5.3 注册成功回调</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-Master-%E6%B3%A8%E5%86%8C%E4%B8%8E%E8%B0%83%E5%BA%A6"><span class="toc-number">4.6.</span> <span class="toc-text">6. Master 注册与调度</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#6-1-Master-receive-%E2%80%94-RegisterApplication"><span class="toc-number">4.6.1.</span> <span class="toc-text">6.1 Master.receive — RegisterApplication</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#6-2-schedule-%E8%B0%83%E5%BA%A6%E5%85%A5%E5%8F%A3"><span class="toc-number">4.6.2.</span> <span class="toc-text">6.2 schedule() 调度入口</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#6-3-startExecutorsOnWorkers-%E2%80%94-Executor-%E8%B0%83%E5%BA%A6"><span class="toc-number">4.6.3.</span> <span class="toc-text">6.3 startExecutorsOnWorkers() — Executor 调度</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#6-4-scheduleExecutorsOnWorkers-%E2%80%94-%E6%A0%B8%E5%BF%83%E5%88%86%E9%85%8D%E7%AE%97%E6%B3%95"><span class="toc-number">4.6.4.</span> <span class="toc-text">6.4 scheduleExecutorsOnWorkers() — 核心分配算法</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#6-5-allocateWorkerResourceToExecutors-%E4%B8%8E-launchExecutor"><span class="toc-number">4.6.5.</span> <span class="toc-text">6.5 allocateWorkerResourceToExecutors() 与 launchExecutor()</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-Worker-%E5%90%AF%E5%8A%A8-Executor"><span class="toc-number">4.7.</span> <span class="toc-text">7. Worker 启动 Executor</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#7-1-Worker-receive-%E2%80%94-LaunchExecutor"><span class="toc-number">4.7.1.</span> <span class="toc-text">7.1 Worker.receive — LaunchExecutor</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#7-2-ExecutorRunner-start-%E4%B8%8E-fetchAndRunExecutor"><span class="toc-number">4.7.2.</span> <span class="toc-text">7.2 ExecutorRunner.start() 与 fetchAndRunExecutor()</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-Executor-%E6%B3%A8%E5%86%8C%E5%88%B0-Driver"><span class="toc-number">4.8.</span> <span class="toc-text">8. Executor 注册到 Driver</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#8-1-CoarseGrainedExecutorBackend-%E5%90%AF%E5%8A%A8"><span class="toc-number">4.8.1.</span> <span class="toc-text">8.1 CoarseGrainedExecutorBackend 启动</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#8-2-onStart-%E2%80%94-%E5%8F%8D%E5%90%91%E6%B3%A8%E5%86%8C"><span class="toc-number">4.8.2.</span> <span class="toc-text">8.2 onStart() — 反向注册</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#8-3-DriverEndpoint-%E5%A4%84%E7%90%86-RegisterExecutor"><span class="toc-number">4.8.3.</span> <span class="toc-text">8.3 DriverEndpoint 处理 RegisterExecutor</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#8-4-%E5%88%9B%E5%BB%BA-Executor-%E5%AE%9E%E4%BE%8B"><span class="toc-number">4.8.4.</span> <span class="toc-text">8.4 创建 Executor 实例</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#9-%E6%80%BB%E7%BB%93"><span class="toc-number">4.9.</span> <span class="toc-text">9. 总结</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%B5%81%E7%A8%8B%E6%A6%82%E8%BF%B0"><span class="toc-number">4.9.1.</span> <span class="toc-text">流程概述</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Standalone-Client-vs-Yarn-Client-%E5%AF%B9%E6%AF%94"><span class="toc-number">4.9.2.</span> <span class="toc-text">Standalone Client vs Yarn Client 对比</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%A0%B8%E5%BF%83%E8%B0%83%E7%94%A8%E9%93%BE"><span class="toc-number">4.9.3.</span> <span class="toc-text">核心调用链</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AE%8C%E6%95%B4%E7%9A%84%E6%B5%81%E7%A8%8B%E5%9B%BE"><span class="toc-number">4.9.4.</span> <span class="toc-text">完整的流程图</span></a></li></ol></li></ol></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%89%88%E6%9C%AC"><span class="toc-number">2.</span> <span class="toc-text">版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Standalone-Client-%E6%A8%A1%E5%BC%8F%E6%A6%82%E8%BF%B0"><span class="toc-number">3.</span> <span class="toc-text">Standalone Client 模式概述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#0-RPC-%E9%80%9A%E4%BF%A1%E6%96%B9%E5%BC%8F%E6%B1%87%E6%80%BB"><span class="toc-number">4.</span> <span class="toc-text">0. RPC 通信方式汇总</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%8C%E6%95%B4%E6%8F%90%E4%BA%A4%E6%B5%81%E7%A8%8B"><span class="toc-number">5.</span> <span class="toc-text">完整提交流程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-SparkSubmit-%E5%87%86%E5%A4%87%E9%98%B6%E6%AE%B5"><span class="toc-number">5.1.</span> <span class="toc-text">1. SparkSubmit 准备阶段</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-runMain-%E6%89%A7%E8%A1%8C%E7%94%A8%E6%88%B7%E4%B8%BB%E7%B1%BB"><span class="toc-number">5.2.</span> <span class="toc-text">2. runMain 执行用户主类</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-SparkContext-%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B8%8E-TaskScheduler-%E5%88%9B%E5%BB%BA"><span class="toc-number">5.3.</span> <span class="toc-text">3. SparkContext 初始化与 TaskScheduler 创建</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#createTaskScheduler-%E6%96%B9%E6%B3%95"><span class="toc-number">5.3.1.</span> <span class="toc-text">createTaskScheduler 方法</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-StandaloneSchedulerBackend-start-%E2%80%94-%E6%A0%B8%E5%BF%83%E5%85%A5%E5%8F%A3"><span class="toc-number">5.4.</span> <span class="toc-text">4. StandaloneSchedulerBackend.start() — 核心入口</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#4-1-%E5%90%AF%E5%8A%A8%E5%91%BD%E4%BB%A4%E6%A8%A1%E6%9D%BF%E4%B8%8E-CoarseGrainedExecutorBackend"><span class="toc-number">5.4.1.</span> <span class="toc-text">4.1 启动命令模板与 CoarseGrainedExecutorBackend</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#4-2-ApplicationDescription"><span class="toc-number">5.4.2.</span> <span class="toc-text">4.2 ApplicationDescription</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-StandaloneAppClient-%E6%B3%A8%E5%86%8C%E6%B5%81%E7%A8%8B"><span class="toc-number">5.5.</span> <span class="toc-text">5. StandaloneAppClient 注册流程</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#5-1-ClientEndpoint-onStart"><span class="toc-number">5.5.1.</span> <span class="toc-text">5.1 ClientEndpoint.onStart()</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#5-2-registerWithMaster-%E4%B8%8E-tryRegisterAllMasters"><span class="toc-number">5.5.2.</span> <span class="toc-text">5.2 registerWithMaster() 与 tryRegisterAllMasters()</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%90%91%E5%A4%9A%E4%B8%AA-Master-%E6%B3%A8%E5%86%8C%EF%BC%9F"><span class="toc-number">5.5.2.1.</span> <span class="toc-text">为什么要向多个 Master 注册？</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#5-3-%E6%B3%A8%E5%86%8C%E6%88%90%E5%8A%9F%E5%9B%9E%E8%B0%83"><span class="toc-number">5.5.3.</span> <span class="toc-text">5.3 注册成功回调</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-Master-%E6%B3%A8%E5%86%8C%E4%B8%8E%E8%B0%83%E5%BA%A6"><span class="toc-number">5.6.</span> <span class="toc-text">6. Master 注册与调度</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#6-1-Master-receive-%E2%80%94-RegisterApplication"><span class="toc-number">5.6.1.</span> <span class="toc-text">6.1 Master.receive — RegisterApplication</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#6-2-schedule-%E8%B0%83%E5%BA%A6%E5%85%A5%E5%8F%A3"><span class="toc-number">5.6.2.</span> <span class="toc-text">6.2 schedule() 调度入口</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#6-3-startExecutorsOnWorkers-%E2%80%94-Executor-%E8%B0%83%E5%BA%A6"><span class="toc-number">5.6.3.</span> <span class="toc-text">6.3 startExecutorsOnWorkers() — Executor 调度</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#6-4-scheduleExecutorsOnWorkers-%E2%80%94-%E6%A0%B8%E5%BF%83%E5%88%86%E9%85%8D%E7%AE%97%E6%B3%95"><span class="toc-number">5.6.4.</span> <span class="toc-text">6.4 scheduleExecutorsOnWorkers() — 核心分配算法</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#6-5-allocateWorkerResourceToExecutors-%E4%B8%8E-launchExecutor"><span class="toc-number">5.6.5.</span> <span class="toc-text">6.5 allocateWorkerResourceToExecutors() 与 launchExecutor()</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-Worker-%E5%90%AF%E5%8A%A8-Executor"><span class="toc-number">5.7.</span> <span class="toc-text">7. Worker 启动 Executor</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#7-1-Worker-receive-%E2%80%94-LaunchExecutor"><span class="toc-number">5.7.1.</span> <span class="toc-text">7.1 Worker.receive — LaunchExecutor</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#7-2-ExecutorRunner-start-%E4%B8%8E-fetchAndRunExecutor"><span class="toc-number">5.7.2.</span> <span class="toc-text">7.2 ExecutorRunner.start() 与 fetchAndRunExecutor()</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-Executor-%E6%B3%A8%E5%86%8C%E5%88%B0-Driver"><span class="toc-number">5.8.</span> <span class="toc-text">8. Executor 注册到 Driver</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#8-1-CoarseGrainedExecutorBackend-%E5%90%AF%E5%8A%A8"><span class="toc-number">5.8.1.</span> <span class="toc-text">8.1 CoarseGrainedExecutorBackend 启动</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#8-2-onStart-%E2%80%94-%E5%8F%8D%E5%90%91%E6%B3%A8%E5%86%8C"><span class="toc-number">5.8.2.</span> <span class="toc-text">8.2 onStart() — 反向注册</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#8-3-DriverEndpoint-%E5%A4%84%E7%90%86-RegisterExecutor"><span class="toc-number">5.8.3.</span> <span class="toc-text">8.3 DriverEndpoint 处理 RegisterExecutor</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#8-4-%E5%88%9B%E5%BB%BA-Executor-%E5%AE%9E%E4%BE%8B"><span class="toc-number">5.8.4.</span> <span class="toc-text">8.4 创建 Executor 实例</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#9-%E6%80%BB%E7%BB%93"><span class="toc-number">5.9.</span> <span class="toc-text">9. 总结</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%B5%81%E7%A8%8B%E6%A6%82%E8%BF%B0"><span class="toc-number">5.9.1.</span> <span class="toc-text">流程概述</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Standalone-Client-vs-Yarn-Client-%E5%AF%B9%E6%AF%94"><span class="toc-number">5.9.2.</span> <span class="toc-text">Standalone Client vs Yarn Client 对比</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%A0%B8%E5%BF%83%E8%B0%83%E7%94%A8%E9%93%BE"><span class="toc-number">5.9.3.</span> <span class="toc-text">核心调用链</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AE%8C%E6%95%B4%E7%9A%84%E6%B5%81%E7%A8%8B%E5%9B%BE"><span class="toc-number">5.9.4.</span> <span class="toc-text">完整的流程图</span></a></li></ol></li></ol></li></ol>
                     </div>
                 </span>
             </div>
@@ -1011,14 +1060,6 @@ var _hmt = _hmt || [];
           <ul class="article-tag-list" q-show="showTags">
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">english</a>
               </li>
              
@@ -1031,23 +1072,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">Hadoop</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ambari</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">python</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1056,10 +1093,6 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Oracle</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hive</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1076,6 +1109,22 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">centos7</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">python</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">anaconda</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">SparkStreaming</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Kafka</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1099,18 +1148,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">Echarts</a>
               </li>
              
@@ -1119,11 +1156,31 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Flink</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Hudi</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Scala</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">HDFS</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">ELKB</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1143,23 +1200,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">开源</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">DBeaver</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Kerberos</a>
+                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Java</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">异常</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1168,6 +1221,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Maven</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1203,15 +1260,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">ibatis</a>
+                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">ogg</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Nginx</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1223,19 +1276,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">redis</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">excel</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1247,6 +1288,14 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">Rdd</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">redis</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">scala</a>
               </li>
              
@@ -1255,11 +1304,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">转载</a>
+                <a href="javascript:void(0)" class="js-tag color4">sbt</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">原理</a>
+                <a href="javascript:void(0)" class="js-tag color3">转载</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1275,6 +1324,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">原理</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">rdd</a>
               </li>
              
@@ -1287,10 +1340,6 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Partition</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Spark Streaming</a>
               </li>
              
@@ -1299,15 +1348,15 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">ml</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Partitions</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">性能优化</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">ml</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1331,6 +1380,10 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">UNION</a>
               </li>
              
@@ -1339,19 +1392,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">tomcat</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">vmware</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">Vue</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1364,6 +1409,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">git-page</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">Vue CLI</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1383,7 +1432,7 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
+                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1391,19 +1440,19 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RPC</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">CDC</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Yarn</a>
+                <a href="javascript:void(0)" class="js-tag color5">BLOB</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">BLOB</a>
+                <a href="javascript:void(0)" class="js-tag color1">Dinky</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Yarn</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1423,15 +1472,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">Ray</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Conda</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">tool</a>
+                <a href="javascript:void(0)" class="js-tag color4">Ray</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1443,11 +1488,11 @@ var _hmt = _hmt || [];
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
+                <a href="javascript:void(0)" class="js-tag color5">ZooKeeper</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">ZooKeeper</a>
+                <a href="javascript:void(0)" class="js-tag color4">VPN</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -1456,6 +1501,10 @@ var _hmt = _hmt || [];
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">Ollama</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">tool</a>
               </li>
             
             <div class="clearfix"></div>
